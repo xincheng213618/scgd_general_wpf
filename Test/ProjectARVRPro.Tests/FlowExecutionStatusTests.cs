@@ -1,9 +1,11 @@
 using ColorVision.Themes;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.UI.Controls;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -36,6 +38,53 @@ public sealed class FlowExecutionStatusTests
         Assert.Equal("1234 ms", status.ElapsedText);
         Assert.Contains("{\"result\":false}", status.Details);
         Assert.Equal(FlowExecutionStatusKind.Completed, status.Kind);
+    }
+
+    [Theory]
+    [InlineData("点阵畸变失败：grid_not_found；Candidates do not form a complete grid.\r\nROI: 1920×1080")]
+    [InlineData("点阵畸变失败: grid_not_found; Candidates do not form a complete grid.")]
+    public void HistoricalGridFailureShowsTheRecognitionHintAndOriginalReason(string reason)
+    {
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            var result = new ProjectARVRReuslt
+            {
+                Id = 42,
+                Model = "Distortion_Test",
+                SN = "SAMPLE",
+                CreateTime = new DateTime(2026, 11, 26, 9, 45, 15),
+                FlowStatus = FlowStatus.Failed,
+                Msg = reason
+            };
+
+            Assert.Null(result.ViewResultJson);
+            var failure = Assert.IsType<Paragraph>(ARVRWindow.CreateFailedResultParagraph(result));
+            string text = new TextRange(failure.ContentStart, failure.ContentEnd).Text;
+            Assert.StartsWith("点阵画面识别失败，未找到符合要求的完整点阵。", text);
+            Assert.Contains("Distortion_Test · SN SAMPLE · 2026/11/26 09:45:15", text);
+            Assert.Contains(reason, text);
+        });
+    }
+
+    [Theory]
+    [InlineData(FlowStatus.OverTime, null, "超时", "该记录未保存具体原因。")]
+    [InlineData(FlowStatus.Failed, "PictureSwitchFailed", "失败", "切图失败")]
+    [InlineData(FlowStatus.Failed, "测试已取消", "已取消", "测试已取消")]
+    public void FailedResultExplainsOtherTerminalOutcomes(FlowStatus status, string? reason, string heading, string detail)
+    {
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            var result = new ProjectARVRReuslt { FlowStatus = status, Msg = reason! };
+            var failure = Assert.IsType<Paragraph>(ARVRWindow.CreateFailedResultParagraph(result));
+            string text = new TextRange(failure.ContentStart, failure.ContentEnd).Text;
+            Assert.StartsWith(heading, text);
+            Assert.Contains(detail, text);
+            Assert.Null(ARVRWindow.CreateFailedResultParagraph(new ProjectARVRReuslt
+            {
+                FlowStatus = FlowStatus.Completed,
+                Result = false
+            }));
+        });
     }
 
     [Fact]

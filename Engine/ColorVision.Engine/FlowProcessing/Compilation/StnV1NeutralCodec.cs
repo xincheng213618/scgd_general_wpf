@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -29,6 +30,9 @@ internal static class StnV1NeutralCodec
     private const int MaximumCompressedLength = 160 * 1024 * 1024;
     private const int MaximumDecompressedLength = 160 * 1024 * 1024;
     private const int MaximumTotalPortCount = 1_000_000;
+    private const int MaximumReusablePropertyNameCount = 256;
+    private const int InflateChunkLength = 81_920;
+    private const int MaximumPooledInflateLength = 8 * 1024 * 1024;
     private static readonly ConcurrentDictionary<Type, Lazy<NeutralNodeSchema>>
         SchemaCache = new();
     private static readonly ConcurrentDictionary<string, Type>
@@ -177,10 +181,24 @@ internal static class StnV1NeutralCodec
             input,
             CompressionMode.Decompress,
             leaveOpen: true);
-        using var body = ReadBounded(gzip, MaximumDecompressedLength);
-        if (input.Position != input.Length)
-            throw new InvalidDataException("STND 包含未识别的尾部内容。");
+        uint sizeHint = BinaryPrimitives.ReadUInt32LittleEndian(canvasData.AsSpan(canvasData.Length - sizeof(uint)));
+        byte[] decompressed = ReadBounded(gzip, MaximumDecompressedLength, sizeHint, out int length);
+        try
+        {
+            if (input.Position != input.Length)
+                throw new InvalidDataException("STND 包含未识别的尾部内容。");
+            // Finish reading the gzip envelope before parsing can construct node defaults.
+            using var body = new MemoryStream(decompressed, 0, length, writable: false);
+            return DecodeBody(body, options, allowMissingNodes);
+        }
+        finally
+        {
+            ReleaseInflateBuffer(decompressed, length);
+        }
+    }
 
+    private static NeutralCanvas DecodeBody(Stream body, StnV1CodecOptions options, bool allowMissingNodes)
+    {
         var canvas = new NeutralCanvas(
             ReadSingle(body),
             ReadSingle(body),
@@ -200,6 +218,7 @@ internal static class StnV1NeutralCodec
         long totalNodeDataLength = 0;
         int remainingPortCount = MaximumTotalPortCount;
         var nodeIds = new HashSet<Guid>();
+        HashSet<string>? propertyNames = null;
         for (int i = 0; i < nodeCount; i++)
         {
             int payloadLength = ReadInt32(body);
@@ -215,7 +234,13 @@ internal static class StnV1NeutralCodec
 
             NeutralNode node = ParseNode(
                 ReadBytes(body, payloadLength),
-                ref remainingPortCount, allowMissingNodes);
+                ref remainingPortCount, allowMissingNodes,
+                propertyNames ??= new HashSet<string>(StringComparer.Ordinal));
+            // Keep a single node with unusually many properties from growing every later clear.
+            if (propertyNames.Count > MaximumReusablePropertyNameCount)
+                propertyNames = null;
+            else
+                propertyNames.Clear();
             if (!nodeIds.Add(node.NodeId))
             {
                 throw new InvalidDataException(
@@ -268,7 +293,8 @@ internal static class StnV1NeutralCodec
         return canvas;
     }
 
-    private static NeutralNode ParseNode(byte[] payload, ref int remainingPortCount, bool allowMissingNodes)
+    private static NeutralNode ParseNode(
+        byte[] payload, ref int remainingPortCount, bool allowMissingNodes, HashSet<string> propertyNames)
     {
         int offset = 0;
         string modelKey = ReadByteLengthString(
@@ -282,8 +308,6 @@ internal static class StnV1NeutralCodec
         int guidValueOffset = -1;
         Guid nodeId = Guid.Empty;
         ReadOnlySpan<byte> hubPortCount = default;
-        var propertyNames = new HashSet<string>(
-            StringComparer.Ordinal);
         while (offset < payload.Length)
         {
             int keyLength = ReadInt32(
@@ -646,41 +670,67 @@ internal static class StnV1NeutralCodec
         }
     }
 
-    private static MemoryStream ReadBounded(
-        Stream source,
-        int maximumLength)
+    private static byte[] ReadBounded(Stream source, int maximumLength, uint sizeHint, out int length)
     {
-        const int bufferSize = 81_920;
-        var output = new MemoryStream();
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-        int usedLength = 0;
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(InflateChunkLength);
+        byte[]? spill = null;
+        length = 0;
         try
         {
             while (true)
             {
-                int read = source.Read(buffer, 0, bufferSize);
-                if (read <= 0)
-                    break;
-                usedLength = Math.Max(usedLength, read);
-                if (output.Length + read > maximumLength)
+                bool fits = buffer.Length - length >= InflateChunkLength;
+                // Probe into scratch space when the next read might be EOF or fit without growing.
+                byte[] destination = fits ? buffer : (spill ??= ArrayPool<byte>.Shared.Rent(InflateChunkLength));
+                int read = source.Read(destination, fits ? length : 0, InflateChunkLength);
+                if (read == 0)
+                    return buffer;
+
+                int requiredLength = length + read;
+                if (requiredLength > maximumLength)
                     throw new InvalidDataException("解压后的流程数据超过限制。");
-                output.Write(buffer, 0, read);
+
+                if (!fits)
+                {
+                    if (requiredLength > buffer.Length)
+                    {
+                        int capacity = Math.Min(buffer.Length * 2, maximumLength);
+                        // The footer can shrink an unpooled allocation once real bytes require it.
+                        // It cannot increase capacity or change length validation.
+                        if (buffer.Length >= MaximumPooledInflateLength && sizeHint >= requiredLength && sizeHint < capacity)
+                            capacity = (int)sizeHint;
+                        byte[] expanded = capacity <= MaximumPooledInflateLength
+                            ? ArrayPool<byte>.Shared.Rent(capacity)
+                            : GC.AllocateUninitializedArray<byte>(capacity);
+                        buffer.AsSpan(0, length).CopyTo(expanded);
+                        ReleaseInflateBuffer(buffer, length);
+                        buffer = expanded;
+                    }
+                    destination.AsSpan(0, read).CopyTo(buffer.AsSpan(length));
+                }
+                length = requiredLength;
             }
-            output.Position = 0;
-            return output;
         }
         catch
         {
-            // A failed stream read can write bytes before throwing.
-            usedLength = bufferSize;
-            output.Dispose();
+            // A failed read can touch the destination before throwing.
+            ReleaseInflateBuffer(buffer, Math.Min(length + InflateChunkLength, buffer.Length));
             throw;
         }
         finally
         {
-            buffer.AsSpan(0, usedLength).Clear();
-            ArrayPool<byte>.Shared.Return(buffer);
+            if (spill != null)
+                ReleaseInflateBuffer(spill, InflateChunkLength);
         }
+    }
+
+    private static void ReleaseInflateBuffer(byte[] buffer, int length)
+    {
+        if (buffer.Length > MaximumPooledInflateLength)
+            return;
+
+        buffer.AsSpan(0, length).Clear();
+        ArrayPool<byte>.Shared.Return(buffer);
     }
 
     private static int ReadCount(

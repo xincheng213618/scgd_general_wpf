@@ -1,4 +1,8 @@
+using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.Engine.Services.PhyCameras.Calibration.Editing;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
@@ -19,6 +23,66 @@ public sealed class CalibrationDocumentEditorTests : IDisposable
     private readonly Authorization previousAuthorization = Authorization.Instance;
     public CalibrationDocumentEditorTests() => Authorization.Instance = new Authorization { PermissionMode = PermissionMode.Administrator };
     public void Dispose() => Authorization.Instance = previousAuthorization;
+
+    [Fact]
+    public void GroupAndTemplateControlsShowTheOrderOfSelectedCalibrationSteps() => WithTheme(() =>
+    {
+        using var devices = new CurrentCameraDefaultsScope();
+        var camera = devices.Camera.PhyCamera!;
+        camera.Config = new ConfigPhyCamera();
+        camera.SysResourceModel = new SysResourceModel { Code = "calibration-order" };
+        var group = Assert.Single(camera.VisualChildren.OfType<GroupResource>());
+        var template = Assert.Single(camera.CalibrationParams).Value;
+        var resources = new List<CalibrationResource>();
+        CalibrationEdit? manager = null;
+        using var directory = new TemporaryDirectory();
+        var previousDao = SysResourceDao.Instance;
+        var resourceDao = new SysResourceDao(new LocalTemplateStore(Path.Combine(directory.Path, "resources.db")), () => false);
+        SysResourceDao.Instance = resourceDao;
+        try
+        {
+            foreach (var type in new[] { ServiceTypes.DarkNoise, ServiceTypes.DefectPoint, ServiceTypes.DSNU, ServiceTypes.Uniformity })
+            {
+                var model = new SysResourceModel { Name = type.ToString(), Type = (int)type };
+                resourceDao.Save(model);
+                var resource = new CalibrationResource(model);
+                resources.Add(resource);
+                group.VisualChildren.Add(resource);
+                var slot = CalibrationSlotDefinitions.ByServiceType[type].ParamGetter(template);
+                slot.FilePath = resource.Name;
+                slot.IsSelected = true;
+            }
+
+            manager = new CalibrationEdit(camera);
+            var editor = new CalibrationControl(camera, template);
+            editor.Initializedsss(template);
+            ((ComboBox)editor.FindName("ComboBoxList")).SelectedItem = group;
+            Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+
+            string[] canonical = ["DefectPoint", "DSNU", "DarkNoise", "Uniformity"];
+            var groupItems = (ItemsControl)manager.FindName("NormalCalibrationItems");
+            Assert.Equal(canonical, groupItems.Items.Cast<CalibrationEditRow>().Take(4).Select(row => row.SlotKey));
+            var templateItems = (ItemsControl)editor.FindName("NormalCalibrationItems");
+            string[] SelectedRows() => templateItems.Items.Cast<CalibrationControlRow>()
+                .Where(row => row.Calibration.IsSelected).Select(row => row.SlotKey).ToArray();
+            Assert.Equal(canonical, SelectedRows());
+            Assert.Equal(canonical, template.Normal.ToDictionary().Keys);
+            template.Normal.DSNU.IsSelected = false;
+            Assert.Equal(new[] { "DarkNoise", "DefectPoint", "Uniformity" }, SelectedRows());
+            Assert.Equal(SelectedRows(), template.Normal.ToDictionary().Keys);
+            template.Normal.DSNU.IsSelected = true;
+            Assert.Equal(canonical, SelectedRows());
+        }
+        finally
+        {
+            try { manager?.Close(); }
+            finally
+            {
+                SysResourceDao.Instance = previousDao;
+                foreach (var resource in resources) CalibrationResource.CalibrationResources.Remove(resource);
+            }
+        }
+    });
 
     public static IEnumerable<object[]> JsonTypes => new[]
     {
@@ -65,6 +129,33 @@ public sealed class CalibrationDocumentEditorTests : IDisposable
     [InlineData("{} {}")]
     public void AmbiguousJsonCannotEnterTheEditor(string json)
         => Assert.ThrowsAny<JsonException>(() => CalibrationJsonDocument.Parse(ServiceTypes.Luminance, json));
+
+    [Theory]
+    [InlineData("""{"DarkNoiseRatio":2}""")]
+    [InlineData("""{"Texp_x":1,"DarkNoiseRatio":-0.5}""")]
+    [InlineData("""{"Texp_x":1.25,"DarkNoiseRatio":0}""")]
+    [InlineData("""{"DarkNoiseRatio":123456789012345678901234}""")]
+    public void DarkNoiseMultiplierCanBeSavedIndependentlyOfExposureMetadata(string json)
+    {
+        var document = CalibrationJsonDocument.Parse(ServiceTypes.DarkNoise, json);
+        Assert.Empty(document.Validate());
+        Assert.True(JToken.DeepEquals(JObject.Parse(json), JObject.Parse(document.BuildJson())));
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{"Texp_x":1.0}""")]
+    [InlineData("""{"DarkNoiseRatio":null}""")]
+    [InlineData("""{"DarkNoiseRatio":"2"}""")]
+    [InlineData("""{"DarkNoiseRatio":false}""")]
+    [InlineData("""{"DarkNoiseRatio":340282348000000000000000000000000000000}""")]
+    [InlineData("""{"DarkNoiseRatio":-1e100}""")]
+    public void MissingOrUnusableDarkNoiseMultiplierBlocksSaving(string json)
+    {
+        var document = CalibrationJsonDocument.Parse(ServiceTypes.DarkNoise, json);
+        Assert.Contains("DarkNoiseRatio", Assert.Single(document.Validate()));
+        Assert.Throws<FormatException>(() => document.BuildJson());
+    }
 
     [Theory]
     [InlineData(ServiceTypes.Distortion, "w", "0")]

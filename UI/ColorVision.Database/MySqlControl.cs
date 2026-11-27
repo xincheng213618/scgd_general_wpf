@@ -227,7 +227,7 @@ namespace ColorVision.Database
             lock (_connectionLock)
                 attemptId = Interlocked.Increment(ref _connectionAttemptId);
             var endpoint = new MySqlConnectedEndpoint(candidate => IsCurrentAttempt(attemptId) && ReferenceEquals(candidate, ConnectedEndpoint),
-                () => CreateDbClient(connectionString));
+                () => CreateDbClient(connectionString), MySqlDatabaseTarget.From(config));
             PublishConnection(attemptId, null);
             return (attemptId, host, summary, endpoint);
         }

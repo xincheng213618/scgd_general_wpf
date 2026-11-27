@@ -246,17 +246,17 @@ namespace ProjectKB
             Dictionary<DateTime, int> dailyTargets = sessions
                 .GroupBy(item => item.StartTime.Date)
                 .ToDictionary(group => group.Key, group => group.Sum(item => Math.Max(0, item.TargetProduction)));
-            Dictionary<DateTime, List<KBItemMaster>> resultsByDate = results
+            Dictionary<DateTime, ProductionMetrics> metricsByDate = results
                 .GroupBy(item => item.CreateTime.Date)
-                .ToDictionary(group => group.Key, group => group.ToList());
-            IEnumerable<DateTime> dailyKeys = resultsByDate.Keys
+                .ToDictionary(group => group.Key, CalculateMetrics);
+            IEnumerable<DateTime> dailyKeys = metricsByDate.Keys
                 .Concat(dailyTargets.Keys)
                 .Distinct()
                 .OrderByDescending(date => date);
             List<KBDailyProductionRow> dailyRows = dailyKeys
                 .Select(date =>
                 {
-                    ProductionMetrics metrics = CalculateMetrics(resultsByDate.GetValueOrDefault(date) ?? []);
+                    ProductionMetrics metrics = metricsByDate.GetValueOrDefault(date);
                     int target = dailyTargets.GetValueOrDefault(date);
                     return new KBDailyProductionRow
                     {
@@ -273,15 +273,14 @@ namespace ProjectKB
                 })
                 .ToList();
 
-            Dictionary<int, List<KBItemMaster>> resultsBySession = results
+            Dictionary<int, ProductionMetrics> metricsBySession = results
                 .Where(item => item.ProductionSessionId > 0)
                 .GroupBy(item => item.ProductionSessionId!.Value)
-                .ToDictionary(group => group.Key, group => group.ToList());
+                .ToDictionary(group => group.Key, CalculateMetrics);
             var sessionRows = new List<KBProductionSessionRow>();
             foreach (KBProductionSession session in sessions.OrderByDescending(item => item.StartTime))
             {
-                List<KBItemMaster> sessionResults = resultsBySession.GetValueOrDefault(session.Id) ?? [];
-                ProductionMetrics metrics = CalculateMetrics(sessionResults);
+                ProductionMetrics metrics = metricsBySession.GetValueOrDefault(session.Id);
                 sessionRows.Add(CreateSessionRow(session, metrics));
             }
 
@@ -362,41 +361,55 @@ namespace ProjectKB
 
         private static ProductionMetrics CalculateMetrics(IEnumerable<KBItemMaster> source)
         {
-            List<KBItemMaster> results = source.ToList();
-            List<KBItemMaster> completed = results.Where(item => item.FlowStatus == FlowStatus.Completed).ToList();
-            List<long> cycleTimes = completed.Where(item => item.RunTime > 0).Select(item => item.RunTime).ToList();
-            int goodCount = completed.Count(item => item.Result);
-            int defectiveCount = completed.Count - goodCount;
-            return new ProductionMetrics(
-                completed.Count,
-                goodCount,
-                defectiveCount,
-                results.Count(IsExecutionFailure),
-                completed.Count > 0 ? goodCount / (double)completed.Count : 0,
-                cycleTimes.Count > 0 ? cycleTimes.Average() : 0,
-                cycleTimes.Count > 0 ? cycleTimes.Min() : 0,
-                cycleTimes.Count > 0 ? cycleTimes.Max() : 0);
-        }
+            int completedCount = 0;
+            int goodCount = 0;
+            int executionFailureCount = 0;
+            int cycleTimeCount = 0;
+            long cycleTimeSum = 0;
+            long minimumCycleTime = long.MaxValue;
+            long maximumCycleTime = 0;
+            foreach (KBItemMaster item in source)
+            {
+                if (item.FlowStatus == FlowStatus.Completed)
+                {
+                    completedCount++;
+                    if (item.Result) goodCount++;
+                    long cycleTime = item.RunTime;
+                    if (cycleTime > 0)
+                    {
+                        cycleTimeCount++;
+                        cycleTimeSum = checked(cycleTimeSum + cycleTime);
+                        minimumCycleTime = Math.Min(minimumCycleTime, cycleTime);
+                        maximumCycleTime = Math.Max(maximumCycleTime, cycleTime);
+                    }
+                }
+                else if (item.FlowStatus is FlowStatus.Failed or FlowStatus.OverTime or FlowStatus.Canceled)
+                {
+                    executionFailureCount++;
+                }
+            }
 
-        private static bool IsExecutionFailure(KBItemMaster item)
-        {
-            return item.FlowStatus is FlowStatus.Failed or FlowStatus.OverTime or FlowStatus.Canceled;
+            return new ProductionMetrics(
+                completedCount,
+                goodCount,
+                completedCount - goodCount,
+                executionFailureCount,
+                completedCount > 0 ? goodCount / (double)completedCount : 0,
+                cycleTimeCount > 0 ? (double)cycleTimeSum / cycleTimeCount : 0,
+                cycleTimeCount > 0 ? minimumCycleTime : 0,
+                maximumCycleTime);
         }
 
         private static List<KBProductionTrendPoint> BuildTrendRows(
-            IEnumerable<KBItemMaster> source,
+            IEnumerable<KBItemMaster> orderedResults,
             KBProductionPeriodMode periodMode)
         {
-            List<KBItemMaster> completed = source
-                .Where(item => item.FlowStatus == FlowStatus.Completed)
-                .OrderBy(item => item.CreateTime)
-                .ThenBy(item => item.Id)
-                .ToList();
+            IEnumerable<KBItemMaster> completed = orderedResults.Where(item => item.FlowStatus == FlowStatus.Completed);
             if (periodMode == KBProductionPeriodMode.All)
             {
+                // Group keys follow the first appearance in the chronological input.
                 return completed
                     .GroupBy(item => new DateTime(item.CreateTime.Year, item.CreateTime.Month, 1))
-                    .OrderBy(group => group.Key)
                     .Select(group =>
                     {
                         ProductionMetrics metrics = CalculateMetrics(group);
@@ -422,7 +435,7 @@ namespace ProjectKB
             }).ToList();
         }
 
-        private sealed record ProductionMetrics(
+        private readonly record struct ProductionMetrics(
             int ProductionCount,
             int GoodCount,
             int DefectiveCount,

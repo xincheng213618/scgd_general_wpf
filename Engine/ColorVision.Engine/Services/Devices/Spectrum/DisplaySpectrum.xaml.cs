@@ -1,5 +1,6 @@
 ﻿using LocalizedText = global::ColorVision.Engine.EngineLocalization;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -97,7 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 return;
             }
 
-            if (group.NDHoleIndex < 0 || (owner.SpectrumBackend.OpensLocally && !owner.Config.NDConfig.IsNDPort))
+            if (group.NDHoleIndex < 0 || (owner.SpectrumBackend.OpensLocally && !owner.Config.NDConfig.HasConfiguredWheel))
             {
                 CompleteCalibrationGroupSwitch(owner, target, group, previousPort, MsgRecordState.Success, null);
                 return;
@@ -453,6 +454,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 return;
             }
             DeviceConfigurationTarget target = optics.ConfigurationTarget;
+            bool localNd = owner.SpectrumBackend.OpensLocally || optics.NdDevice?.CfwBackend.OpensLocally == true;
             bool CanApply() => IsCurrentNdCommand(owner, target) && optics.IsNdCurrent;
             if (!CanApply()) return;
             ExecuteSpectrumCommand(sender, () => owner.DService.SendNdCommand(requestedPort, optics), (record, state) => Dispatcher.Invoke(() =>
@@ -464,23 +466,21 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         MessageBox.Show(Application.Current.GetActiveWindow(), record.MsgReturn?.Message ?? "ND 指令超时。", "ColorVision");
                     return;
                 }
-                if (requestedPort is int port)
+                try
                 {
-                    try
+                    if (!localNd)
                     {
-                        owner.ApplyCalibrationGroupForND(port, true, target, optics);
-                        if (CanApply()) RefreshNDHoleMappings();
+                        int actualPort = MQTTCfwPort.ReadPortReply(record, requestedPort)
+                            ?? throw new InvalidOperationException("ND 未返回确认孔位。");
+                        if (!owner.ApplyLocalNdState(actualPort, null, target, optics)) return;
+                        owner.ApplyCalibrationGroupForND(actualPort, requestedPort.HasValue, target, optics);
                     }
-                    catch (Exception ex)
-                    {
-                        logger.Error("Failed to apply spectrum calibration for the confirmed ND port.", ex);
-                        if (CanApply()) MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
-                    }
+                    if (CanApply()) RefreshNDHoleMappings();
                 }
-                else
+                catch (Exception ex)
                 {
-                    int actualPort = record.MsgReturn.Data.Port;
-                    owner.ApplyLocalNdState(actualPort, null, target, optics);
+                    logger.Error("Failed to apply spectrum calibration for the confirmed ND port.", ex);
+                    if (CanApply()) MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
                 }
             }));
         }

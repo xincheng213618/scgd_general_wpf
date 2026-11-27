@@ -19,7 +19,6 @@
         "Ghost1.0",
         "畸变2.0",
         "StereoFusion",
-        "SFR寻边",
         "ARVR屏幕缺陷检测",
         "SFR曲线",
         "SFR导出CSV",
@@ -37,7 +36,6 @@
         "Engine/ColorVision.Engine/Templates/Jsons/FOV2",
         "Engine/ColorVision.Engine/Templates/Jsons/Distortion2",
         "Engine/ColorVision.Engine/Templates/Jsons/BinocularFusion",
-        "Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI",
         "Engine/ColorVision.Engine/Templates/Jsons/FindCross",
         "Engine/ColorVision.Engine/Templates/Jsons/DetectScreenDefects",
         "Engine/ColorVision.Engine/Services/Devices/Algorithm/JsonDisplayAlgorithmBase.cs",
@@ -1408,25 +1406,20 @@
       "knowledge_id": "algorithms.roi-routes",
       "knowledge_type": "index",
       "status": "current",
-      "summary": "按用途定位发光区、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。",
+      "summary": "按用途定位本地发光区与中立算法 ROI 模型，并查阅各自的参数与坐标契约。",
       "aliases": [
         "ROI到底对应哪个模块",
-        "TemplateSFRFindROI",
         "AlgorithmInvocation.Roi"
       ],
       "code_paths": [
-        "Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/TemplateSFRFindROI.cs",
         "UI/ColorVision.Algorithms/AlgorithmInvocation.cs"
       ],
       "related": [
         "algorithms.index",
         "algorithms.find-light-area",
-        "algorithms.json-templates",
-        "algorithms.arvr",
         "algorithms.platform"
       ],
       "code_scopes": [
-        "Engine/ColorVision.Engine",
         "UI/ColorVision.Algorithms"
       ],
       "domain": "algorithms",
@@ -4474,6 +4467,7 @@
         "Engine/ColorVision.Engine/Dao/SysResourceGoupModel.cs",
         "Engine/ColorVision.Engine/Dao/VSysResourceDao.cs",
         "UI/ColorVision.Database/BaseTableDao.cs",
+        "Engine/ColorVision.Engine/Services/WorkstationConfiguration.cs",
         "Engine/ColorVision.Engine/Services/LocalConfigurationDao.cs",
         "Engine/ColorVision.Engine/Services/ServiceManager.cs",
         "Engine/ColorVision.Engine/Services/ServiceInitializer.cs",
@@ -5556,7 +5550,7 @@
         "FlowIncidentManagementWindow",
         "FlowOwnerProcessState",
         "RunRecovered",
-        "流程执行分析",
+        "流程分析",
         "阶段耗时",
         "FlowNodeTiming",
         "InspectFlowIncident",
@@ -7142,14 +7136,18 @@
         "LocalSmuWindow",
         "电阻测量",
         "脉冲",
-        "高阻"
+        "高阻",
+        "IVL",
+        "实时曲线",
+        "LiveIvlWindow"
       ],
       "code_paths": [
         "Engine/ColorVision.Engine/Services/Devices/SMU",
         "Engine/cvColorVision/Devices/PassSx/PassSx.cs",
         "Engine/ColorVision.Engine/FlowProcessing/Nodes/Compatibility/SMU",
         "Engine/FlowEngineLib/SMUBaseNode.cs",
-        "Engine/FlowEngineLib/Node/SMU"
+        "Engine/FlowEngineLib/Node/SMU",
+        "Engine/ColorVision.Engine/FlowProcessing/Monitoring"
       ],
       "related": [
         "engine.devices",
@@ -9358,7 +9356,7 @@
       "knowledge_id": "ui.database",
       "knowledge_type": "topic",
       "status": "current",
-      "summary": "MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。",
+      "summary": "MySQL 连接配置与业务 DAO、POI 模板的工位存储来源，以及旧插件注册的二进制兼容。",
       "aliases": [
         "数据库操作",
         "数据库浏览器",
@@ -9433,7 +9431,6 @@
         "UI/ColorVision.Database/GenericQueryConditionSupport.cs",
         "UI/ColorVision.Database/GenericQuerySessionStore.cs",
         "UI/ColorVision.Database/IEntity.cs",
-        "Engine/ColorVision.Engine/Dao/MeasureBatchManagerPage.xaml.cs",
         "Engine/ColorVision.Engine/Messages/MessagesListManager.cs",
         "UI/ColorVision.SocketProtocol/SocketMessageManager.cs"
       ],
@@ -10053,6 +10050,7 @@
       "code_paths": [
         "UI/ColorVision.ImageEditor/Settings",
         "UI/ColorVision.ImageEditor/ImageView.xaml.cs",
+        "UI/ColorVision.ImageEditor/ImageView.Configuration.cs",
         "UI/ColorVision.ImageEditor/ImageViewConfig.cs",
         "UI/ColorVision.ImageEditor/EditorTools/Filters",
         "UI/ColorVision.ImageEditor/EditorTools/PseudoColor",

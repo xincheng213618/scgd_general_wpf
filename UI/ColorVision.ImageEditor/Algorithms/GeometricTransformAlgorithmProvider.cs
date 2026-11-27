@@ -266,6 +266,11 @@ namespace ColorVision.ImageEditor.Algorithms
             int vectorColumns = !separable && Vector256.IsHardwareAccelerated && width >= 128
                 ? width - width % Vector256<double>.Count
                 : 0;
+            int workers = Math.Min(height / 16, Math.Min(Environment.ProcessorCount, 4));
+            if (!separable && workers > 1 && mask.Length >= 2048 * 2048)
+                return (mask, WriteProjectedMaskBands(mask, width, height, sourceWidth, sourceHeight,
+                    inverse, tolerance, vectorColumns, workers, cancellationToken, progress));
+
             int firstColumn = 0;
             int lastColumn = 0;
             for (int y = 0; y < height; y++)
@@ -297,19 +302,7 @@ namespace ColorVision.ImageEditor.Algorithms
                     }
                     continue;
                 }
-                if (vectorColumns != 0)
-                    valid += WriteProjectedMaskColumns(mask.AsSpan(row, vectorColumns), y, sourceWidth, sourceHeight, inverse, tolerance);
-                for (int x = vectorColumns; x < width; x++)
-                {
-                    double denominator = inverse[6] * x + inverse[7] * y + inverse[8];
-                    if (!double.IsFinite(denominator) || Math.Abs(denominator) <= DenominatorTolerance(inverse, x, y)) continue;
-                    double sourceX = (inverse[0] * x + inverse[1] * y + inverse[2]) / denominator;
-                    double sourceY = (inverse[3] * x + inverse[4] * y + inverse[5]) / denominator;
-                    if (sourceX < -tolerance || sourceY < -tolerance
-                        || sourceX > sourceWidth - 1 + tolerance || sourceY > sourceHeight - 1 + tolerance) continue;
-                    mask[row + x] = byte.MaxValue;
-                    valid++;
-                }
+                valid += WriteProjectedMaskRow(mask.AsSpan(row, width), y, sourceWidth, sourceHeight, inverse, tolerance, vectorColumns);
             }
             cancellationToken.ThrowIfCancellationRequested();
             return (mask, valid);
@@ -319,6 +312,49 @@ namespace ColorVision.ImageEditor.Algorithms
                 double mapped = (scale * coordinate + offset) / constantDenominator;
                 return mapped >= -tolerance && mapped <= length - 1 + tolerance;
             }
+        }
+
+        private static long WriteProjectedMaskBands(byte[] mask, int width, int height, int sourceWidth, int sourceHeight,
+            double[] inverse, double tolerance, int vectorColumns, int workers,
+            CancellationToken cancellationToken, IProgress<AlgorithmProgress>? progress)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            progress?.Report(new AlgorithmProgress(0.78, "transform.mask"));
+            int[] validByBand = new int[workers];
+            Parallel.For(0, workers, new ParallelOptions { MaxDegreeOfParallelism = workers, CancellationToken = cancellationToken }, band =>
+            {
+                int start = (int)((long)height * band / workers);
+                int end = (int)((long)height * (band + 1) / workers);
+                int bandValid = 0;
+                for (int y = start; y < end; y++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    bandValid += WriteProjectedMaskRow(mask.AsSpan(y * width, width), y, sourceWidth, sourceHeight, inverse, tolerance, vectorColumns);
+                }
+                validByBand[band] = bandValid;
+            });
+            progress?.Report(new AlgorithmProgress(0.96, "transform.mask"));
+            cancellationToken.ThrowIfCancellationRequested();
+            return validByBand.Sum(count => (long)count);
+        }
+
+        private static int WriteProjectedMaskRow(Span<byte> row, int y, int sourceWidth, int sourceHeight,
+            double[] inverse, double tolerance, int vectorColumns)
+        {
+            int valid = vectorColumns == 0 ? 0
+                : WriteProjectedMaskColumns(row[..vectorColumns], y, sourceWidth, sourceHeight, inverse, tolerance);
+            for (int x = vectorColumns; x < row.Length; x++)
+            {
+                double denominator = inverse[6] * x + inverse[7] * y + inverse[8];
+                if (!double.IsFinite(denominator) || Math.Abs(denominator) <= DenominatorTolerance(inverse, x, y)) continue;
+                double sourceX = (inverse[0] * x + inverse[1] * y + inverse[2]) / denominator;
+                double sourceY = (inverse[3] * x + inverse[4] * y + inverse[5]) / denominator;
+                if (sourceX < -tolerance || sourceY < -tolerance
+                    || sourceX > sourceWidth - 1 + tolerance || sourceY > sourceHeight - 1 + tolerance) continue;
+                row[x] = byte.MaxValue;
+                valid++;
+            }
+            return valid;
         }
 
         private static int WriteProjectedMaskColumns(Span<byte> row, int y, int sourceWidth, int sourceHeight, double[] inverse, double tolerance)

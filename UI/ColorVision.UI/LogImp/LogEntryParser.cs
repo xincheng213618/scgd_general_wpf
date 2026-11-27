@@ -39,28 +39,37 @@ namespace ColorVision.UI.LogImp
             ArgumentNullException.ThrowIfNull(lines);
 
             var entries = new List<LogEntry>();
-            StringBuilder? currentEntry = null;
+            string? entryStart = null;
+            StringBuilder? multilineEntry = null;
 
             foreach (var line in lines)
             {
                 if (IsTimestampedLogLine(line))
                 {
-                    FlushCurrentEntry(entries, ref currentEntry);
-                    currentEntry = new StringBuilder(line);
+                    if (entryStart != null)
+                    {
+                        entries.Add(FromText(multilineEntry?.ToString() ?? entryStart));
+                        multilineEntry = null;
+                    }
+                    entryStart = line;
                     continue;
                 }
 
-                if (currentEntry == null)
+                if (entryStart == null)
                 {
                     entries.Add(FromText(line));
                     continue;
                 }
 
-                currentEntry.AppendLine();
-                currentEntry.Append(line);
+                multilineEntry ??= new StringBuilder(entryStart);
+                multilineEntry.AppendLine();
+                multilineEntry.Append(line);
             }
 
-            FlushCurrentEntry(entries, ref currentEntry);
+            if (entryStart != null)
+            {
+                entries.Add(FromText(multilineEntry?.ToString() ?? entryStart));
+            }
             return entries;
         }
 
@@ -88,33 +97,58 @@ namespace ColorVision.UI.LogImp
         public static bool TryParseLogTimestamp(string line, out DateTime logTime)
         {
             logTime = default;
-            if (string.IsNullOrWhiteSpace(line) || line.Length < LogConstants.LogTimestampLength)
+            if (line == null || line.Length < LogConstants.LogTimestampLength)
             {
                 return false;
             }
 
-            return DateTime.TryParseExact(
-                line.AsSpan(0, LogConstants.LogTimestampLength),
-                LogConstants.LogTimestampFormat,
-                null,
-                DateTimeStyles.None,
-                out logTime);
+            ReadOnlySpan<char> timestamp = line.AsSpan(0, LogConstants.LogTimestampLength);
+            DateTimeFormatInfo format = DateTimeFormatInfo.CurrentInfo;
+            // The rolling log uses a fixed ASCII layout. Keep culture-specific calendars and separators on the general parser.
+            if (format.Calendar.GetType() == typeof(GregorianCalendar) && format.TimeSeparator == ":"
+                && TryParseGregorianTimestamp(timestamp, out logTime))
+                return true;
+
+            return DateTime.TryParseExact(timestamp, LogConstants.LogTimestampFormat, format, DateTimeStyles.None, out logTime);
+        }
+
+        private static bool TryParseGregorianTimestamp(ReadOnlySpan<char> timestamp, out DateTime logTime)
+        {
+            logTime = default;
+            if (timestamp[4] != '-' || timestamp[7] != '-' || timestamp[10] != ' '
+                || timestamp[13] != ':' || timestamp[16] != ':' || timestamp[19] != ',')
+                return false;
+
+            int year = ReadDigits(timestamp[..4]);
+            int month = ReadDigits(timestamp.Slice(5, 2));
+            int day = ReadDigits(timestamp.Slice(8, 2));
+            int hour = ReadDigits(timestamp.Slice(11, 2));
+            int minute = ReadDigits(timestamp.Slice(14, 2));
+            int second = ReadDigits(timestamp.Slice(17, 2));
+            int millisecond = ReadDigits(timestamp.Slice(20, 3));
+            if (year <= 0 || (uint)(month - 1) >= 12 || day <= 0 || day > DateTime.DaysInMonth(year, month)
+                || (uint)hour >= 24 || (uint)minute >= 60 || (uint)second >= 60 || millisecond < 0)
+                return false;
+
+            logTime = new DateTime(year, month, day, hour, minute, second, millisecond);
+            return true;
+        }
+
+        private static int ReadDigits(ReadOnlySpan<char> digits)
+        {
+            int value = 0;
+            foreach (char digit in digits)
+            {
+                int number = digit - '0';
+                if ((uint)number > 9) return -1;
+                value = value * 10 + number;
+            }
+            return value;
         }
 
         private static bool IsTimestampedLogLine(string line)
         {
             return TryParseLogTimestamp(line, out _);
-        }
-
-        private static void FlushCurrentEntry(List<LogEntry> entries, ref StringBuilder? currentEntry)
-        {
-            if (currentEntry == null)
-            {
-                return;
-            }
-
-            entries.Add(FromText(currentEntry.ToString()));
-            currentEntry = null;
         }
 
         private static bool ContainsToken(ReadOnlySpan<char> text, string token)

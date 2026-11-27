@@ -12,12 +12,16 @@ using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
 {
     public partial class RoiStatisticsResultWindow : Window, IDisposable
     {
+        private const int DeferredHistogramRowThreshold = 6_144;
         private readonly AlgorithmResult _result;
+        private readonly AlgorithmTableArtifact _histogram;
+        private readonly AlgorithmTableArtifact _candidates;
         private IDisposable? _overlaySession;
         private bool _disposed;
         private Exception? _disposeFailure;
@@ -27,22 +31,27 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             ArgumentNullException.ThrowIfNull(result);
             AlgorithmTableArtifact summary = result.GetArtifact<AlgorithmTableArtifact>("roi-statistics-summary")
                 ?? throw new ArgumentException("The result has no ROI statistics summary.", nameof(result));
-            AlgorithmTableArtifact histogram = result.GetArtifact<AlgorithmTableArtifact>("roi-histogram")
+            _histogram = result.GetArtifact<AlgorithmTableArtifact>("roi-histogram")
                 ?? throw new ArgumentException("The result has no ROI histogram.", nameof(result));
-            AlgorithmTableArtifact candidates = result.GetArtifact<AlgorithmTableArtifact>("bad-pixel-candidates")
+            _candidates = result.GetArtifact<AlgorithmTableArtifact>("bad-pixel-candidates")
                 ?? throw new ArgumentException("The result has no bad-pixel candidate table.", nameof(result));
             _result = result;
             try
             {
-            InitializeComponent();
-            this.ApplyCaption();
+                InitializeComponent();
+                this.ApplyCaption();
                 SummaryGrid.ItemsSource = ToTable(summary).DefaultView;
-                HistogramGrid.ItemsSource = ToTable(histogram).DefaultView;
-                CandidatesGrid.ItemsSource = ToTable(candidates).DefaultView;
+                bool loadDetails = _histogram.Rows.Count < DeferredHistogramRowThreshold;
+                if (loadDetails)
+                {
+                    HistogramGrid.ItemsSource = ToTable(_histogram).DefaultView;
+                    CandidatesGrid.ItemsSource = ToTable(_candidates).DefaultView;
+                }
                 double pixelCount = Measurement("roi.pixel_count");
                 double badPixels = Measurement("roi.bad_pixel_candidate_count");
                 SummaryText.Text = LocalizedText.Format($"ROI 像素：{pixelCount:N0}；通道：{summary.Rows.Count}；坏点候选：{badPixels:N0}。统计值排除 NaN/Infinity，StdDev 为总体标准差。");
-                RenderHistogram(histogram);
+                if (loadDetails)
+                    RenderHistogram();
                 _overlaySession = AlgorithmOverlayRenderer.Apply(image, draw, result);
                 Closed += (_, _) => DisposeOwnedState();
             }
@@ -55,10 +64,26 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
             }
         }
 
-        private void RenderHistogram(AlgorithmTableArtifact table)
+        private void Tabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_disposed || !ReferenceEquals(sender, e.Source) || sender is not TabControl { SelectedItem: TabItem selected })
+                return;
+
+            if (ReferenceEquals(selected, HistogramTab) && HistogramGrid is { ItemsSource: null })
+            {
+                HistogramGrid.ItemsSource = ToTable(_histogram).DefaultView;
+                RenderHistogram();
+            }
+            else if (ReferenceEquals(selected, CandidatesTab) && CandidatesGrid is { ItemsSource: null } candidateGrid)
+            {
+                candidateGrid.ItemsSource = ToTable(_candidates).DefaultView;
+            }
+        }
+
+        private void RenderHistogram()
         {
             HistogramPlot.Plot.Clear();
-            foreach (IGrouping<int, IReadOnlyDictionary<string, JsonElement>> channel in table.Rows.GroupBy(row => row["Channel"].GetInt32()))
+            foreach (IGrouping<int, IReadOnlyDictionary<string, JsonElement>> channel in _histogram.Rows.GroupBy(row => row["Channel"].GetInt32()))
             {
                 IReadOnlyDictionary<string, JsonElement>[] rows = channel.OrderBy(row => row["BinIndex"].GetInt32()).ToArray();
                 double[] positions = rows.Select(row => (row["LowerInclusive"].GetDouble() + row["Upper"].GetDouble()) / 2).ToArray();
@@ -70,7 +95,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
                 plot.LegendText = rows[0]["ChannelName"].GetString() ?? channel.Key.ToString(CultureInfo.InvariantCulture);
                 plot.Color = channel.Key switch
                 {
-                    0 when table.Rows.Any(row => row["ChannelName"].GetString() == "B") => Colors.Blue,
+                    0 when _histogram.Rows.Any(row => row["ChannelName"].GetString() == "B") => Colors.Blue,
                     1 => Colors.Green,
                     2 => Colors.Red,
                     3 => Colors.Gray,
@@ -89,13 +114,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.RoiStatistics
 
         private static DataTable ToTable(AlgorithmTableArtifact artifact)
         {
-            DataTable table = new(artifact.Name);
+            DataTable table = new(artifact.Name) { MinimumCapacity = artifact.Rows.Count };
             foreach (AlgorithmTableColumn column in artifact.Columns) table.Columns.Add(column.Name, typeof(string));
             foreach (IReadOnlyDictionary<string, JsonElement> source in artifact.Rows)
             {
                 DataRow row = table.NewRow();
-                foreach (AlgorithmTableColumn column in artifact.Columns)
-                    row[column.Name] = source.TryGetValue(column.Name, out JsonElement value) ? Display(value) : string.Empty;
+                for (int index = 0; index < artifact.Columns.Count; index++)
+                    row[index] = source.TryGetValue(artifact.Columns[index].Name, out JsonElement value) ? Display(value) : string.Empty;
                 table.Rows.Add(row);
             }
             return table;

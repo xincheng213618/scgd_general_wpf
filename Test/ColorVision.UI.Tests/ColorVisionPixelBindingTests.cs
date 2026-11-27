@@ -28,6 +28,31 @@ public sealed class ColorVisionPixelBindingTests
     }
 
     [Fact]
+    public void BgrBindingKeepsCanonicalOrderAcrossBlocksAndFinalPartialBlock()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            const int width = 641, height = 557;
+            const int rowBytes = width * 3, stride = rowBytes + 5;
+            byte[] paddedBgr = new byte[stride * height];
+            new Random(3521).NextBytes(paddedBgr);
+            byte[] packedRgb = new byte[rowBytes * height];
+            for (int y = 0; y < height; y++)
+            for (int offset = 0; offset < rowBytes; offset += 3)
+            {
+                int input = y * stride + offset;
+                int output = y * rowBytes + offset;
+                packedRgb[output] = paddedBgr[input + 2];
+                packedRgb[output + 1] = paddedBgr[input + 1];
+                packedRgb[output + 2] = paddedBgr[input];
+            }
+            BitmapSource image = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgr24, null, paddedBgr, stride);
+
+            Assert.Equal(Convert.ToHexString(SHA256.HashData(packedRgb)), ColorVisionPixelBinding.ComputeSha256(image));
+        });
+    }
+
+    [Fact]
     public void FloatBindingPreservesNegativeAndFractionalSamples()
     {
         WpfTestHost.Invoke(() =>

@@ -5,19 +5,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     internal sealed class CacheModuleViewItem : ViewModelBase
     {
-        internal CacheModuleViewItem(CacheModuleSnapshot snapshot, ulong totalBytes)
+        internal CacheModuleViewItem(CacheModuleSnapshot snapshot) => Snapshot = snapshot;
+
+        public CacheModuleSnapshot Snapshot { get; private set; }
+        internal void Update(CacheModuleSnapshot snapshot)
         {
             Snapshot = snapshot;
-            MemoryShare = totalBytes == 0 ? 0 : (double)snapshot.MemoryBytes / totalBytes;
+            OnPropertyChanged(string.Empty);
         }
-
-        internal CacheModuleSnapshot Snapshot { get; }
         public string Id => Snapshot.Id;
         public string Name => Snapshot.Name;
         public string Description => Snapshot.Description;
         public ulong MemoryBytes => Snapshot.MemoryBytes;
         public string MemoryText => Snapshot.Error == null ? CacheManagerService.FormatBytes(MemoryBytes) : "—";
-        public double MemoryShare { get; }
         public int EntryCount => Snapshot.EntryCount;
         public ulong HitCount => Snapshot.HitCount;
         public ulong ActiveReferences => Snapshot.ActiveReferences;
@@ -34,7 +34,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             : MemoryBytes > 0 ? "已缓存（可释放）" : "暂无缓存");
     }
 
-    internal sealed record CacheNavigationItem(string Id, string Name, string MemoryText);
+    internal sealed class CacheNavigationItem(string id, string name, string memoryText) : ViewModelBase
+    {
+        public string Id { get; } = id;
+        public string Name { get; } = name;
+        private string memory = memoryText;
+        public string MemoryText
+        {
+            get => memory;
+            set { if (memory != value) SetProperty(ref memory, value); }
+        }
+    }
 
     internal sealed class CacheEntryViewItem(CacheEntrySnapshot entry, long? currentSourceId = null)
     {

@@ -27,7 +27,8 @@ namespace ColorVision.Engine.Services.Caches
             ulong activeReferences = entries.Aggregate(0UL, (total, entry) => checked(total + entry.ActiveReferences));
             string detailSummary = EngineLocalization.Format($"缓存预算：{CacheManagerService.FormatBytes(statistics.BudgetBytes)}");
             return new CacheModuleSnapshot(Id, Name, Description, statistics.EstimatedMemoryBytes, checked((int)statistics.EntryCount),
-                statistics.HitCount, statistics.MissCount, activeReferences, true, false, detailSummary, Array.AsReadOnly(entries));
+                statistics.HitCount, statistics.MissCount, activeReferences, statistics.BudgetBytes > 0, false, detailSummary,
+                Array.AsReadOnly(entries)) { BudgetBytes = statistics.BudgetBytes };
         }
 
         public async Task<CacheModuleReleaseResult> ReleaseAsync()

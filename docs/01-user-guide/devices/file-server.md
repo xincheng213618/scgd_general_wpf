@@ -20,6 +20,12 @@ related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "o
 
 ## 文件保存配置与输出
 
+在 **设备配置** 顶部点击 **创建设备** 后面的 **配置路径**。窗口显示本机 ColorVision 配置 JSON 中保存的数据基础路径，初始值为 `D:\CVTest`。还没有设备时也可以设置。新建相机、校准、算法和光谱设备时，将本机选定的路径填入设备配置，并随设备一起保存。
+
+点击 **应用设置** 会保存本机选择，并把路径同步到当前相机、校准、算法和光谱设备原有的 `FileServerCfg.DataBasePath`。设备编辑窗口中已移除该字段的编辑入口。旧服务从原有设备配置读取该字段，本地设备从下一次操作开始读取保存后的路径。
+
+在线配置保存后，程序向受影响且使用远端后端的算法、校准和光谱设备发送定向重载请求。物理相机保持连接，已运行的远端相机服务在下次重载配置时读取新路径。历史数据和物理相机的校准资源继续使用各自已有的目录。
+
 | 入口 | 当前职责 |
 | --- | --- |
 | `Services/Cache/FileServerCfg.cs` 的 `IFileServerCfg / FileServerCfg` | 相机、算法、光谱和校准配置中的数据保存设置，含 `DataBasePath`、`Endpoint`、`PortRange`、`SaveDays` |
@@ -30,7 +36,7 @@ related: ["engine.devices", "operations.device-configuration", "engine.mqtt", "o
 
 数据保存、保留和清理职责见[数据管理](../data-management/README.md)；本地 CVRAW/CVCIE 格式读写见[CV 文件读写](../../04-api-reference/engine-components/ColorVision.FileIO.md)。
 
-`FileServerCfg.Endpoint` 与 `FileServerCfg.PortRange` 是兼容已部署旧文件服务的传输配置。当前部署按本机文件路径运行，属性编辑器不显示这两个字段，但它们仍保留默认值并参与 JSON 序列化；不要用 `JsonIgnore` 或删除字段替代界面隐藏，否则旧服务收到缺失的 `Endpoint` 后可能无法完成设备初始化。物理相机的 `FileSeviceConfig` 同样保留 `FileBasePath`、`Endpoint = 127.0.0.1` 和 `PortRange` 的序列化；界面只显示文件路径。
+`FileServerCfg.Endpoint` 与 `FileServerCfg.PortRange` 是兼容已部署旧文件服务的传输配置。完整保存设备配置时，这两个字段仍保留默认值并参与 JSON 序列化，供旧服务初始化读取。物理相机的 `FileSeviceConfig` 同样序列化 `FileBasePath`、`Endpoint = 127.0.0.1` 和 `PortRange`，在物理相机配置中单独编辑资源路径。
 
 `FileServerCfg.SaveDays` 保留为可读写的兼容字段，界面隐藏，读取和下发始终为 `0`，表示禁用设备服务按保存天数删除数据。旧配置中的正值（例如 3 或 365）加载后同样按 `0` 处理；保存和下发 JSON 时显式包含 `"SaveDays": 0`，即使序列化器忽略默认值也不省略。已核对的旧服务只在 `SaveDays > 0` 时按天清理，且会将大于 30 的值压回 30，因此不能用很大的天数替代禁用值。更新客户端后需重新下发设备配置，已运行服务的旧配置才会切换。流程执行时的容量清理继续由流程预处理负责；独立归档任务的清理策略不由此字段控制。
 

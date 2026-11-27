@@ -13,9 +13,9 @@ public sealed partial class DisplayMetrologyProvider
     private static float[] Smooth(float[] signal, int width, int height, double sigma)
     {
         using Mat source = Mat.FromPixelData(height, width, MatType.CV_32FC1, signal);
-        using Mat result = new();
+        float[] values = GC.AllocateUninitializedArray<float>(signal.Length);
+        using Mat result = Mat.FromPixelData(height, width, MatType.CV_32FC1, values);
         Cv2.GaussianBlur(source, result, new Size(0, 0), sigma, sigma, BorderTypes.Reflect101);
-        result.GetArray(out float[] values);
         return values;
     }
 
@@ -30,28 +30,52 @@ public sealed partial class DisplayMetrologyProvider
         var rows = new List<IReadOnlyDictionary<string, JsonElement>>();
         var shapes = new List<AlgorithmGeometry>();
         var classification = new byte[signal.Length];
-        var residual = new float[signal.Length];
-        var mask = new byte[signal.Length];
-        var componentQueue = new int[signal.Length];
+        byte[]? brightMask = null, darkMask = null;
+        int[]? componentQueue = null;
         int brightPoints = 0, darkPoints = 0, lines = 0, mura = 0;
+        double absoluteThreshold = p.AbsoluteThreshold;
+        double relativeThreshold = p.RelativeThreshold;
         // Two scales: narrow residual for points/lines, smoothed residual for low-frequency mura.
         foreach (bool lowFrequency in new[] { false, true })
         {
-            for (int i = 0; i < signal.Length; i++) residual[i] = lowFrequency ? smoothed[i] - background[i] : signal[i] - smoothed[i];
-            foreach (int sign in new[] { 1, -1 })
+            float[] upper = lowFrequency ? smoothed : signal;
+            float[] lower = lowFrequency ? background : smoothed;
+            // Both filters have consumed the decoded image. Keep candidate residuals in that private buffer.
+            int brightPixels = 0, darkPixels = 0;
+            for (int y = margin; y < height - margin; y++)
             {
-                for (int y = margin; y < height - margin; y++)
+                token.ThrowIfCancellationRequested();
+                int row = y * width;
+                for (int i = row + margin; i < row + width - margin; i++)
                 {
-                    token.ThrowIfCancellationRequested();
-                    for (int x = margin; x < width - margin; x++)
+                    float residual = upper[i] - lower[i];
+                    if (Math.Abs(residual) <= absoluteThreshold) continue;
+                    double threshold = Math.Max(absoluteThreshold, relativeThreshold * Math.Max(background[i], absoluteThreshold));
+                    if (residual > threshold)
                     {
-                        int i = y * width + x;
-                        double threshold = Math.Max(p.AbsoluteThreshold, p.RelativeThreshold * Math.Max(background[i], p.AbsoluteThreshold));
-                        if (sign * residual[i] > threshold) mask[i] = 255;
+                        (brightMask ??= new byte[signal.Length])[i] = byte.MaxValue;
+                        signal[i] = residual;
+                        brightPixels++;
+                    }
+                    else if (-residual > threshold)
+                    {
+                        (darkMask ??= new byte[signal.Length])[i] = byte.MaxValue;
+                        signal[i] = residual;
+                        darkPixels++;
                     }
                 }
-                // Components clears the candidate mask before the next pass.
-                foreach (var region in Components(mask, residual, width, height, token, componentQueue))
+            }
+            int foregroundPixels = Math.Max(brightPixels, darkPixels);
+            if (foregroundPixels == 0) continue;
+            if (componentQueue == null || componentQueue.Length < foregroundPixels)
+                componentQueue = new int[foregroundPixels];
+
+            // Keep the original bright-before-dark order. Components clears each mask for the next scale.
+            foreach (int sign in new[] { 1, -1 })
+            {
+                if ((sign > 0 ? brightPixels : darkPixels) == 0) continue;
+                byte[] mask = (sign > 0 ? brightMask : darkMask)!;
+                foreach (var region in Components(mask, signal, width, height, token, componentQueue))
                 {
                     double aspect = (double)Math.Max(region.Bounds.Width, region.Bounds.Height) / Math.Min(region.Bounds.Width, region.Bounds.Height);
                     string kind;
@@ -96,31 +120,42 @@ public sealed partial class DisplayMetrologyProvider
             (int)Math.Floor(p.PrimaryWidth * width), (int)Math.Floor(p.PrimaryHeight * height));
         if (primary.Width < 3 || primary.Height < 3) throw new MeasurementException("primary_too_small", "主像区域至少需要 3×3 像素。");
         if ((long)primary.Width * primary.Height >= signal.Length) throw new MeasurementException("outside_region_missing", "主像区域必须留出外部杂散光测量区。");
-        var residual = new float[signal.Length];
-        double primarySum = 0, primaryPeak = 0, outsideSum = 0;
-        for (int y = 0; y < height; y++)
+        double background = p.Background;
+        double primarySum = 0, primaryPeak = 0;
+        for (int y = primary.Y; y < primary.Bottom; y++)
         {
             token.ThrowIfCancellationRequested();
-            for (int x = 0; x < width; x++)
+            int row = y * width;
+            for (int i = row + primary.X; i < row + primary.Right; i++)
             {
-                int i = y * width + x;
-                residual[i] = (float)Math.Max(0, signal[i] - p.Background);
-                if (primary.Contains(x, y))
-                {
-                    if (signal[i] >= 1) throw new MeasurementException("saturated_primary", "主像包含满量程像素，强度比不可可靠测量。");
-                    primarySum += residual[i]; primaryPeak = Math.Max(primaryPeak, residual[i]);
-                }
-                else outsideSum += residual[i];
+                if (signal[i] >= 1) throw new MeasurementException("saturated_primary", "主像包含满量程像素，强度比不可可靠测量。");
+                float value = (float)Math.Max(0, signal[i] - background);
+                primarySum += value;
+                primaryPeak = Math.Max(primaryPeak, value);
             }
         }
         if (primaryPeak <= 1e-6) throw new MeasurementException("primary_missing", "主像区域没有高于背景的有效信号。");
-        var mask = new byte[signal.Length];
+
+        double threshold = primaryPeak * p.RelativeThreshold;
+        double outsideSum = 0;
+        byte[]? mask = null;
+        int foregroundPixels = 0;
         for (int y = 0; y < height; y++)
-            for (int x = 0; x < width; x++)
-                if (!primary.Contains(x, y) && residual[y * width + x] >= primaryPeak * p.RelativeThreshold) mask[y * width + x] = 255;
+        {
+            token.ThrowIfCancellationRequested();
+            int row = y * width;
+            if (y >= primary.Y && y < primary.Bottom)
+            {
+                MeasureOutside(row, row + primary.X);
+                MeasureOutside(row + primary.Right, row + width);
+            }
+            else MeasureOutside(row, row + width);
+        }
+
         var rows = new List<IReadOnlyDictionary<string, JsonElement>>();
         var shapes = new List<AlgorithmGeometry> { Box("primary", primary) };
-        foreach (var candidate in Components(mask, residual, width, height, token).Where(v => v.Area >= p.MinimumArea))
+        IEnumerable<Component> candidates = mask == null ? [] : Components(mask, signal, width, height, token, new int[foregroundPixels]);
+        foreach (var candidate in candidates.Where(v => v.Area >= p.MinimumArea))
         {
             bool touchesPrimary = candidate.Bounds.IntersectsWith(new Rect(Math.Max(0, primary.X - 1), Math.Max(0, primary.Y - 1), primary.Width + 2, primary.Height + 2));
             double aspect = (double)Math.Max(candidate.Bounds.Width, candidate.Bounds.Height) / Math.Min(candidate.Bounds.Width, candidate.Bounds.Height);
@@ -135,5 +170,21 @@ public sealed partial class DisplayMetrologyProvider
             ("outside_integral_over_primary_region", outsideSum / primarySum, "ratio"),
             ("outside_mean_over_primary_peak", outsideSum / (signal.Length - primary.Width * primary.Height) / primaryPeak, "ratio"));
         Overlay(artifacts, shapes);
+
+        void MeasureOutside(int start, int end)
+        {
+            for (int i = start; i < end; i++)
+            {
+                float value = (float)Math.Max(0, signal[i] - background);
+                outsideSum += value;
+                if (value >= threshold)
+                {
+                    // Components reads only the candidate pixels in this private decoded buffer.
+                    signal[i] = value;
+                    (mask ??= new byte[signal.Length])[i] = byte.MaxValue;
+                    foregroundPixels++;
+                }
+            }
+        }
     }
 }

@@ -8,7 +8,6 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Views;
-using log4net;
 using System;
 using System.ComponentModel;
 using System.Windows;
@@ -18,7 +17,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class DeviceCalibration : DeviceService<ConfigCalibration>
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
         private volatile bool _isDisposed;
         private PhyCamera? _subscribedPhyCamera;
 
@@ -51,10 +49,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             EditCommand = new RelayCommand(a =>
             {
                 if (!CanConfigure) return;
-                var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                var target = ProtectConfigurationEditor(propertyEditorWindow);
-                propertyEditorWindow.Submitted += (_, _) => TryCommitConfiguration(propertyEditorWindow, expectedTarget: target);
-                propertyEditorWindow.ShowDialog();
+                CreateConfigurationEditor(Application.Current.GetActiveWindow()).ShowDialog();
             }, a => CanConfigure);
 
 
@@ -63,7 +58,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             DisplayLazy = new Lazy<DisplayCalibration>(() => new DisplayCalibration(this));
             AttachPhyCamera(PhyCamera);
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
-            EditDisplayConfigCommand = new RelayCommand(_ => EditDisplayConfig());
             ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
         }
 
@@ -72,23 +66,69 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         [Description("CommandCameraCalibrationHint")]
         public RelayCommand EditCalibrationCommand { get; set; }
 
-        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 0)]
-        [Category("DeviceConnection")]
-        [Description("CommandDisplayConfigHint")]
-        public RelayCommand EditDisplayConfigCommand { get; }
-
         [CommandDisplay("本地校正缓存管理", CategoryOrder = 1)]
         [Category("CalibrationCorrection")]
         [Description("CommandCalibrationCacheHint")]
         public RelayCommand ReleaseLocalCalibrationCacheCommand { get; }
 
-        private void EditDisplayConfig()
+        internal CameraBoundDeviceConfigurationWindow CreateConfigurationEditor(Window? owner)
         {
-            new PropertyEditorWindow(DisplayConfig)
+            var display = DisplayConfig;
+            var target = CaptureConfigurationTarget();
+            string initialName = Config.Name;
+            string? initialCameraCode = Config.CameraCode;
+            bool initialBackend = display.UseLocalCalibration;
+            var draft = new CalibrationConfigurationDraft
             {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.ShowDialog();
+                Name = initialName,
+                CameraCode = initialCameraCode,
+                UseLocalCalibration = initialBackend
+            };
+            return new CameraBoundDeviceConfigurationWindow(owner, draft, window =>
+            {
+                DemandConfigurationAccess();
+                if (!TryAdmitConfigurationEdit(target, window)) return false;
+                bool changeName = draft.Name != initialName && draft.Name != Config.Name;
+                bool changeCamera = draft.CameraCode != initialCameraCode && draft.CameraCode != Config.CameraCode;
+                if (changeName || changeCamera)
+                {
+                    CommitConfiguration(() =>
+                    {
+                        if (changeName) Config.Name = draft.Name;
+                        if (changeCamera) Config.CameraCode = draft.CameraCode;
+                    }, target);
+                    initialName = draft.Name;
+                    initialCameraCode = draft.CameraCode;
+                    if (!TryAdmitConfigurationEdit(target, window)) return false;
+                }
+
+                bool previousBackend = display.UseLocalCalibration;
+                if (draft.UseLocalCalibration == initialBackend || draft.UseLocalCalibration == previousBackend) return true;
+
+                try
+                {
+                    display.UseLocalCalibration = draft.UseLocalCalibration;
+                    if (ConfigService.Instance is ConfigHandler handler)
+                    {
+                        if (!handler.TrySave(DisplayConfigManager.Instance, out string error))
+                            throw new InvalidOperationException(error);
+                    }
+                    else ConfigService.Instance.Save<DisplayConfigManager>();
+                }
+                catch
+                {
+                    display.UseLocalCalibration = previousBackend;
+                    throw;
+                }
+                return true;
+            }, nameof(CalibrationConfigurationDraft.UseLocalCalibration));
+        }
+
+        private sealed class CalibrationConfigurationDraft : CameraBoundDeviceConfigurationDraft
+        {
+            [DisplayName("使用本地校正")]
+            [Description("使用进程内优化校正；流程中的校正及其下游实时关注点结点一起使用内部调用，实时关注点忽略高级参数。关闭后两者使用原 MQTT 服务。")]
+            public bool UseLocalCalibration { get; set; } = true;
         }
 
         public void EditCalibration()

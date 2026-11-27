@@ -4,6 +4,7 @@ using HelixToolkit.SharpDX;
 using System;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.ImageEditor.EditorTools.ThreeD
 {
@@ -11,6 +12,8 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
     internal sealed class HeightMapDxGeometry
     {
         private const byte VisibleAlphaThreshold = 127;
+        private const int ParallelVertexThreshold = 512 * 1024;
+        private const int MaxMeshWorkers = 4;
 
         private readonly Vector3Collection positions;
         private readonly Vector3Collection normals;
@@ -48,6 +51,7 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             int width = sample.Width;
             int height = sample.Height;
             int count = checked(width * height);
+            int workers = count >= ParallelVertexThreshold ? Math.Min(Environment.ProcessorCount, MaxMeshWorkers) : 1;
             var meshPositions = new Vector3Collection(count);
             var meshNormals = new Vector3Collection(count);
             var meshTextureCoordinates = new Vector2Collection(count);
@@ -61,15 +65,17 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
             byte[]? mask = maskSource.Alpha;
             // A missing visibility array means every mesh cell is visible.
             bool[]? visibleCells = mask != null || width <= 0 || height <= 0 ? new bool[cellCount] : null;
-            int visibleCount = visibleCells == null ? cellCount : 0;
+            int[]? visibleCellOffsets = visibleCells == null ? null : new int[height];
             bool maskMatchesMesh = maskSource.Width == width && maskSource.Height == height;
-            for (int y = 0; y < height; y++)
+            ForEachRow(height, y =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 int cellsInRow = visibleCells != null && y + 1 < height ? width - 1 : 0;
+                int visibleInRow = 0;
+                int rowStart = y * width;
                 for (int x = 0; x < width; x++)
                 {
-                    int index = y * width + x;
+                    int index = rowStart + x;
                     byte gray = sample.Gray[index];
                     positions[index] = new Vector3(x * dx, (height - 1 - y) * dy, gray / 255f);
                     uv[index] = new Vector2((gray + 0.5f) / 256f, 0.5f);
@@ -87,22 +93,38 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                                 && mask[index + width] > VisibleAlphaThreshold && mask[index + width + 1] > VisibleAlphaThreshold
                             : IsCoarseCellVisible(maskSource, x, y, width, height);
                         visibleCells![y * (width - 1) + x] = visible;
-                        if (visible) visibleCount++;
+                        if (visible) visibleInRow++;
                     }
+                }
+                if (visibleCellOffsets != null) visibleCellOffsets[y] = visibleInRow;
+            });
+
+            int visibleCount = cellCount;
+            if (visibleCellOffsets != null)
+            {
+                // Keep the final triangle order row-major even when rows finish out of order.
+                visibleCount = 0;
+                for (int y = 0; y < height; y++)
+                {
+                    int rowCount = visibleCellOffsets[y];
+                    visibleCellOffsets[y] = visibleCount;
+                    visibleCount += rowCount;
                 }
             }
 
             int indexCount = checked(visibleCount * 6);
             var meshIndices = new IntCollection(indexCount);
             int[] indices = ResizeBuffer(meshIndices, indexCount);
-            int cursor = 0;
-            for (int y = 0; y < height - 1; y++)
+            ForEachRow(height - 1, y =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                int cellStart = y * (width - 1);
+                int rowStart = y * width;
+                int cursor = (visibleCellOffsets?[y] ?? cellStart) * 6;
                 for (int x = 0; x < width - 1; x++)
                 {
-                    if (visibleCells != null && !visibleCells[y * (width - 1) + x]) continue;
-                    int topLeft = y * width + x;
+                    if (visibleCells != null && !visibleCells[cellStart + x]) continue;
+                    int topLeft = rowStart + x;
                     int bottomLeft = topLeft + width;
                     indices[cursor++] = topLeft;
                     indices[cursor++] = bottomLeft;
@@ -111,8 +133,24 @@ namespace ColorVision.ImageEditor.EditorTools.ThreeD
                     indices[cursor++] = bottomLeft;
                     indices[cursor++] = bottomLeft + 1;
                 }
-            }
+            });
             return new HeightMapDxGeometry(sample, meshPositions, meshNormals, meshTextureCoordinates, meshIndices, visibleCells);
+
+            void ForEachRow(int rowCount, Action<int> buildRow)
+            {
+                if (workers > 1 && rowCount > 1)
+                {
+                    var options = new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = workers,
+                        TaskScheduler = TaskScheduler.Default,
+                        CancellationToken = cancellationToken,
+                    };
+                    Parallel.For(0, rowCount, options, buildRow);
+                    return;
+                }
+                for (int y = 0; y < rowCount; y++) buildRow(y);
+            }
         }
 
         private static T[] ResizeBuffer<T>(FastList<T> collection, int count)

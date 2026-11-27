@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using ColorVision.Engine.Cache;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.Types;
@@ -56,6 +57,8 @@ internal static class TerminalDeviceCreation
         void SetConfiguration(IReadOnlyList<LicenseModel> licenses)
         {
             DeviceServiceFactoryRegistry.ApplyDefaultLicense(serviceType, config, licenses, DateTimeOffset.Now);
+            if (config is IFileServerCfg fileConfig)
+                (fileConfig.FileServerCfg ??= new FileServerCfg()).DataBasePath = DeviceDataPathSettings.CurrentPath;
             child.Value = JsonConvert.SerializeObject(config);
         }
     }

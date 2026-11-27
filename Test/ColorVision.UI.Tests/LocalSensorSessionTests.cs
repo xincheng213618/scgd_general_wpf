@@ -180,6 +180,34 @@ public sealed class LocalSensorSessionTests
     }
 
     [Fact]
+    public void DiagnosticSummaryReusesOnlyResponsesWithUnchangedFragments()
+    {
+        var diagnostics = new LocalSensorDiagnostics();
+        var command = new LocalSensorCommand { Name = "Query", CmdType = SensorCmdType.Ascii };
+        diagnostics.AddTraffic(LocalSensorDiagnosticKind.Received, "test", command, 1, 1, "A"u8);
+        diagnostics.AddTraffic(LocalSensorDiagnosticKind.Received, "test", command, 1, 2, "X"u8);
+        diagnostics.AddTraffic(LocalSensorDiagnosticKind.Received, "test", command, 1, 1, "B"u8);
+        diagnostics.AddTraffic(LocalSensorDiagnosticKind.Received, "test", command, 1, 2, "Y"u8);
+        var original = LocalSensorDiagnostics.SummarizeResponses(diagnostics.GetSnapshot(-1, out _)!);
+
+        diagnostics.AddTraffic(LocalSensorDiagnosticKind.Received, "test", command, 1, 1, "C"u8);
+        var snapshot = diagnostics.GetSnapshot(-1, out _)!;
+        var appended = LocalSensorDiagnostics.SummarizeResponses(snapshot, original);
+        Assert.Equal("ABC", appended[0].Text);
+        Assert.Equal(3, appended[0].FragmentCount);
+        Assert.Same(original[1], appended[1]);
+
+        for (int i = snapshot.Length; i <= LocalSensorDiagnostics.MaxEntries; i++)
+            diagnostics.AddLog("test", "log", "new");
+        snapshot = diagnostics.GetSnapshot(-1, out _)!;
+        var evicted = LocalSensorDiagnostics.SummarizeResponses(snapshot, appended);
+        Assert.Equal(LocalSensorDiagnostics.SummarizeResponses(snapshot), evicted);
+        Assert.Same(appended[1], evicted[0]);
+        Assert.Equal("BC", evicted[1].Text);
+        Assert.Equal(2, evicted[1].FragmentCount);
+    }
+
+    [Fact]
     public async Task FramingWaitsForCompleteBytes()
     {
         var command = new LocalSensorCommand { Request = "Q", Response = "OK" };

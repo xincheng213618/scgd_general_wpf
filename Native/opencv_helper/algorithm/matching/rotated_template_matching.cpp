@@ -294,7 +294,7 @@ cv::Point2d refinePeak(const cv::Mat& response, const cv::Point& peak)
 }
 
 std::vector<ResponsePeak> extractPeaks(
-    const cv::Mat& response,
+    cv::Mat& response,
     double minimumScore,
     int maximumCount,
     double suppressionRadius,
@@ -305,27 +305,62 @@ std::vector<ResponsePeak> extractPeaks(
         return peaks;
     }
 
-    cv::Mat remaining = response.clone();
+    struct BandMaximum
+    {
+        double score;
+        cv::Point location;
+    };
+
+    constexpr int samplesPerBand = 64 * 1024;
+    const int bandHeight = response.total() >= 4 * samplesPerBand && maximumCount > 1
+        ? std::max(1, samplesPerBand / response.cols)
+        : response.rows;
+    const int bandCount = (response.rows - 1) / bandHeight + 1;
+    std::vector<BandMaximum> maxima(static_cast<size_t>(bandCount));
+    const auto refreshBand = [&](const cv::Mat& values, int band) {
+        const int firstRow = band * bandHeight;
+        const int endRow = firstRow + std::min(bandHeight, values.rows - firstRow);
+        BandMaximum& maximum = maxima[static_cast<size_t>(band)];
+        cv::minMaxLoc(values.rowRange(firstRow, endRow), nullptr, &maximum.score, nullptr, &maximum.location);
+        maximum.location.y += firstRow;
+    };
+    for (int band = 0; band < bandCount; ++band) {
+        refreshBand(response, band);
+    }
+
+    cv::Mat remaining;
     const int radius = std::max(1, static_cast<int>(std::ceil(suppressionRadius)));
     for (int i = 0; i < maximumCount; ++i) {
-        double maxValue = -1.0;
-        cv::Point maxLocation;
-        cv::minMaxLoc(remaining, nullptr, &maxValue, nullptr, &maxLocation);
-        if (!isFinite(maxValue) || maxValue < minimumScore) {
+        // Ordered bands and first-maximum selection retain OpenCV's row-major tie order.
+        const BandMaximum maximum = *std::max_element(maxima.begin(), maxima.end(),
+            [](const BandMaximum& lhs, const BandMaximum& rhs) { return lhs.score < rhs.score; });
+        if (!isFinite(maximum.score) || maximum.score < minimumScore) {
             break;
         }
 
+        const cv::Point maxLocation = maximum.location;
         ResponsePeak peak;
         peak.location = subpixel ? refinePeak(response, maxLocation) : cv::Point2d(maxLocation.x, maxLocation.y);
-        peak.score = maxValue;
+        peak.score = maximum.score;
         peaks.push_back(peak);
+        if (i + 1 == maximumCount) {
+            break;
+        }
 
+        if (remaining.empty()) {
+            // Only subpixel refinement needs the original samples after suppressing earlier peaks.
+            remaining = subpixel ? response.clone() : response;
+        }
         const cv::Rect suppression(
             std::max(0, maxLocation.x - radius),
             std::max(0, maxLocation.y - radius),
             std::min(remaining.cols, maxLocation.x + radius + 1) - std::max(0, maxLocation.x - radius),
             std::min(remaining.rows, maxLocation.y + radius + 1) - std::max(0, maxLocation.y - radius));
         remaining(suppression).setTo(cv::Scalar(-1.0));
+        const int lastBand = (suppression.y + suppression.height - 1) / bandHeight;
+        for (int band = suppression.y / bandHeight; band <= lastBand; ++band) {
+            refreshBand(remaining, band);
+        }
     }
 
     return peaks;

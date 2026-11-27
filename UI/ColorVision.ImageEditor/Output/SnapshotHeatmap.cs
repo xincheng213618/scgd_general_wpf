@@ -23,12 +23,22 @@ internal static class SnapshotHeatmap
         cancellationToken.ThrowIfCancellationRequested();
         Cv2.MinMaxLoc(samples, out double minimum, out double maximum);
         double scale = maximum > minimum && double.IsFinite(maximum - minimum) ? 255 / (maximum - minimum) : 0;
-        using Mat indices = new();
         bool hasRange = scale > 0 && double.IsFinite(scale);
-        if (hasRange)
-            samples.ConvertTo(indices, MatType.CV_8U, scale, -minimum * scale);
-        // Neither the compact indices nor the constant heatmap need the source luminance again.
-        samples.Release();
+        using Mat normalized = new();
+        Mat indices = samples;
+        if (hasRange && samples.Type() == MatType.CV_8UC1)
+        {
+            // Byte luminance already occupies the index buffer. Normalize it in place if needed.
+            if (minimum != 0 || maximum != byte.MaxValue)
+                samples.ConvertTo(samples, MatType.CV_8U, scale, -minimum * scale);
+        }
+        else
+        {
+            if (hasRange)
+                samples.ConvertTo(normalized, MatType.CV_8U, scale, -minimum * scale);
+            indices = normalized;
+            samples.Release();
+        }
         cancellationToken.ThrowIfCancellationRequested();
         var bitmap = new WriteableBitmap(width, height, dpiX, dpiY, PixelFormats.Bgr24, null);
         bitmap.Lock();

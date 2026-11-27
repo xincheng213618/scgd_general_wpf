@@ -33,16 +33,21 @@ namespace ColorVision.Engine.Templates.POI
         public static LocalLuminousAreaPoiTemplateShape Update(
             string templateName,
             IReadOnlyList<LuminousAreaPoint> corners,
-            MySqlConnectedEndpoint endpoint)
+            MySqlConnectedEndpoint? endpoint,
+            PoiTemplateStorage? storage = null)
         {
             if (string.IsNullOrWhiteSpace(templateName))
                 throw new ArgumentException("POI 保存模板名称不能为空。", nameof(templateName));
 
-            using SqlSugarClient db = endpoint.CreateDbClient();
+            string normalizedName = templateName.Trim();
+            storage ??= PoiTemplateStorage.Default;
+            if (storage.IsLocal)
+                return storage.UpdateLocalByName(normalizedName, template => UpdateLocal(template, corners));
+
+            using SqlSugarClient db = storage.OpenTemplateDatabase(endpoint);
             db.Ado.BeginTran();
             try
             {
-                string normalizedName = templateName.Trim();
                 // Match the legacy service views: soft-deleted rows are excluded,
                 // while is_enable does not change which saved template rows are updated.
                 PoiMasterModel? master = db.Queryable<PoiMasterModel>()
@@ -78,6 +83,31 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 throw;
             }
+        }
+
+        private static LocalLuminousAreaPoiTemplateShape UpdateLocal(PoiParam template, IReadOnlyList<LuminousAreaPoint> corners)
+        {
+            var update = BuildUpdate(LocalPoiSearchRegionResolver.LocalRegionDetails(template), corners, template.Name);
+            PointInt[] editorCorners = [template.PoiConfig.PointInt1, template.PoiConfig.PointInt2,
+                template.PoiConfig.PointInt3, template.PoiConfig.PointInt4];
+            for (int index = 0; index < update.Details.Count; index++)
+            {
+                var point = template.PoiPoints[index];
+                var geometry = update.Details[index];
+                point.PixX = geometry.PixX!.Value;
+                point.PixY = geometry.PixY!.Value;
+                if (point.PointType == PoiShape.Point)
+                {
+                    editorCorners[index].X = geometry.PixX.Value;
+                    editorCorners[index].Y = geometry.PixY.Value;
+                }
+                else
+                {
+                    point.PixWidth = geometry.PixWidth!.Value;
+                    point.PixHeight = geometry.PixHeight!.Value;
+                }
+            }
+            return update.Shape;
         }
 
         internal static LocalLuminousAreaPoiTemplateUpdate BuildUpdate(

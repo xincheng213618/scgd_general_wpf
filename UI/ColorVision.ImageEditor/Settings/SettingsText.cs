@@ -56,6 +56,12 @@ namespace ColorVision.ImageEditor.Settings
         public static string Provider => Get(nameof(Provider));
         public static string Scope => Get(nameof(Scope));
         public static string Toolbar => Get(nameof(Toolbar));
+        internal static string ReferenceLine => Get(nameof(ReferenceLine));
+        internal static string ReferenceLineSaveGlobal => Get(nameof(ReferenceLineSaveGlobal));
+        internal static string ReferenceLineSaveProfile => Get(nameof(ReferenceLineSaveProfile));
+        internal static string ReferenceLineRestoreGlobal => Get(nameof(ReferenceLineRestoreGlobal));
+        internal static string ReferenceLineRestoreGlobalConfirm => Get(nameof(ReferenceLineRestoreGlobalConfirm));
+        internal static string ReferenceLineInvalidGeometry => Get(nameof(ReferenceLineInvalidGeometry));
         public static string ImageScaling => Get(nameof(ImageScaling));
         public static string TextStyle => Get(nameof(TextStyle));
         public static string DefaultShader => Get(nameof(DefaultShader));

@@ -44,10 +44,9 @@ void showimages(vector<Mat> sample) {
 Mat gfocus(const Mat& im, int window) {
 	CV_Assert(im.type() == CV_32FC1);
 
-	Mat average;
 	Mat focusMeasure;
-	boxFilter(im, average, CV_32FC1, Size(window, window), Point(-1, -1), true, BORDER_REPLICATE);
-	subtract(im, average, focusMeasure);
+	boxFilter(im, focusMeasure, CV_32FC1, Size(window, window), Point(-1, -1), true, BORDER_REPLICATE);
+	subtract(im, focusMeasure, focusMeasure);
 	multiply(focusMeasure, focusMeasure, focusMeasure);
 	boxFilter(focusMeasure, focusMeasure, CV_32FC1, Size(window, window), Point(-1, -1), true, BORDER_REPLICATE);
 	return focusMeasure;
@@ -82,19 +81,28 @@ Mat fusion(const vector<Mat>& imgs, const FusionOptions& options) {
 	}
 
 	vector<Mat> focusMaps(P);
-	for (int i = 0; i < P; ++i)
-	{
-		Mat gray;
-		if (channels == 3) {
-			cvtColor(imgs[i], gray, COLOR_BGR2GRAY);
+	const auto buildFocusMaps = [&](const Range& range) {
+		for (int i = range.start; i < range.end; ++i)
+		{
+			Mat gray;
+			if (channels == 3) {
+				cvtColor(imgs[i], gray, COLOR_BGR2GRAY);
+			}
+			else {
+				gray = imgs[i];
+			}
+			gray.convertTo(gray, CV_32FC1, kFocusScale);
+			focusMaps[i] = gfocus(gray, options.focusWindow);
 		}
-		else {
-			gray = imgs[i];
-		}
+	};
 
-		gray.convertTo(gray, CV_32FC1, kFocusScale);
-		focusMaps[i] = gfocus(gray, options.focusWindow);
-	}
+	// Shallow stacks are the normal CPU path. Split independent frames into two
+	// stripes, using no more full float planes than the previous serial preparation.
+	constexpr size_t parallelFocusPixels = 512 * 1024;
+	if (P <= 4 && imgs[0].total() >= parallelFocusPixels)
+		cv::parallel_for_(Range(0, P), buildFocusMaps, 2);
+	else
+		buildFocusMaps(Range(0, P));
 
 	if (P >= 2 * STEP + 1) {
 #pragma region Compute Smeasure

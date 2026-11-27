@@ -145,14 +145,15 @@ public sealed class CvcieSrgbRendererTests
     {
         StaTest.Run(() =>
         {
-            List<double> samples = [0, 1, 0.0031308 - 1e-10, 0.0031308, 0.0031308 + 1e-10];
+            List<double> samples = new();
+            AddNeighborhood(0);
+            AddNeighborhood(1);
+            AddNeighborhood(0.0031308);
             for (int code = 0; code < byte.MaxValue; code++)
             {
                 double encoded = (code + 0.5) / byte.MaxValue;
                 double linear = encoded <= 0.04045 ? encoded / 12.92 : Math.Pow((encoded + 0.055) / 1.055, 2.4);
-                samples.Add(linear - 1e-10);
-                samples.Add(linear);
-                samples.Add(linear + 1e-10);
+                AddNeighborhood(linear);
             }
 
             // With Y and Z at zero, the blue component is 0.0556434 * X.
@@ -161,6 +162,22 @@ public sealed class CvcieSrgbRendererTests
             byte[] expected = RenderSerialReference(file, mode, 1);
 
             Assert.Equal(expected, ReadPixels(CvcieSrgbRenderer.Render(file, mode, 1)));
+
+            void AddNeighborhood(double center)
+            {
+                samples.Add(center - 1e-10);
+                samples.Add(center);
+                samples.Add(center + 1e-10);
+                double below = center;
+                double above = center;
+                for (int step = 0; step < 8; step++)
+                {
+                    below = Math.BitDecrement(below);
+                    above = Math.BitIncrement(above);
+                    samples.Add(below);
+                    samples.Add(above);
+                }
+            }
         });
     }
 
@@ -305,13 +322,19 @@ public sealed class CvcieSrgbRendererTests
         }
     }
 
-    [Fact]
-    public void FiniteXyzThatOverflowsTheConversionIsRejected()
+    [Theory]
+    [InlineData(1, 0, CvcieBrightnessMode.Auto)]
+    [InlineData(67, 18, CvcieBrightnessMode.Auto)]
+    [InlineData(67, 18, CvcieBrightnessMode.ReferenceWhite)]
+    public void FiniteXyzThatOverflowsTheConversionIsRejected(int count, int invalidPixel, CvcieBrightnessMode mode)
     {
-        using CVCIEFile file = CreateFile(64, (double.MaxValue, 0, 0));
+        var values = Enumerable.Repeat(White(1), count).ToArray();
+        values[invalidPixel] = (double.MaxValue, 0, 0);
+        using CVCIEFile file = CreateFile(64, values);
 
-        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => CvcieSrgbRenderer.Render(file, CvcieBrightnessMode.Auto, 1));
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => CvcieSrgbRenderer.Render(file, mode, 1));
 
+        Assert.Contains($"第 {invalidPixel + 1} 个像素", error.Message);
         Assert.Contains("超出真彩转换范围", error.Message);
     }
 

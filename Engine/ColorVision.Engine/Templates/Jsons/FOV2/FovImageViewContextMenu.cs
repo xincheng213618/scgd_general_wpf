@@ -4,6 +4,7 @@ using ColorVision.ImageEditor.Algorithms;
 using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
@@ -21,7 +22,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
-    public sealed class FovImageViewOptions : ViewModelBase
+    public sealed class FovImageViewOptions : ViewModelBase, IConfig
     {
         private double fovDist = 9410;
         private double cameraDegrees = 74.2;
@@ -59,7 +60,8 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
 
         [Category("发光区定位")]
         [DisplayName("最低可信度")]
-        [Description("所选模式的发光区定位结果低于此可信度时拒绝计算；范围 0 到 1。")]
+        [Description("四角自动定位所需的最低可信度，范围 0 到 1。")]
+        [PropertyVisibility(nameof(MeasurementMode), FovMeasurementMode.FourCorners)]
         [Range(0d, 1d)]
         [PropertyEditorType(typeof(SliderPropertiesEditor))]
         public double MinimumConfidence
@@ -88,27 +90,149 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         public int TotalTime { get; init; }
     }
 
+    internal sealed record FovImageViewCamera(string Key, string Name)
+    {
+        internal static FovImageViewCamera? FromIdentity(string? cameraId, string? deviceCode, string? deviceName)
+        {
+            string? id = cameraId?.Trim();
+            string? code = deviceCode?.Trim();
+            string? identifier = !string.IsNullOrEmpty(id) ? id : code;
+            if (string.IsNullOrEmpty(identifier)) return null;
+
+            string prefix = !string.IsNullOrEmpty(id) ? "camera:" : "device:";
+            string name = string.IsNullOrWhiteSpace(deviceName) || string.Equals(deviceName.Trim(), identifier, StringComparison.OrdinalIgnoreCase)
+                ? identifier : $"{deviceName.Trim()} ({identifier})";
+            return new FovImageViewCamera(prefix + identifier, name);
+        }
+    }
+
+    internal sealed class FovImageViewCameraOptions : IConfig
+    {
+        public FovImageViewCameraOptions() { }
+
+        public Dictionary<string, FovImageViewOptions> Overrides { get; internal set; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+
     internal static class FovImageViewRunner
     {
-        private static readonly ConditionalWeakTable<ImageProcessingContext, FovImageViewOptions> Options = new();
+        private static readonly FovImageViewOptions SessionOptions = new();
+        private static readonly FovImageViewCameraOptions SessionCameraOptions = new();
+        private static readonly ConditionalWeakTable<ImageView, DeviceCamera> CameraHosts = new();
+
+        internal static void BindCamera(ImageView view, DeviceCamera device) => CameraHosts.AddOrUpdate(view, device);
+
+        internal static FovImageViewCamera? ResolveCamera(ImageView view)
+        {
+            var source = view.SourceCamera;
+            FovImageViewCamera? camera = FovImageViewCamera.FromIdentity(source?.CameraId, source?.DeviceCode, source?.DeviceName);
+            if (camera != null) return camera;
+            if (!CameraHosts.TryGetValue(view, out DeviceCamera? host)) return null;
+
+            string? cameraId = host.LocalCameraSession.OpenedCameraId;
+            if (string.IsNullOrWhiteSpace(cameraId)) cameraId = host.Config.CameraID;
+            return FovImageViewCamera.FromIdentity(cameraId, host.Code, host.Config.Name);
+        }
 
         public static void ShowOptions(EditorContext editorContext, RoiRect roi)
         {
-            ImageProcessingContext imageContext = editorContext.ProcessingContext;
             DrawEditorContext drawContext = editorContext.DrawEditorContext;
             AlgorithmResultOverlay.InvalidateRequest(drawContext, AlgorithmResultOverlay.FovTag);
             AlgorithmResultOverlay.ClearTagged(drawContext, AlgorithmResultOverlay.FovTag);
 
-            FovImageViewOptions options = Options.GetValue(imageContext, static _ => new FovImageViewOptions());
-            PropertyEditorWindow window = new(options, PropertyEditorEditMode.Transactional)
-            {
-                Title = ColorVision.ImageEditor.Properties.Resources.Algorithm_FieldOfView,
-                Owner = editorContext.OwnerWindow,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            window.Submitted += (_, _) => Run(editorContext, roi, options);
+            FovImageViewCamera? camera = ResolveCamera(editorContext.ImageView);
+            PropertyEditorWindow window = CreateOptionsEditor(ConfigService.Instance as ConfigHandler, camera,
+                () => string.Equals(camera?.Key, ResolveCamera(editorContext.ImageView)?.Key, StringComparison.OrdinalIgnoreCase));
+            window.Owner = editorContext.OwnerWindow;
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.Submitted += (_, _) => Run(editorContext, roi, (FovImageViewOptions)window.Config);
             window.ShowDialog();
         }
+
+        internal static PropertyEditorWindow CreateOptionsEditor(ConfigHandler? config, FovImageViewCamera? camera = null, Func<bool>? isCurrentCamera = null)
+        {
+            FovImageViewOptions global = config?.GetRequiredService<FovImageViewOptions>() ?? SessionOptions;
+            FovImageViewCameraOptions? cameraOptions = camera == null ? null : config?.GetRequiredService<FovImageViewCameraOptions>() ?? SessionCameraOptions;
+            FovImageViewOptions options = camera == null ? global : CopyOptions(cameraOptions!.Overrides.GetValueOrDefault(camera.Key) ?? global);
+            string scope = camera?.Name ?? LocalizedText.Get("全局");
+            string destination = LocalizedText.Format($"保存到：{scope}");
+            PropertyEditorWindow window = new(options, PropertyEditorEditMode.Transactional)
+            {
+                Title = $"{ColorVision.ImageEditor.Properties.Resources.Algorithm_FieldOfView} · {destination}"
+            };
+            if (camera != null)
+                window.ConfigureResetToDefaults(LocalizedText.Get("恢复到全局"), () => global);
+
+            window.Submitting += (_, args) =>
+            {
+                if (isCurrentCamera?.Invoke() == false
+                    || (config != null && (!ReferenceEquals(global, config.GetRequiredService<FovImageViewOptions>())
+                        || (cameraOptions != null && !ReferenceEquals(cameraOptions, config.GetRequiredService<FovImageViewCameraOptions>())))))
+                {
+                    args.Cancel = true;
+                    args.ErrorMessage = LocalizedText.Get("配置已更新，请重新打开参数窗口。");
+                    return;
+                }
+
+                var draft = (FovImageViewOptions)window.EditConfig;
+                try
+                {
+                    FovCalculator.ValidateCalibration(draft.FovDist, draft.CameraDegrees);
+                }
+                catch (ArgumentOutOfRangeException ex)
+                {
+                    args.Cancel = true;
+                    args.ErrorMessage = ex.Message;
+                    return;
+                }
+
+                // Save the working copy before the editor commits it to the live options.
+                string error = string.Empty;
+                bool saved = camera == null
+                    ? config == null || config.TrySave(draft, out error)
+                    : SaveCameraOptions(config, cameraOptions!, camera.Key, draft, global, out error);
+                if (!saved)
+                {
+                    args.Cancel = true;
+                    args.ErrorMessage = error;
+                }
+            };
+            return window;
+        }
+
+        private static bool SaveCameraOptions(ConfigHandler? config, FovImageViewCameraOptions current, string key,
+            FovImageViewOptions draft, FovImageViewOptions global, out string error)
+        {
+            error = string.Empty;
+            bool inheritsGlobal = OptionValues(draft) == OptionValues(global);
+            FovImageViewOptions? existing = current.Overrides.GetValueOrDefault(key);
+            if (inheritsGlobal ? existing == null : existing != null && OptionValues(draft) == OptionValues(existing))
+                return true;
+
+            var candidate = new FovImageViewCameraOptions { Overrides = new(current.Overrides, StringComparer.OrdinalIgnoreCase) };
+            if (inheritsGlobal)
+                candidate.Overrides.Remove(key);
+            else
+                candidate.Overrides[key] = CopyOptions(draft);
+
+            if (config == null)
+            {
+                current.Overrides = candidate.Overrides;
+                return true;
+            }
+            return config.TrySaveAndPublish(candidate, () => current.Overrides = candidate.Overrides, out error)
+                == ConfigSavePublicationStatus.PersistedAndPublished;
+        }
+
+        private static FovImageViewOptions CopyOptions(FovImageViewOptions options) => new()
+        {
+            FovDist = options.FovDist,
+            CameraDegrees = options.CameraDegrees,
+            MeasurementMode = options.MeasurementMode,
+            MinimumConfidence = options.MinimumConfidence
+        };
+
+        private static (double, double, FovMeasurementMode, double) OptionValues(FovImageViewOptions options) =>
+            (options.FovDist, options.CameraDegrees, options.MeasurementMode, options.MinimumConfidence);
 
         internal static void Run(EditorContext editorContext, RoiRect roi, FovImageViewOptions options)
         {
@@ -216,7 +340,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                 string.Empty,
                 $"FovDist: {measurement.FovDist:G12}",
                 $"cameraDegrees: {measurement.CameraDegrees:G12}",
-                $"定位可信度: {result.Calculation!.Detection?.Confidence?.ToString("F3") ?? "N/A"}",
+                $"{(measurement.Mode == FovMeasurementMode.CurvedBoundary ? "最弱弧边缘对比度（参考）" : "定位可信度")}: {result.Calculation!.Detection?.Confidence?.ToString("F3") ?? "N/A"}",
                 $"测量模式: {(measurement.Mode == FovMeasurementMode.CurvedBoundary ? "轮廓（实际中心边界，D 为两条中心斜向跨度均值）" : "四角")}",
                 $"边界来源: {result.Calculation!.BoundaryMode}",
                 $"耗时: {result.TotalTime} ms"

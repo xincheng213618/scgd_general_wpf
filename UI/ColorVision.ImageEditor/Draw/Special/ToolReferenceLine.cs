@@ -1,5 +1,7 @@
+using ColorVision.ImageEditor.Properties;
+using ColorVision.ImageEditor.Settings;
+using ColorVision.UI;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -47,7 +49,14 @@ namespace ColorVision.ImageEditor.Draw.Special
             List<MenuItem> MenuItems = new List<MenuItem>();
             if (obj is ReferenceLine referenceLine)
             {
-                MenuItem menuItem = new() { Header = ColorVision.ImageEditor.Properties.Resources.Draw_Lock,IsChecked = referenceLine.IsLocked };
+                if (referenceLine.EditProfile is { } edit)
+                {
+                    MenuItem editItem = new() { Header = Resources.Draw_Edit };
+                    editItem.Click += (_, _) => edit();
+                    MenuItems.Add(editItem);
+                }
+
+                MenuItem menuItem = new() { Header = Resources.Draw_Lock, IsChecked = referenceLine.IsLocked };
                 menuItem.Click += (s, e) =>
                 {
                     referenceLine.IsLocked = !referenceLine.IsLocked;
@@ -74,20 +83,28 @@ namespace ColorVision.ImageEditor.Draw.Special
     
     public class ReferenceLine: DrawingVisualBase<ReferenceLineParam>
     {
+        private bool _applyingOptions;
+
+        internal Action? EditProfile { get; set; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
-        public ReferenceLine()
-        {
-            Attribute = new ReferenceLineParam();
-            Attribute.Pen  = new Pen(Attribute.Brush, 1);
-            Attribute.PropertyChanged += (s, e) => Render();
-        }
+        public ReferenceLine() : this(new ReferenceLineParam()) { }
 
         public ReferenceLine(ReferenceLineParam referenceLineParam)
         {
             Attribute = referenceLineParam;
             Attribute.Pen = new Pen(Attribute.Brush, 1);
-            Attribute.PropertyChanged += (s, e) => Render();
+            ObserveAttributeChanges((_, _) =>
+            {
+                if (!_applyingOptions) Render();
+            });
+        }
+
+        internal void ApplyOptions(ReferenceLineParam options)
+        {
+            _applyingOptions = true;
+            try { Attribute.CopyOptionsFrom(options); }
+            finally { _applyingOptions = false; }
         }
         public double Ratio { get; set; } = 1;
         public double ActualWidth { get; set; }
@@ -96,7 +113,12 @@ namespace ColorVision.ImageEditor.Draw.Special
         public bool IsRMouseDown { get; set; }
         public bool IsLMouseDown { get; set; }
 
-        public Point RMouseDownP { get => new Point(Attribute.PointX, Attribute.PointY); set
+        public Point RMouseDownP
+        {
+            get => Attribute.PointX == 0 && Attribute.PointY == 0
+                ? new Point(ActualWidth / 2, ActualHeight / 2)
+                : new Point(Attribute.PointX, Attribute.PointY);
+            set
             {
                 Attribute.PointX = value.X;
                 Attribute.PointY = value.Y;
@@ -409,7 +431,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen;
 
-        [DisplayName("模式"), JsonConverter(typeof(ReferenceLineModeReader))]
+        [DisplayName("模式")]
         public ReferenceLineMode Mode
         {
             get => _Mode;
@@ -424,6 +446,22 @@ namespace ColorVision.ImageEditor.Draw.Special
         [DisplayName("颜色"), JsonIgnore]
         public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged();  if (Pen!=null) Pen.Brush = value; } }
         private Brush _Brush = Brushes.Red;
+
+        [Browsable(false), JsonProperty("Color", NullValueHandling = NullValueHandling.Ignore)]
+        private string? SerializedColor
+        {
+            get => (Brush as SolidColorBrush)?.Color.ToString(CultureInfo.InvariantCulture);
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value)) return;
+                try
+                {
+                    if (ColorConverter.ConvertFromString(value) is Color color)
+                        Brush = new SolidColorBrush(color);
+                }
+                catch (FormatException) { }
+            }
+        }
 
         [DisplayName("线宽")]
         public double LineWidth { get => _LineWidth; set { _LineWidth = value; OnPropertyChanged(); } }
@@ -455,31 +493,50 @@ namespace ColorVision.ImageEditor.Draw.Special
         [Category("Mapping"), DisplayName("MappingH"), PropertyVisibility(nameof(IsMapping))]
         public double MappingH { get => _MappingH; set { _MappingH = value; OnPropertyChanged(); } }
         private double _MappingH = 1080.0;
-    }
 
-
-    internal sealed class ReferenceLineModeReader : StringEnumConverter
-    {
-        public override bool CanWrite => false;
-
-        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        internal void CopyOptionsFrom(ReferenceLineParam source)
         {
-            // Older camera display configurations can contain either the numeric values or their names.
-            if (reader.Value is string name &&
-                (name.Equals("CrossMask", StringComparison.OrdinalIgnoreCase) ||
-                 name.Equals("GridLines", StringComparison.OrdinalIgnoreCase)))
-            {
-                return ReferenceLineMode.SimpleCross;
-            }
-            return base.ReadJson(reader, objectType, existingValue, serializer);
+            Id = source.Id;
+            Name = source.Name;
+            IsShowLockedText = source.IsShowLockedText;
+            Mode = source.Mode;
+            Brush = source.Brush;
+            LineWidth = source.LineWidth;
+            Angle = source.Angle;
+            PointX = source.PointX;
+            PointY = source.PointY;
+            IsMapping = source.IsMapping;
+            Mapping = source.Mapping;
+            MappingW = source.MappingW;
+            MappingH = source.MappingH;
         }
+
+        internal bool HasValidGeometry() => double.IsFinite(LineWidth) && LineWidth >= 0
+            && double.IsFinite(Angle) && double.IsFinite(PointX) && double.IsFinite(PointY)
+            && double.IsFinite(Mapping) && double.IsFinite(MappingW) && double.IsFinite(MappingH)
+            && (!IsMapping || double.IsFinite(Mapping * MappingW) && double.IsFinite(Mapping * MappingH));
     }
+
 
     public class ToolReferenceLine : IEditorToggleToolBase, IDisposable
     {
+        public const string ProfileToolId = "reference-line";
+
+        private static readonly string[] OptionProperties =
+        [
+            nameof(ReferenceLineParam.Mode), nameof(ReferenceLineParam.Brush), nameof(ReferenceLineParam.LineWidth),
+            nameof(ReferenceLineParam.Angle), nameof(ReferenceLineParam.PointX), nameof(ReferenceLineParam.PointY),
+            nameof(ReferenceLineParam.IsShowLockedText), nameof(ReferenceLineParam.IsMapping),
+            nameof(ReferenceLineParam.Mapping), nameof(ReferenceLineParam.MappingW), nameof(ReferenceLineParam.MappingH)
+        ];
+
         private Zoombox ZoomboxSub => EditorContext.Zoombox;
         private DrawCanvas Image => EditorContext.DrawCanvas;
-        private Matrix MatrixBackup;
+        private Matrix _overlayMatrix;
+        private readonly ImageView? _profileView;
+        private readonly IDisposable? _settingsRegistration;
+        private int _configurationRevision;
+        private bool _disposed;
 
         public DrawEditorContext EditorContext { get; set; }
 
@@ -490,10 +547,150 @@ namespace ColorVision.ImageEditor.Draw.Special
             ToolBarLocal = ToolBarLocal.Top;
             Order = 550;
             Icon = IEditorToolFactory.TryFindResource("ConcentricCirclesDrawImg");
-
         }
-             
+
+        public ToolReferenceLine(DrawEditorContext drawContext, EditorContext editorContext) : this(drawContext)
+        {
+            _profileView = editorContext.ImageView;
+            _profileView.ConfigurationCodeChanged += ConfigurationCodeChanged;
+            _settingsRegistration = _profileView.RegisterSettingsProvider(GetSettingsEntries);
+            ReferenceLine.EditProfile = OpenOptionsEditor;
+            ReloadProfileOptions();
+        }
+
         public ReferenceLine ReferenceLine { get; set; } = new ReferenceLine();
+
+        private IEnumerable<ImageViewSettingsEntry> GetSettingsEntries()
+        {
+            string? code = _profileView!.ConfigurationCode;
+            int revision = _configurationRevision;
+            List<ImageSettingsAction> actions =
+            [new(Resources.Draw_Edit, () =>
+            {
+                EnsureCurrentConfiguration(revision);
+                OpenOptionsEditor();
+            })];
+            if (code != null)
+                actions.Add(new(SettingsText.ReferenceLineRestoreGlobal, () => RestoreGlobalOptions(revision)));
+
+            return [new ImageViewSettingsEntry(SettingsText.ReferenceLine, SettingsText.ReferenceLine, ReferenceLine.Attribute)
+            {
+                Id = ProfileToolId,
+                OwnerId = "ImageEditor",
+                CategoryId = "view.reference-line",
+                Scope = ImageSettingsScope.CurrentView,
+                Order = 12,
+                IsReadOnly = true,
+                Description = GetDestination(code),
+                PropertyNames = OptionProperties,
+                Actions = actions,
+            }];
+        }
+
+        private static string GetDestination(string? code) => code == null
+            ? SettingsText.ReferenceLineSaveGlobal
+            : string.Format(CultureInfo.CurrentCulture, SettingsText.ReferenceLineSaveProfile, code);
+
+        private void OpenOptionsEditor()
+        {
+            Window? owner = Application.Current?.GetActiveWindow();
+            var window = CreateOptionsEditor();
+            if (owner?.IsVisible == true)
+            {
+                window.Owner = owner;
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            }
+            window.ShowDialog();
+        }
+
+        internal PropertyEditorWindow CreateOptionsEditor()
+        {
+            ImageView view = _profileView ?? throw new InvalidOperationException(SettingsText.Unavailable);
+            string? code = view.ConfigurationCode;
+            int revision = _configurationRevision;
+            IConfigService? config = ConfigService.Instance;
+            var options = new ReferenceLineParam();
+            options.CopyOptionsFrom(ReferenceLine.Attribute);
+            var window = new PropertyEditorWindow(options, PropertyEditorEditMode.Transactional)
+            {
+                Title = $"{SettingsText.ReferenceLine} · {GetDestination(code)}",
+            };
+            if (code != null && window.FindName("ResetDefaultsButton") is Button resetDefaults)
+                resetDefaults.Visibility = Visibility.Collapsed;
+
+            window.Submitting += (_, args) =>
+            {
+                if (_disposed || revision != _configurationRevision || !ReferenceEquals(config, ConfigService.Instance))
+                {
+                    args.Cancel = true;
+                    args.ErrorMessage = SettingsText.ConfigChanged;
+                    return;
+                }
+
+                var draft = (ReferenceLineParam)window.EditConfig;
+                if (!draft.HasValidGeometry())
+                {
+                    args.Cancel = true;
+                    args.ErrorMessage = SettingsText.ReferenceLineInvalidGeometry;
+                    return;
+                }
+
+                if (!view.TrySaveProfileOptions(ProfileToolId, draft, out string error))
+                {
+                    args.Cancel = true;
+                    args.ErrorMessage = error;
+                    return;
+                }
+
+                ApplyProfileOptions(draft);
+            };
+            return window;
+        }
+
+        private void RestoreGlobalOptions(int revision)
+        {
+            EnsureCurrentConfiguration(revision);
+            IConfigService? config = ConfigService.Instance;
+            if (MessageBox.Show(Application.Current?.GetActiveWindow(), SettingsText.ReferenceLineRestoreGlobalConfirm,
+                    SettingsText.ReferenceLine, MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
+            EnsureCurrentConfiguration(revision);
+            if (!ReferenceEquals(config, ConfigService.Instance))
+                throw new InvalidOperationException(SettingsText.ConfigChanged);
+            if (!_profileView!.TryResetProfileOptions(ProfileToolId, out string error))
+                throw new InvalidOperationException(error);
+
+            ReloadProfileOptions();
+        }
+
+        private void EnsureCurrentConfiguration(int revision)
+        {
+            if (_disposed || revision != _configurationRevision)
+                throw new InvalidOperationException(SettingsText.ConfigChanged);
+        }
+
+        private void ConfigurationCodeChanged(object? sender, EventArgs e)
+        {
+            _configurationRevision++;
+            ReloadProfileOptions();
+        }
+
+        private void ReloadProfileOptions()
+        {
+            ReferenceLineParam options = _profileView!.ReadProfileOptions(ProfileToolId, static () => new ReferenceLineParam());
+            ApplyProfileOptions(options.HasValidGeometry() ? options : new ReferenceLineParam());
+        }
+
+        private void ApplyProfileOptions(ReferenceLineParam options)
+        {
+            ReferenceLine.ApplyOptions(options);
+            // Stop applying a drag begun under the previous effective settings.
+            ReferenceLine.IsLMouseDown = false;
+            ReferenceLine.IsRMouseDown = false;
+            ReferenceLine.PointLen = new Vector();
+            RefreshOverlay();
+        }
 
         public override bool IsChecked
         {
@@ -504,19 +701,8 @@ namespace ColorVision.ImageEditor.Draw.Special
 
                 if (value)
                 {
-                    UpdateReferenceLineView();
-                    
-                    // Only reset to image center when PointX and PointY are both 0 (first time)
-                    if (ReferenceLine.Attribute.PointX == 0 && ReferenceLine.Attribute.PointY == 0)
-                    {
-                        ReferenceLine.RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
-                        ReferenceLine.Attribute.Angle = 0;
-                    }
-                    
                     ReferenceLine.PointLen = new Vector();
-
-                    ReferenceLine.Render();
-                    DrawVisualImageControl(true);
+                    RefreshOverlay();
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
@@ -546,20 +732,25 @@ namespace ColorVision.ImageEditor.Draw.Special
             }
         }
 
-        private void ZoomboxSub_LayoutUpdated(object? sender, EventArgs e)
+        private void ZoomboxSub_LayoutUpdated(object? sender, EventArgs e) => RefreshOverlay(force: false);
+
+        private void RefreshOverlay(bool force = true)
         {
-            Matrix currentMatrix = ZoomboxSub.ContentMatrix;
-            if (MatrixBackup != currentMatrix)
-            {
-                MatrixBackup = currentMatrix;
-                UpdateReferenceLineView();
-                ReferenceLine.Render();
-            }
+            if (!IsChecked || !Image.HasImage) return;
+
+            Matrix matrix = ZoomboxSub.ContentMatrix;
+            if (!force && _overlayMatrix == matrix && ReferenceLine.ActualWidth == Image.ActualWidth
+                && ReferenceLine.ActualHeight == Image.ActualHeight && Image.ContainsVisual(ReferenceLine))
+                return;
+
+            _overlayMatrix = matrix;
+            UpdateReferenceLineView(matrix);
+            ReferenceLine.Render();
+            DrawVisualImageControl(true);
         }
 
-        private void UpdateReferenceLineView()
+        private void UpdateReferenceLineView(Matrix matrix)
         {
-            Matrix matrix = ZoomboxSub.ContentMatrix;
             double ratio = Math.Max(matrix.M11, 0.0001);
             ReferenceLine.Ratio = ratio;
             ReferenceLine.ActualWidth = Image.ActualWidth;
@@ -653,6 +844,14 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
+            if (_profileView != null)
+            {
+                _profileView.ConfigurationCodeChanged -= ConfigurationCodeChanged;
+                ReferenceLine.EditProfile = null;
+            }
+            _settingsRegistration?.Dispose();
             IsChecked = false;
             GC.SuppressFinalize(this);
         }

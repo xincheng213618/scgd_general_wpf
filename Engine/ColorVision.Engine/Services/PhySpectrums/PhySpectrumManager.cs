@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using cvColorVision;
@@ -24,8 +25,11 @@ namespace ColorVision.Engine.Services.PhySpectrums
         private readonly Dictionary<string, string> discoveries = new(StringComparer.OrdinalIgnoreCase);
         private readonly CancellationTokenSource cancellation = new();
         private readonly string? initialSerial;
-        // Keep asynchronous imports and renewals in the catalog opened by this window.
-        private readonly bool useLocalStore = SysResourceDao.Instance.UseLocal;
+        // Keep reads and writes in the catalog opened by this window.
+        private readonly MySqlConnectedEndpoint? capturedEndpoint;
+        private readonly bool useLocalStore;
+        private MySqlConnectedEndpoint? DatabaseEndpoint => useLocalStore ? null : capturedEndpoint is { IsCurrent: true }
+            ? capturedEndpoint : throw new InvalidOperationException(Properties.Resources.SpectrumCatalogSourceChanged);
         private bool disposed;
 
         public ObservableCollection<PhySpectrum> Spectrums { get; } = new();
@@ -36,12 +40,15 @@ namespace ColorVision.Engine.Services.PhySpectrums
         public RelayCommand ImportAllCommand { get; }
         public RelayCommand CopyLicenseCommand { get; }
         public RelayCommand ExportLicenseCommand { get; }
+        public RelayCommand RemoveLicenseCommand { get; }
         public RelayCommand OpenDriverToolCommand { get; }
         public RelayCommand OpenLogCommand { get; }
         public RelayCommand OpenCorrectionCommand { get; }
 
         public PhySpectrumManager(string? initialSerial = null, int comPort = 0)
         {
+            useLocalStore = SysResourceDao.Instance.UseLocal;
+            capturedEndpoint = useLocalStore ? null : WorkstationConfiguration.ConnectedEndpoint;
             this.initialSerial = initialSerial;
             ComPort = comPort;
             FilteredSpectrums = CollectionViewSource.GetDefaultView(Spectrums);
@@ -54,6 +61,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
             ImportAllCommand = new RelayCommand(_ => ImportLicenses(), _ => !IsBusy);
             CopyLicenseCommand = new RelayCommand(async _ => await RunAsync(() => { Clipboard.SetText(SelectedSpectrum!.License!.LicenseValue!); return Task.CompletedTask; }, silent: true), _ => CanExportLicense);
             ExportLicenseCommand = new RelayCommand(_ => ExportLicense(), _ => CanExportLicense);
+            RemoveLicenseCommand = new RelayCommand(async _ => await RemoveLicenseAsync(), _ => !IsBusy && SelectedSpectrum?.License != null);
             OpenDriverToolCommand = new RelayCommand(_ => DeviceSpectrum.OpenSpectrumDriverTool(), _ => !IsBusy);
             OpenLogCommand = new RelayCommand(_ => DeviceSpectrum.OpenSpectrumLog(), _ => !IsBusy);
             OpenCorrectionCommand = new RelayCommand(_ => OpenCorrection(), _ => !IsBusy && SelectedCorrectionDevice != null);
@@ -93,7 +101,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
 
         private void RefreshCommands()
         {
-            foreach (var command in new[] { ScanCommand, UpdateCommand, ImportCommand, ImportAllCommand, CopyLicenseCommand, ExportLicenseCommand, OpenDriverToolCommand, OpenLogCommand, OpenCorrectionCommand })
+            foreach (var command in new[] { ScanCommand, UpdateCommand, ImportCommand, ImportAllCommand, CopyLicenseCommand, ExportLicenseCommand, RemoveLicenseCommand, OpenDriverToolCommand, OpenLogCommand, OpenCorrectionCommand })
                 command?.RaiseCanExecuteChanged();
         }
 
@@ -141,7 +149,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
         private async Task ReloadAsync(string? selectSerial = null)
         {
             selectSerial ??= SelectedSpectrum?.SN ?? initialSerial;
-            var stored = (await Task.Run(() => PhySpectrumStore.Load(useLocalStore), cancellation.Token)).ToDictionary(s => s.SN, StringComparer.OrdinalIgnoreCase);
+            var stored = (await Task.Run(() => PhySpectrumStore.Load(useLocalStore, DatabaseEndpoint), cancellation.Token)).ToDictionary(s => s.SN, StringComparer.OrdinalIgnoreCase);
             cancellation.Token.ThrowIfCancellationRequested();
             foreach (string sn in discoveries.Keys.Concat(string.IsNullOrWhiteSpace(initialSerial) ? Array.Empty<string>() : new[] { initialSerial.Trim() }))
                 stored.TryAdd(sn, new PhySpectrum { SN = sn });
@@ -149,7 +157,8 @@ namespace ColorVision.Engine.Services.PhySpectrums
             foreach (var entry in stored.Values.OrderByDescending(s => discoveries.ContainsKey(s.SN)).ThenBy(s => s.SN, StringComparer.OrdinalIgnoreCase))
                 Spectrums.Add(new PhySpectrum { SN = entry.SN, ResourceId = entry.ResourceId, License = entry.License,
                     DiscoverySource = discoveries.GetValueOrDefault(entry.SN) ?? string.Empty });
-            SelectedSpectrum = Spectrums.FirstOrDefault(s => string.Equals(s.SN, selectSerial, StringComparison.OrdinalIgnoreCase)) ?? Spectrums.FirstOrDefault();
+            var visible = FilteredSpectrums.Cast<PhySpectrum>();
+            SelectedSpectrum = visible.FirstOrDefault(s => string.Equals(s.SN, selectSerial, StringComparison.OrdinalIgnoreCase)) ?? visible.FirstOrDefault();
             OnPropertyChanged(nameof(SummaryText));
             RefreshCommands();
         }
@@ -172,7 +181,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
                 foreach (string sn in discoveries.Keys)
                 {
                     cancellation.Token.ThrowIfCancellationRequested();
-                    PhySpectrumStore.Register(sn, useLocalStore);
+                    PhySpectrumStore.Register(sn, useLocalStore, DatabaseEndpoint);
                 }
             }, cancellation.Token);
             await ReloadAsync();
@@ -183,7 +192,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
         {
             LicenseModel license = await licenseService.DownloadAsync(sn, cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
-            await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore), cancellation.Token);
+            await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore, DatabaseEndpoint), cancellation.Token);
             Log.Info($"Spectrum license updated: {sn}");
             await ReloadAsync();
         }
@@ -197,7 +206,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
             await RunAsync(async () =>
             {
                 var license = await Task.Run(() => SpectrumLicenseUpdateService.ReadFile(dialog.FileName, sn), cancellation.Token);
-                await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore), cancellation.Token);
+                await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore, DatabaseEndpoint), cancellation.Token);
                 await ReloadAsync(sn);
                 StatusText = $"{sn} · {Properties.Resources.UpdataSucess}";
             });
@@ -212,6 +221,22 @@ namespace ColorVision.Engine.Services.PhySpectrums
             await RunAsync(() => File.WriteAllTextAsync(dialog.FileName, item.License.LicenseValue, cancellation.Token), silent: true);
         }
 
+        private async Task RemoveLicenseAsync()
+        {
+            var item = SelectedSpectrum;
+            if (IsBusy || disposed || item?.License is not { } license) return;
+            string message = string.Format(Properties.Resources.SpectrumRemoveLicenseConfirm, item.SN);
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), message, Properties.Resources.SpectrumRemoveLicense,
+                MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes) return;
+
+            await RunAsync(async () =>
+            {
+                bool removed = await Task.Run(() => PhySpectrumStore.TryRemoveLicense(license, DatabaseEndpoint), cancellation.Token);
+                await ReloadAsync(item.SN);
+                StatusText = string.Format(removed ? Properties.Resources.SpectrumRemoveLicenseSuccess : Properties.Resources.SpectrumRemoveLicenseChanged, item.SN);
+            });
+        }
+
         private async void ImportLicenses()
         {
             var dialog = new OpenFileDialog { Filter = "License (*.zip;*.lic)|*.zip;*.lic", Title = Properties.Resources.LicenseImport, Multiselect = true };
@@ -221,7 +246,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
                 // Validate every selected file before writing the first license.
                 var licenses = await Task.Run(() => SpectrumLicenseUpdateService.ReadFiles(dialog.FileNames), cancellation.Token);
                 foreach (var license in licenses)
-                    await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore), cancellation.Token);
+                    await Task.Run(() => PhySpectrumStore.SaveLicense(license, useLocalStore, DatabaseEndpoint), cancellation.Token);
                 SearchText = string.Empty;
                 await ReloadAsync(licenses.FirstOrDefault()?.MacAddress);
                 StatusText = Properties.Resources.UpdataSucess;

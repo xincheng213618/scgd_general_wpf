@@ -257,24 +257,12 @@ namespace ColorVision.Engine.FlowProcessing
                 _runningNodeNames.Clear();
                 ResetNodeTitleProgress();
                 string msg = $"{completedFlowName} {flowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{flowControlData.Params}{Environment.NewLine}{_stopwatch.ElapsedMilliseconds}ms";
-                CVCommonNode? failedNode;
                 lock (_executionStateSync)
                 {
                     _completedErrorNodeKey = completedErrorNodeKey;
-                    _completedSummaryMessage = msg;
-                    failedNode = _lastFailedNode;
+                    _hasCompletedSummary = true;
                 }
                 View.ShowExecutionSummary(msg);
-                if (failedNode != null
-                    && FlowExecutionNavigator.IsExecutionNodeNameMatch(failedNode, completedErrorNodeKey))
-                {
-                    _ = ShowExecutionSummaryAfterNodeWritesAsync(
-                        failedNode,
-                        null,
-                        completedErrorNodeKey,
-                        msg,
-                        completedGeneration);
-                }
                 if (!View.IsStandalone)
                     FlowEngineManager.BatchProgress = 100;
                 log.InfoFormat("FlowExecutionCompleted SerialNumber={0} FlowName={1} BatchId={2} Status={3} ElapsedMs={4} ErrorNode={5} Message={6}",
@@ -505,52 +493,9 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly AsyncOperationDrain _pendingNodeExecutionDrain = new();
         private CVCommonNode? _lastFailedNode;
         private string? _completedErrorNodeKey;
-        private string? _completedSummaryMessage;
+        private bool _hasCompletedSummary;
         private TaskCompletionSource<bool>? _terminalNodeEndCompletion;
         private long _executionGeneration;
-
-        private async Task ShowExecutionSummaryAfterNodeWritesAsync(
-            CVCommonNode node,
-            Task? pendingWrite,
-            string? completedErrorNodeKey,
-            string? completedSummaryMessage,
-            long generation)
-        {
-            if (pendingWrite != null)
-            {
-                try
-                {
-                    await pendingWrite;
-                }
-                catch (Exception ex)
-                {
-                    log.Warn("等待流程节点记录写入失败。", ex);
-                }
-            }
-
-            bool flushed = await FlushNodeTelemetryAsync();
-            if (!flushed)
-                log.Warn("等待流程节点记录落库超时，详情窗口可手动刷新。");
-
-            await View.Dispatcher.InvokeAsync(() =>
-            {
-                bool isCurrent;
-                lock (_executionStateSync)
-                {
-                    isCurrent = generation == Volatile.Read(ref _executionGeneration)
-                        && string.Equals(_completedSummaryMessage, completedSummaryMessage, StringComparison.Ordinal)
-                        && FlowExecutionNavigator.IsExecutionNodeNameMatch(node, _completedErrorNodeKey)
-                        && FlowExecutionNavigator.IsExecutionNodeNameMatch(node, completedErrorNodeKey);
-                }
-                if (isCurrent)
-                {
-                    View.ShowExecutionSummary(
-                        completedSummaryMessage ?? View.logTextBox.Text,
-                        completedErrorNodeKey,
-                        node);
-                }
-            });
-        }
 
         private static Task<bool> FlushNodeTelemetryAsync()
         {
@@ -612,7 +557,7 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 _lastFailedNode = null;
                 _completedErrorNodeKey = null;
-                _completedSummaryMessage = null;
+                _hasCompletedSummary = false;
                 _terminalNodeEndCompletion?.TrySetResult(true);
                 _terminalNodeEndCompletion = null;
             }
@@ -839,29 +784,11 @@ namespace ColorVision.Engine.FlowProcessing
                 if (e?.RecvStatusCode != 0
                     && e?.FailureKind != FlowFailureKind.Canceled)
                 {
-                    string? completedErrorNodeKey;
-                    string? completedSummaryMessage;
-                    bool matchesCompletedFailure;
                     lock (_executionStateSync)
                     {
                         _lastFailedNode = algorithmNode;
-                        completedErrorNodeKey = _completedErrorNodeKey;
-                        completedSummaryMessage = _completedSummaryMessage;
-                        matchesCompletedFailure = FlowExecutionNavigator.IsExecutionNodeNameMatch(
-                            algorithmNode,
-                            completedErrorNodeKey);
-                        if (matchesCompletedFailure)
+                        if (FlowExecutionNavigator.IsExecutionNodeNameMatch(algorithmNode, _completedErrorNodeKey))
                             _terminalNodeEndCompletion?.TrySetResult(true);
-                    }
-
-                    if (matchesCompletedFailure)
-                    {
-                        _ = ShowExecutionSummaryAfterNodeWritesAsync(
-                            algorithmNode,
-                            completionWrite,
-                            completedErrorNodeKey,
-                            completedSummaryMessage,
-                            generation);
                     }
                 }
                 else if (e?.FailureKind == FlowFailureKind.Canceled)
@@ -1224,27 +1151,6 @@ namespace ColorVision.Engine.FlowProcessing
             }
             FlowParam selectedFlowParam =
                 executionSnapshot.CreateFlowParam();
-            bool requiresServices = View.STNodeEditorMain.Nodes
-                .OfType<CVBaseServerNode>()
-                .Any(node => node.RequiresRemoteService);
-            if (requiresServices && !MqttRCService.GetInstance().IsConnect)
-            {
-                if (reportStartupFailures)
-                    throw new InvalidOperationException(ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
-                MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
-                return default;
-            }
-
-            if (requiresServices && MqttRCService.GetInstance().ServiceTokens.Count == 0)
-            {
-                MqttRCService.GetInstance().QueryServices();
-                View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                if (reportStartupFailures)
-                    throw new InvalidOperationException(ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                return default;
-            }
-
             RefreshStartNodeSelection(SelectedStartNodeName);
             string? startNodeName = SelectedStartNodeName;
             if (string.IsNullOrWhiteSpace(startNodeName))
@@ -1253,6 +1159,27 @@ namespace ColorVision.Engine.FlowProcessing
                     throw new InvalidOperationException(ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed);
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
                 return default;
+            }
+
+            if (View.FlowEngineControl.FindRemoteServiceNode(startNodeName) is { } remote)
+            {
+                var registry = MqttRCService.GetInstance();
+                string? failure = null;
+                if (!registry.IsConnect)
+                    failure = ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected;
+                else if (registry.ServiceTokens.Count == 0)
+                {
+                    registry.QueryServices();
+                    failure = ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry;
+                }
+                if (failure != null)
+                {
+                    string message = $"{failure} {FlowControl.DescribeRemoteDependency(startNodeName, remote)}";
+                    View.ShowExecutionSummary(message);
+                    if (reportStartupFailures) throw new InvalidOperationException(message);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), message);
+                    return default;
+                }
             }
 
             string sn = ColorVision.Common.Utilities.Tool.SanitizeFileName(requestedSerialNumber ?? CreateFlowSerialNumber());
@@ -1596,8 +1523,8 @@ namespace ColorVision.Engine.FlowProcessing
             lock (_executionStateSync)
                 hasCompletedPresentation = hasActiveLifecycle
                     && _runLifecycle.IsActiveRun(CurrentBatch?.Code)
-                    && _completedSummaryMessage != null;
-            // A stop request during post-processing must keep the engine result and its pending failure details.
+                    && _hasCompletedSummary;
+            // A stop request during post-processing must preserve the engine result and its diagnostics.
             if (!hasCompletedPresentation)
                 InvalidateExecutionPresentation();
             ResetNodeTitleProgress();

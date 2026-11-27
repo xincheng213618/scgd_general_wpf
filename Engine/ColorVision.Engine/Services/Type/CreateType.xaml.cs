@@ -17,6 +17,8 @@ namespace ColorVision.Engine.Services.Types
     {
         public TypeService TypeService { get; set; }
         public TerminalService? CreatedTerminal { get; private set; }
+        private readonly SysResourceDao resourceDao = SysResourceDao.Instance;
+        private readonly MySqlConnectedEndpoint? endpoint = WorkstationConfiguration.ConnectedEndpoint;
         public CreateType(TypeService typeService)
         {
             TypeService = typeService;
@@ -61,13 +63,12 @@ namespace ColorVision.Engine.Services.Types
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
             AccessControl.Demand("service.create", PermissionMode.Administrator, TypeService.CreationResourceId);
-            var resourceDao = SysResourceDao.Instance;
             bool useLocal = resourceDao.UseLocal;
-            var endpoint = useLocal ? null : MySqlControl.GetInstance().ConnectedEndpoint;
             int pkId;
             try
             {
-                if (useLocal) pkId = resourceDao.SaveAndReturnId(sysResource, local: true);
+                if (!ReferenceEquals(resourceDao, SysResourceDao.Instance)) pkId = 0;
+                else if (useLocal) pkId = resourceDao.SaveAndReturnId(sysResource, local: true);
                 else if (endpoint is { IsCurrent: true })
                 {
                     using var db = endpoint.CreateDbClient();

@@ -50,6 +50,25 @@ public sealed class CalibrationBinaryDocumentTests : IDisposable
     }
 
     [Fact]
+    public void DsnuExtremaIncludeTheTailAfterFullVectors()
+    {
+        const int count = 69;
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream);
+        writer.Write(1u);
+        writer.Write((uint)count);
+        for (int index = 0; index < count - 1; index++)
+            writer.Write((ushort)(500 - index));
+        writer.Write(ushort.MaxValue);
+
+        CalibrationBinaryDocument map = CalibrationBinaryDocument.Parse(ServiceTypes.DSNU, stream.ToArray());
+
+        Assert.Equal(count, map.ValueCount);
+        Assert.Equal(433, map.Minimum);
+        Assert.Equal(ushort.MaxValue, map.Maximum);
+    }
+
+    [Fact]
     public void DefectCoordinateEditsPreserveUnknownTrailingBytes()
     {
         using var stream = new MemoryStream(); using var writer = new BinaryWriter(stream);
@@ -70,7 +89,9 @@ public sealed class CalibrationBinaryDocumentTests : IDisposable
         Assert.Throws<FormatException>(() => CalibrationBinaryDocument.Parse(ServiceTypes.DSNU, new byte[20]));
         using var stream = new MemoryStream(); using var writer = new BinaryWriter(stream);
         writer.Write(4u); foreach (float value in new[] { 1f, float.PositiveInfinity, 2, 3 }) writer.Write(value);
-        Assert.Throws<FormatException>(() => CalibrationBinaryDocument.Parse(ServiceTypes.LineArity, stream.ToArray()));
+        FormatException error = Assert.Throws<FormatException>(() =>
+            CalibrationBinaryDocument.Parse(ServiceTypes.LineArity, stream.ToArray()));
+        Assert.Equal("第 1 项必须是有限数值。", error.Message);
     }
 
     [Fact]

@@ -68,7 +68,8 @@ public class CVNodeContainer : IDisposable
 
 	public void LoadCanvas(byte[] byData)
 	{
-		using MemoryStream s = new MemoryStream(byData);
+		ArgumentNullException.ThrowIfNull(byData);
+		using MemoryStream s = new MemoryStream(byData, 0, byData.Length, writable: false, publiclyVisible: true);
 		LoadCanvas(s);
 	}
 

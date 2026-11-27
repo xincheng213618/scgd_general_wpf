@@ -130,7 +130,6 @@ namespace ColorVision.Engine.FlowProcessing
         private string? _standaloneFileContentHash;
         private string _standaloneDocumentName = string.Empty;
         private bool _saveStandaloneFlowParam;
-        private CVCommonNode? _executionDetailsNode;
         private string? _standaloneStartNodeName;
         private bool _runtimeSelectionInitialized;
         private string? _documentLoadedContentHash;
@@ -1238,26 +1237,7 @@ namespace ColorVision.Engine.FlowProcessing
             _executionSession.DetachNodeEvents(previousNodes);
         }
 
-        public void ShowExecutionSummary(string message, string? executionNodeName = null, CVCommonNode? preferredNode = null)
-        {
-            logTextBox.Text = message;
-            _executionDetailsNode = FlowExecutionNavigator.ResolveExecutionNode(
-                STNodeEditorMain,
-                executionNodeName,
-                preferredNode);
-            ErrorNodeDetailsButton.Visibility = _executionDetailsNode == null
-                ? Visibility.Collapsed
-                : Visibility.Visible;
-            ErrorNodeDetailsButton.ToolTip = _executionDetailsNode == null
-                ? null
-                : $"{Properties.Resources.Flow_NodeLabel}{_executionDetailsNode.OnGetDrawTitle()}";
-        }
-
-        private void ErrorNodeDetailsButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_executionDetailsNode != null)
-                _executionNavigator.OpenNodeExecutionDetails(_executionDetailsNode, focusNode: true);
-        }
+        public void ShowExecutionSummary(string message) => logTextBox.Text = message;
 
         private void Button_Click_NodeAnalysis(object sender, RoutedEventArgs e)
         {

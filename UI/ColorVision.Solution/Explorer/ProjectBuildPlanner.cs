@@ -60,6 +60,7 @@ namespace ColorVision.Solution.Explorer
             var orderedProjects = new List<ProjectDefinition>();
             var diagnostics = new List<ProjectBuildDiagnostic>();
             var diagnosticKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, ProjectDefinition?>? projectsByPath = null;
 
             foreach (ProjectDefinition project in requestedProjects)
                 Visit(project);
@@ -80,11 +81,9 @@ namespace ColorVision.Solution.Explorer
                 stack.Add(project);
                 foreach (string dependencyReference in project.Dependencies ?? Array.Empty<string>())
                 {
-                    List<ProjectDefinition> matches = ResolveDependency(
-                        availableProjects,
-                        project,
-                        dependencyReference);
-                    if (matches.Count == 0)
+                    string? referencePath = ResolveDependencyPath(project, dependencyReference);
+                    if (referencePath == null ||
+                        !(projectsByPath ??= IndexProjectsByPath(availableProjects)).TryGetValue(referencePath, out ProjectDefinition? match))
                     {
                         AddDiagnostic(new ProjectBuildDiagnostic(
                             ProjectBuildDiagnosticKind.MissingDependency,
@@ -93,7 +92,7 @@ namespace ColorVision.Solution.Explorer
                             $"项目“{project.Name}”引用了不存在或未加入解决方案的依赖“{dependencyReference}”。"));
                         continue;
                     }
-                    if (matches.Count > 1)
+                    if (match == null)
                     {
                         AddDiagnostic(new ProjectBuildDiagnostic(
                             ProjectBuildDiagnosticKind.AmbiguousDependency,
@@ -103,17 +102,11 @@ namespace ColorVision.Solution.Explorer
                         continue;
                     }
 
-                    Visit(matches[0]);
+                    Visit(match);
                 }
                 stack.RemoveAt(stack.Count - 1);
                 states[projectIdentity] = VisitState.Visited;
-                if (!orderedProjects.Any(item => string.Equals(
-                    GetProjectIdentity(item),
-                    projectIdentity,
-                    StringComparison.OrdinalIgnoreCase)))
-                {
-                    orderedProjects.Add(project);
-                }
+                orderedProjects.Add(project);
             }
 
             void AddCycleDiagnostic(ProjectDefinition repeatedProject)
@@ -142,19 +135,37 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
-        private static List<ProjectDefinition> ResolveDependency(
-            IReadOnlyList<ProjectDefinition> projects,
-            ProjectDefinition owner,
-            string dependencyReference)
+        private static Dictionary<string, ProjectDefinition?> IndexProjectsByPath(IReadOnlyList<ProjectDefinition> projects)
+        {
+            var index = new Dictionary<string, ProjectDefinition?>(StringComparer.OrdinalIgnoreCase);
+            foreach (ProjectDefinition project in projects)
+            {
+                AddPath(project.ProjectFile.FullName, project);
+                AddPath(project.ProjectDirectory.FullName, project);
+            }
+            return index;
+
+            void AddPath(string path, ProjectDefinition project)
+            {
+                // A null entry marks a path shared by different projects.
+                if (!index.TryAdd(path, project) && index[path] is { } existing && !ReferenceEquals(existing, project))
+                    index[path] = null;
+            }
+        }
+
+        private static string? ResolveDependencyPath(ProjectDefinition owner, string dependencyReference)
         {
             string baseDirectory = owner.ProjectFile.Directory?.FullName
                 ?? owner.ProjectDirectory.FullName;
-            return projects
-                .Where(project => SolutionExplorer.ProjectReferenceMatches(
-                    baseDirectory,
-                    dependencyReference,
-                    project))
-                .ToList();
+            if (string.IsNullOrWhiteSpace(dependencyReference)) return null;
+            try
+            {
+                return SolutionExplorer.GetFullProjectReferencePath(baseDirectory, dependencyReference);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return null;
+            }
         }
 
         private static string GetProjectIdentity(ProjectDefinition project)

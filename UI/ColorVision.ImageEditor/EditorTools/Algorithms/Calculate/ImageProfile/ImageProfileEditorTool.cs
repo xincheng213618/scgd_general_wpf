@@ -82,6 +82,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
             ImageProfileSourceOption[] sources = sourceChoices?.ToArray() ?? [];
             AlgorithmInput? input = null;
             AlgorithmImageBuffer? displaySlice = null;
+            ImageProfileAlgorithmProvider.DisplaySampleSnapshot? displaySamples = null;
             Int32Rect? sliceBounds = null;
             ImageSelectionScope scope;
             long sourceRevision;
@@ -98,14 +99,24 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                 if (measurementSource == null)
                 {
                     if (ReferenceEquals(image.AlgorithmRuntime, ImageAlgorithmPlatform.Runtime))
+                    {
                         sliceBounds = ImageProfileAlgorithmProvider.GetDisplaySlice(roi, parameters, scope);
-                    if (sliceBounds is { } bounds)
+                        if (image.CaptureSourceState() is { } state && state.Source is BitmapSource bitmap
+                            && state.Revision == scope.SourceRevision && ReferenceEquals(image.ViewBitmapSource, bitmap))
+                        {
+                            displaySamples = ImageProfileAlgorithmProvider.TryCaptureDisplaySamples(bitmap, roi, parameters, scope, sliceBounds);
+                            if (displaySamples != null && (!ReferenceEquals(image.ViewBitmapSource, bitmap)
+                                || !TransientRoiSelectionSession.IsSourceScopeCurrent(image, scope)))
+                                throw new InvalidOperationException("The image changed. Select the profile again.");
+                        }
+                    }
+                    if (displaySamples == null && sliceBounds is { } bounds)
                     {
                         (displaySlice, long revision) = ImageAlgorithmInputFactory.AcquireCurrentFrame(image, bounds);
                         if (revision != scope.SourceRevision || !TransientRoiSelectionSession.IsSourceScopeCurrent(image, scope))
                             throw new InvalidOperationException("The image changed. Select the profile again.");
                     }
-                    else input = ImageAlgorithmInputFactory.Acquire(image, scope);
+                    else if (displaySamples == null) input = ImageAlgorithmInputFactory.Acquire(image, scope);
                 }
                 sourceRevision = scope.SourceRevision;
             }
@@ -154,6 +165,13 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.ImageProfile
                         using IImageProfileMeasurementSource source = measurementSource.Open(token);
                         return ValueTask.FromResult(provider.ExecuteMeasurement(invocation, parameters, source, scope, token, progress));
                     }, cancellation.Token);
+                }
+                else if (displaySamples != null)
+                {
+                    ImageProfileAlgorithmProvider provider = new();
+                    result = await image.AlgorithmRuntime.Scheduler.ScheduleAsync(provider.Metadata, token =>
+                        ValueTask.FromResult(provider.ExecuteDisplaySamples(invocation, parameters, displaySamples, scope, token, progress)),
+                        cancellation.Token);
                 }
                 else if (sliceLease != null && sliceBounds is { } bounds)
                 {

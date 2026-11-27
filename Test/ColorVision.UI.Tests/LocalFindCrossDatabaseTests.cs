@@ -38,7 +38,7 @@ public sealed class LocalFindCrossDatabaseTests
                         DbType = DbType.Sqlite,
                         InitKeyType = InitKeyType.Attribute,
                         IsAutoCloseConnection = true,
-                    }));
+                    }), new("TEST", 3306, file));
                 var first = Endpoint("a.db");
                 var second = Endpoint("b.db");
                 current = first;
@@ -62,7 +62,7 @@ public sealed class LocalFindCrossDatabaseTests
                 if (detailWriteFailed)
                     a.Ado.ExecuteCommand("CREATE TRIGGER reject_detail BEFORE INSERT ON t_scgd_algorithm_result_detail_common BEGIN SELECT RAISE(ABORT, 'synthetic detail failure'); END");
 
-                var services = new TestCrossServices(detectionFailed);
+                var services = new TestCrossServices(detectionFailed, LocalPoiSearchRegionTests.ServiceTemplates(directory.FullName, first));
                 var node = new LocalFindCrossNode(services) { SearchRegionPoiTemplate = "Search", ResultDirectory = resultsDirectory };
                 List<ResultMessage> notifications = [];
                 using var subscription = ResultMessageBus.Default.Subscribe(message =>
@@ -162,13 +162,13 @@ public sealed class LocalFindCrossDatabaseTests
         return db.Insertable(new MeasureResultImgModel { FileUrl = sourceFile }).ExecuteReturnIdentity();
     }
 
-    private sealed class TestCrossServices(bool detectionFailed) : ILocalFindCrossNodeServices
+    private sealed class TestCrossServices(bool detectionFailed, PoiTemplateStorage storage) : ILocalFindCrossNodeServices
     {
         public string? LoadedPath { get; private set; }
         public RoiRect SearchRegion { get; private set; }
 
         public Int32Rect LoadSearchRegionTemplate(string templateName, MySqlConnectedEndpoint? endpoint) =>
-            LocalFindCrossNodeServices.Instance.LoadSearchRegionTemplate(templateName, endpoint);
+            new LocalFindCrossNodeServices(storage).LoadSearchRegionTemplate(templateName, endpoint);
 
         public MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint) =>
             LocalFindCrossNodeServices.Instance.GetImageResult(masterId, endpoint);

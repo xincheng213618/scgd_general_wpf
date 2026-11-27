@@ -112,7 +112,8 @@ public sealed class LuxCustomerCsvExporterTests
                 new { name = "custom-inner", childRects = new[]
                 {
                     new { mtfValue = 0.61 }, new { mtfValue = 0.52 }, new { mtfValue = 0.63 }, new { mtfValue = 0.54 }
-                } }
+                } },
+                new { name = "custom-inner", childRects = new[] { new { mtfValue = 0.99 }, new { mtfValue = 0.98 } } }
             } } }
         });
         if (!is058)

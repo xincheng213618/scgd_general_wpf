@@ -19,8 +19,8 @@ internal static class LocalSpectrumLicense
         int resourceId = owner.SysResourceModel.Id;
         bool skipValidation = ExperimentalFeaturesConfig.Instance.IsEnabled;
         MySqlConnectedEndpoint? endpoint = resourceId > 0 ? owner.ResultDatabaseEndpoint
-            : resourceId is 0 or -1 ? MySqlControl.GetInstance().ConnectedEndpoint : null;
-        if (resourceId > 0 || endpoint?.IsCurrent == true)
+            : resourceId is 0 or -1 ? WorkstationConfiguration.ConnectedEndpoint : null;
+        if (resourceId > 0 || ((resourceId is 0 or -1) && !WorkstationConfiguration.UseLocal))
         {
             bool OwnsEndpoint() => ownsConfiguration() && endpoint?.IsCurrent == true
                 && (resourceId <= 0 || ReferenceEquals(owner.ResultDatabaseEndpoint, endpoint));

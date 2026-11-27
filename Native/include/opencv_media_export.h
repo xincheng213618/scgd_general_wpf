@@ -314,6 +314,10 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadFileW(
     void* context,
     std::int32_t calibrationType,
     const wchar_t* filePath);
+// Reports the common RAW input requirement of the loaded stages. On success,
+// zero accepts either sample depth; 8 and 16 require that depth. Incompatible
+// or unsupported declarations fail without writing the output.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetInputDepthV1(void* context, std::uint32_t* bitsPerChannel);
 // DSNU and Uniformity only. On success, sha256 receives the 32-byte digest
 // of the exact file contents used by the newly attached calibration item.
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadMapWithSha256V1W(
@@ -364,6 +368,56 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecuteToV1(
     float* cieData,
     std::uint64_t cieFloatCount,
     const MCalibrationExecutionOptionsV1* options);
+
+enum MCalibrationRawLayout : std::uint32_t {
+    M_CALIBRATION_MONO = 0,
+    M_CALIBRATION_BGR_INTERLEAVED = 1,
+    M_CALIBRATION_RGB_PLANAR = 2,
+};
+
+enum MCalibrationOutputMode : std::uint32_t {
+    M_CALIBRATION_RAW_ONLY = 0,
+    M_CALIBRATION_FULL_CIE = 1,
+    M_CALIBRATION_DEFERRED_COLOR = 2,
+};
+
+enum MCalibrationRawFlip : std::uint32_t {
+    M_CALIBRATION_FLIP_NONE = 0,
+    M_CALIBRATION_FLIP_VERTICAL = 1,
+    M_CALIBRATION_FLIP_HORIZONTAL = 2,
+    M_CALIBRATION_FLIP_BOTH = 3,
+};
+
+struct MCalibrationFrameRequestV2 {
+    std::uint32_t structSize;
+    std::uint32_t width;
+    std::uint32_t height;
+    std::uint32_t bitsPerChannel;
+    MCalibrationRawLayout rawLayout;
+    MCalibrationOutputMode outputMode;
+    MCalibrationRawFlip rawFlip;
+    std::uint32_t sensorRoi[4]; // x, y, width, height
+    std::uint32_t opticalBlack[4]; // left, right, top, bottom
+    float exposure[3]; // X, Y, Z, in the calibration file's exposure units
+};
+static_assert(sizeof(MCalibrationFrameRequestV2) == 72, "Calibration frame request ABI layout changed");
+
+// Runs the prepared stages against an exclusively owned, mutable RAW frame.
+// RawOnly requires a basic-only plan. FullCie writes planar XYZ (or a single Y
+// plane for luminance) and DeferredColor leaves it unmaterialized. Both color
+// modes validate the input layout and return the effective transform on success.
+// Corrected RAW retains the requested sample layout after basic stages and mirroring.
+// The CIE buffer is exclusive to FullCie, which does not support RAW mirroring.
+// RAW, CIE and transform storage must be disjoint. Pixel buffers may contain
+// partial output on execution failure.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecuteFrameV2(
+    void* context,
+    const MCalibrationFrameRequestV2* request,
+    std::uint8_t* rawData,
+    std::uint64_t rawByteLength,
+    float* cieData,
+    std::uint64_t cieByteLength,
+    MRawColorTransformV1* transform);
 // Returns the required UTF-8 byte count including the null terminator. If the
 // supplied buffer is large enough it is populated as well.
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetLastError(
@@ -371,6 +425,9 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetLastError(
     char* buffer,
     std::uint32_t bufferLength);
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemCount(void* context);
+// Reports the estimated parsed bytes of the file generation leased by this item.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemEstimatedBytesV1(
+    void* context, std::uint32_t itemIndex, std::uint64_t* estimatedBytes);
 
 // Process-wide, per-file parsed calibration cache. The default budget is 4
 // GiB and may be overridden before first use with the
@@ -379,6 +436,10 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemCount(void* conte
 // order, hit counts, or generation.
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheGetStatsV1(
     MCalibrationCacheStatsV1* stats);
+// Sets the process-wide retention budget in bytes and trims idle LRU entries now.
+// Live contexts keep their assets. Zero drops retained references and disables retention.
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheSetBudgetV1(
+    std::uint64_t budgetBytes);
 // Entries are ordered by most-recent access. pathCapacity is measured in
 // UTF-16 wchar_t code units. A null/undersized path buffer is not an error: no
 // partial path is copied and pathCharacterCount reports the required size.

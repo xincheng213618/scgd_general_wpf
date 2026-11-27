@@ -378,6 +378,53 @@ public sealed class ImageDisplayEffectsTests
         }
     }
 
+    [Theory]
+    [InlineData(8, 4, 2)]
+    [InlineData(16, 3, 0)]
+    public async Task ContinuousPlainChannelKeepsSampleBytesAndTheFrozenSource(int depth, int channels, int channel)
+    {
+        const int width = 37, height = 3;
+        int sampleBytes = depth / 8;
+        int sourceStride = width * channels * sampleBytes;
+        int channelStride = width * sampleBytes;
+        byte[] pixels = new byte[sourceStride * height];
+        new Random(926).NextBytes(pixels);
+        byte[] expected = new byte[channelStride * height];
+        for (int pixel = 0; pixel < width * height; pixel++)
+            Array.Copy(pixels, (pixel * channels + channel) * sampleBytes, expected, pixel * sampleBytes, sampleBytes);
+
+        EffectsFixture fixture = WpfTestHost.Invoke(() => new EffectsFixture { SelectedChannel = channel });
+        try
+        {
+            var (source, completion) = WpfTestHost.Invoke(() =>
+            {
+                PixelFormat format = depth == 8 ? PixelFormats.Pbgra32 : PixelFormats.Rgb48;
+                WriteableBitmap source = new(width, height, 144, 120, format, null);
+                source.WritePixels(new Int32Rect(0, 0, width, height), pixels, sourceStride, 0);
+                source.Freeze();
+                fixture.Source = source;
+                fixture.Context.StreamPresentation.Submit(source, Guid.NewGuid());
+                return (source, fixture.Context.StreamPresentation.Completion);
+            });
+            await completion.WaitAsync(TimeSpan.FromSeconds(10));
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Same(source, fixture.Context.ViewBitmapSource);
+                var display = Assert.IsType<WriteableBitmap>(fixture.Context.FunctionImage);
+                Assert.True(display.IsFrozen);
+                Assert.Equal(depth == 8 ? PixelFormats.Gray8 : PixelFormats.Gray16, display.Format);
+                Assert.Equal((96d, 96d), (display.DpiX, display.DpiY));
+                byte[] actual = new byte[expected.Length];
+                display.CopyPixels(actual, channelStride, 0);
+                Assert.Equal(expected, actual);
+                byte[] original = new byte[pixels.Length];
+                source.CopyPixels(original, sourceStride, 0);
+                Assert.Equal(pixels, original);
+            });
+        }
+        finally { WpfTestHost.Invoke(fixture.Dispose); }
+    }
+
     [Fact]
     public async Task ContinuousPlainChannelRejectsInFlightPseudoColorAndPublishesOnlyLatestFrame()
     {

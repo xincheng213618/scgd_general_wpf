@@ -68,6 +68,10 @@ public sealed class SqliteGzipTextMigrationTests
         Assert.Equal(text, GzipTextPayloadCodec.Decode(payload.CompressedBytes, payload.Utf8Length, utf8Length));
         Assert.Throws<InvalidDataException>(() =>
             GzipTextPayloadCodec.Decode(payload.CompressedBytes, null, utf8Length - 1));
+        Assert.Throws<InvalidDataException>(() =>
+            GzipTextPayloadCodec.Decode(payload.CompressedBytes, utf8Length - 1));
+        Assert.Throws<InvalidDataException>(() =>
+            GzipTextPayloadCodec.Decode(payload.CompressedBytes, utf8Length - 1, utf8Length - 1));
         Assert.Throws<EncoderFallbackException>(() => GzipTextPayloadCodec.Encode(text + "\uD800"));
     }
 

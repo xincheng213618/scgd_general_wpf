@@ -301,7 +301,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Calibration
             if (PoiTemplateCombo.SelectedItem is not TemplateModel<PoiParam> selected) { BeginDrawMode(); return; }
             poiEditor!.ClearPoi();
             PoiParam source = selected.Value;
-            var points = source.Id > 0 ? await PoiParam.LoadPoiDetailsFromDBAsync(source.Id) : source.PoiPoints.ToList();
+            var points = source.Id > 0 ? await Task.Run(() => (source.Storage ?? PoiTemplateStorage.Default).ReadPoints(source.Id)) : source.PoiPoints.ToList();
             if (closed) return;
             PoiParam snapshot = new() { Width = source.Width, Height = source.Height };
             if (points.Count > 0) snapshot.PoiPoints.Add(points[0]);

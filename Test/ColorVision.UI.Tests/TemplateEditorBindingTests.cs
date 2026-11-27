@@ -87,6 +87,65 @@ public sealed class TemplateEditorBindingTests
     }
 
     [Fact]
+    public void JsonTemplateSearchReusesIdenticalMatchesAndRefreshesAfterReload()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var editor = new JsonPropertyEditorControl();
+            var search = Assert.IsType<TextBox>(editor.FindName("SearchTextBox"));
+            var panel = Assert.IsAssignableFrom<Panel>(editor.FindName("PropertyPanel"));
+            editor.SetJson("""{"Acquisition": {"Gain": 1, "Delay": 2}}""");
+
+            search.Text = "ga";
+            var gainGroup = VisibleGroup();
+            gainGroup.IsExpanded = false;
+            search.Text = "gain";
+            Assert.Same(gainGroup, VisibleGroup());
+            Assert.True(gainGroup.IsExpanded);
+
+            editor.SetJson("""{"Acquisition": {"Gain": 3, "Delay": 2}}""");
+            var reloadedGroup = VisibleGroup();
+            Assert.NotSame(gainGroup, reloadedGroup);
+            Assert.Equal(3, (int?)JObject.Parse(editor.GetJson()!).SelectToken("Acquisition.Gain"));
+
+            search.Text = "delay";
+            Assert.NotSame(reloadedGroup, VisibleGroup());
+
+            Expander VisibleGroup() => Assert.Single(panel.Children.OfType<Expander>());
+        });
+    }
+
+    [Fact]
+    public void JsonTemplateSearchRebuildsTheEditorAfterTheValueShapeChanges()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var editor = new JsonPropertyEditorControl();
+            var search = Assert.IsType<TextBox>(editor.FindName("SearchTextBox"));
+            var panel = Assert.IsAssignableFrom<Panel>(editor.FindName("PropertyPanel"));
+            editor.SetJson("""{"Value": null, "Delay": 2}""");
+
+            search.Text = "val";
+            var originalField = ValueField();
+            originalField.Text = "[1, 2]";
+            Assert.False(editor.HasValidationErrors);
+
+            search.Text = "value";
+            var arrayField = ValueField();
+            Assert.NotSame(originalField, arrayField);
+            arrayField.Text = "3";
+            Assert.True(editor.HasValidationErrors);
+            Assert.IsType<JArray>(JObject.Parse(editor.GetJson()!)["Value"]);
+
+            TextBox ValueField()
+            {
+                var group = Assert.Single(panel.Children.OfType<Expander>());
+                return Assert.Single(Descendants(Assert.IsAssignableFrom<Panel>(group.Content)).OfType<TextBox>());
+            }
+        });
+    }
+
+    [Fact]
     public void FilteredBatchActionsUseSelectedRowsInsteadOfVisibleIndicesOrSharedMarks()
     {
         WpfTestHost.Invoke(() =>

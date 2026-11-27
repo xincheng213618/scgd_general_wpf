@@ -11,7 +11,11 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Media
 {
@@ -187,46 +191,66 @@ namespace ColorVision.Engine.Media
             double zFrom2 = config.I / exposure[2] / gainZ;
 
             byte[] xyzData = GC.AllocateUninitializedArray<byte>(checked(pixelCount * 3 * sizeof(float)));
-            Span<float> xyzPlanes = MemoryMarshal.Cast<byte, float>(xyzData.AsSpan());
-            int yOffset = pixelCount;
-            int zOffset = checked(pixelCount * 2);
-
-            if (rawFile.Bpp == 8)
-            {
-                for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++)
-                {
-                    int sourceIndex = pixelIndex * 3;
-                    double source0 = rawFile.Data[sourceIndex + 2];
-                    double source1 = rawFile.Data[sourceIndex + 1];
-                    double source2 = rawFile.Data[sourceIndex + 0];
-
-                    xyzPlanes[pixelIndex] = ToFiniteSingle(xFrom0 * source0 + xFrom1 * source1 + xFrom2 * source2);
-                    xyzPlanes[yOffset + pixelIndex] = ToFiniteSingle(yFrom0 * source0 + yFrom1 * source1 + yFrom2 * source2);
-                    xyzPlanes[zOffset + pixelIndex] = ToFiniteSingle(zFrom0 * source0 + zFrom1 * source1 + zFrom2 * source2);
-                }
-            }
-            else
-            {
-                ReadOnlySpan<ushort> source = MemoryMarshal.Cast<byte, ushort>(rawFile.Data.AsSpan());
-
-                for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++)
-                {
-                    int sourceIndex = pixelIndex * 3;
-                    double source0 = source[sourceIndex + 2];
-                    double source1 = source[sourceIndex + 1];
-                    double source2 = source[sourceIndex + 0];
-
-                    xyzPlanes[pixelIndex] = ToFiniteSingle(xFrom0 * source0 + xFrom1 * source1 + xFrom2 * source2);
-                    xyzPlanes[yOffset + pixelIndex] = ToFiniteSingle(yFrom0 * source0 + yFrom1 * source1 + yFrom2 * source2);
-                    xyzPlanes[zOffset + pixelIndex] = ToFiniteSingle(zFrom0 * source0 + zFrom1 * source1 + zFrom2 * source2);
-                }
-            }
-
             RawColorTransformV1 transform = RawColorTransformV1.Create();
             transform.CalibrationType = 8;
             transform.Coefficients = [xFrom0, xFrom1, xFrom2, yFrom0, yFrom1, yFrom2, zFrom0, zFrom1, zFrom2];
+            if (rawFile.Bpp == 8)
+                CalculateXyz<byte>(rawFile.Data, xyzData, pixelCount, transform.Coefficients);
+            else
+                CalculateXyz<ushort>(rawFile.Data, xyzData, pixelCount, transform.Coefficients);
+
             var snapshot = ColorCalibrationSnapshot.Create(transform, rawFile.Cols, rawFile.Rows, rawFile.Bpp, exposure, "Manual CIE");
             return new CalculationResult(xyzData, rawFile.Cols, rawFile.Rows, exposure, snapshot);
+        }
+
+        private static void CalculateXyz<T>(byte[] raw, byte[] xyz, int pixelCount, double[] coefficients)
+            where T : unmanaged, INumberBase<T>
+        {
+            const int pixelsPerChunk = 256 * 1024;
+            int workers = Math.Min(8, Math.Min(Environment.ProcessorCount, pixelCount / pixelsPerChunk));
+            if (workers <= 1)
+            {
+                WriteXyzRange<T>(raw, xyz, pixelCount, coefficients, 0, pixelCount);
+                return;
+            }
+
+            // Each chunk reads packed BGR and owns a disjoint range in every output plane.
+            int chunks = (pixelCount - 1) / pixelsPerChunk + 1;
+            try
+            {
+                Parallel.For(0, chunks, new ParallelOptions { MaxDegreeOfParallelism = workers }, chunk =>
+                {
+                    int start = chunk * pixelsPerChunk;
+                    WriteXyzRange<T>(raw, xyz, pixelCount, coefficients, start, Math.Min(pixelsPerChunk, pixelCount - start));
+                });
+            }
+            catch (AggregateException error) when (error.InnerExceptions.All(exception => exception is InvalidOperationException))
+            {
+                // Keep the calculator's validation error at the caller boundary.
+                ExceptionDispatchInfo.Throw(error.InnerExceptions[0]);
+            }
+        }
+
+        private static void WriteXyzRange<T>(byte[] raw, byte[] xyz, int pixelCount, double[] coefficients, int start, int count)
+            where T : unmanaged, INumberBase<T>
+        {
+            ReadOnlySpan<T> source = MemoryMarshal.Cast<byte, T>(raw.AsSpan()).Slice(start * 3, count * 3);
+            Span<float> xyzPlanes = MemoryMarshal.Cast<byte, float>(xyz.AsSpan());
+            Span<float> x = xyzPlanes.Slice(start, count);
+            Span<float> y = xyzPlanes.Slice(pixelCount + start, count);
+            Span<float> z = xyzPlanes.Slice(2 * pixelCount + start, count);
+            double xFrom0 = coefficients[0], xFrom1 = coefficients[1], xFrom2 = coefficients[2];
+            double yFrom0 = coefficients[3], yFrom1 = coefficients[4], yFrom2 = coefficients[5];
+            double zFrom0 = coefficients[6], zFrom1 = coefficients[7], zFrom2 = coefficients[8];
+            for (int index = 0, packed = 0; index < count; index++, packed += 3)
+            {
+                double red = double.CreateChecked(source[packed + 2]);
+                double green = double.CreateChecked(source[packed + 1]);
+                double blue = double.CreateChecked(source[packed]);
+                x[index] = ToFiniteSingle(xFrom0 * red + xFrom1 * green + xFrom2 * blue);
+                y[index] = ToFiniteSingle(yFrom0 * red + yFrom1 * green + yFrom2 * blue);
+                z[index] = ToFiniteSingle(zFrom0 * red + zFrom1 * green + zFrom2 * blue);
+            }
         }
 
         private static float ResolveExposure(double configuredValue, float[]? sourceExposure, int index)

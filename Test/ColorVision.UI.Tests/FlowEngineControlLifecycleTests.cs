@@ -7,6 +7,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
 using SqlSugar;
+using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
 using System.Diagnostics;
 using System.IO;
@@ -828,6 +829,43 @@ public class FlowEngineControlLifecycleTests
             server.NodeType = "Service.Old";
             Assert.Equal("Service.Old", server.NodeType);
             Assert.Equal(new[] { "S01" }, control.GetServiceCodes("Service.Old"));
+        });
+    }
+
+    [Fact]
+    public void ReplacingHostRemovesOnlyItsNamedAndAnonymousDeviceRegistrations()
+    {
+        StaTest.Run(() =>
+        {
+            using var oldHost = new CVNodeContainer();
+            using var retainedHost = new CVNodeContainer();
+            using var newHost = new CVNodeContainer();
+            var detached = CreateServerNode("Service.Shared", "S01", "D01");
+            var detachedAnonymous = CreateServerNode("Service.Anonymous", "", "");
+            var retained = CreateServerNode("Service.Shared", "S01", "D01");
+            var retainedAnonymous = CreateServerNode("Service.Anonymous", "", "");
+            var replacement = CreateServerNode("Service.Shared", "S01", "D01");
+            oldHost.Nodes.Add(detached);
+            oldHost.Nodes.Add(detachedAnonymous);
+            retainedHost.Nodes.Add(retained);
+            retainedHost.Nodes.Add(retainedAnonymous);
+            newHost.Nodes.Add(replacement);
+            var nodeManager = new FlowNodeManager();
+            using var control = new FlowEngineControl(oldHost, false, nodeManager);
+            using var other = new FlowEngineControl(retainedHost, false, nodeManager);
+
+            control.AttachNodeContainer(newHost);
+            UpdateDevices(nodeManager,
+                ("Service.Shared", "S01", "D01", "current-named"),
+                ("Service.Anonymous", "S02", "D02", "current-anonymous"));
+
+            Assert.NotEqual("current-named", detached.Token);
+            Assert.NotEqual("current-anonymous", detachedAnonymous.Token);
+            Assert.Equal(string.Empty, detachedAnonymous.DeviceCode);
+            Assert.Equal("current-named", retained.Token);
+            Assert.Equal("current-named", replacement.Token);
+            Assert.Equal("current-anonymous", retainedAnonymous.Token);
+            Assert.Equal("D02", retainedAnonymous.DeviceCode);
         });
     }
 

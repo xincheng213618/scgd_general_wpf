@@ -357,6 +357,9 @@ public class CVXRCameraNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
+		if (!System.Enum.IsDefined(_Algorithm))
+			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请重新选择受支持的算子。");
+
 		float[] expTime = new float[3]
 		{
 			m_ctrl_expTime[0].Value,
@@ -386,9 +389,6 @@ public class CVXRCameraNode : CVBaseServerNode
 			break;
 		case AlgorithmARVRType.双目融合:
 			operatorCodeXR = "ARVR.BinocularFusion";
-			break;
-		case AlgorithmARVRType.SFR_FindROI:
-			operatorCodeXR = "ARVR.SFR.FindROI";
 			break;
 		case AlgorithmARVRType.十字计算:
 			operatorCodeXR = "FindCross";

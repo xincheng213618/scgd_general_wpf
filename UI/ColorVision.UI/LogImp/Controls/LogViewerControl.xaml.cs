@@ -81,6 +81,7 @@ namespace ColorVision.UI.LogImp.Controls
         private string _plainText = string.Empty;
         private string _searchText = string.Empty;
         private int _selectionAnchorIndex = -1;
+        private int _selectedRangeStart = -1;
         private Point _rangeSelectionPoint;
         private bool _latestAtTop;
         private bool _isRangeSelecting;
@@ -115,6 +116,8 @@ namespace ColorVision.UI.LogImp.Controls
             EntriesListBox.PreviewMouseMove += EntriesListBox_PreviewMouseMove;
             EntriesListBox.PreviewMouseUp += EntriesListBox_PreviewMouseUp;
             EntriesListBox.PreviewMouseWheel += EntriesListBox_PreviewMouseWheel;
+            EntriesListBox.SelectionChanged += (_, _) => _selectedRangeStart = -1;
+            _visibleEntries.CollectionChanged += (_, _) => _selectedRangeStart = -1;
             Loaded += LogViewerControl_Loaded;
             Unloaded += LogViewerControl_Unloaded;
 
@@ -248,6 +251,14 @@ namespace ColorVision.UI.LogImp.Controls
             if (latestAtTop)
                 displayEntries.Reverse();
 
+            int evictedMatches = -1;
+            if (UsesVirtualizedRendering && IsSearchActive && MaxEntries > 0
+                && displayEntries.Count > MaxEntries - _entries.Count && LogSearchHelper.IsKeywordSearch(_searchText))
+            {
+                int evicted = Math.Min(_entries.Count, displayEntries.Count - (MaxEntries - _entries.Count));
+                evictedMatches = CountEvictedMatches(evicted, latestAtTop);
+            }
+
             if (latestAtTop)
                 _entries.InsertRange(0, displayEntries);
             else
@@ -257,7 +268,7 @@ namespace ColorVision.UI.LogImp.Controls
             if (RetainsPlainText)
                 AppendPlainText(displayEntries, latestAtTop, removedCount);
             if (UsesVirtualizedRendering)
-                UpdateVisibleEntriesAfterAppend(displayEntries, latestAtTop, removedCount);
+                UpdateVisibleEntriesAfterAppend(displayEntries, latestAtTop, removedCount, evictedMatches);
 
             if (autoScroll && !_suspendAutoScroll)
             {

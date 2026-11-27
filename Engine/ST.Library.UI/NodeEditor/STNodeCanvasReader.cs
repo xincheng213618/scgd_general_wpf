@@ -1,4 +1,6 @@
 using System;
+using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -65,10 +67,7 @@ internal static class STNodeCanvasReader
         if (header[STNodeConstant.NodeFlag.Length] != STNodeConstant.Version)
             throw new InvalidDataException("无法识别的文件版本号");
 
-        byte[] compressed = ReadToEnd(
-            stream,
-            MaximumCompressedGraphLength);
-        ReadOnlySpan<byte> body = DecompressGZip(compressed);
+        ReadOnlySpan<byte> body = DecompressGZip(ReadCompressed(stream)).AsSpan();
         var document = new Document
         {
             CanvasOffsetX = ReadSingle(ref body),
@@ -87,10 +86,10 @@ internal static class STNodeCanvasReader
         }
 
         int nodeCount = ReadCount(ref body, MaximumNodeCount, "节点");
-        var options = new Dictionary<long, STNodeOption>();
+        var options = new List<STNodeOption>();
         var indexedOptions = new HashSet<STNodeOption>();
         STNodeLegacyConnections legacyConnections = null;
-        var states = new List<STNodeSavedState>();
+        var portLayouts = new (bool HasSavedLayout, bool HasLegacyPlaceholder)[nodeCount];
         var nodeIds = new HashSet<Guid>();
         long totalNodeDataLength = 0;
         for (int i = 0; i < nodeCount; i++)
@@ -109,13 +108,14 @@ internal static class STNodeCanvasReader
             try
             {
                 STNodeSavedState state = STNodeSavedState.Parse(ReadBodyBytes(ref body, nodeDataLength));
-                states.Add(state);
                 if (state.Properties.TryGetValue(STNodeSavedState.LegacyConnectionsKey, out byte[] archive))
                 {
                     if (legacyConnections != null) throw new InvalidDataException("旧流程连线记录重复。");
                     legacyConnections = STNodeLegacyConnections.Deserialize(archive);
                 }
                 node = state.CreateNode();
+                portLayouts[i] = (state.Properties.ContainsKey(STNodeSavedState.PortLayoutKey),
+                    state.Properties.ContainsKey(STNodeSavedState.LegacyPlaceholderKey));
             }
             catch (Exception ex)
             {
@@ -129,16 +129,23 @@ internal static class STNodeCanvasReader
 
         var legacyPlaceholderIds = legacyConnections?.Nodes.Where(span => span.InputCount < 0)
             .Select(span => span.NodeId).ToHashSet();
+        bool archiveOriginalConnections = false;
         for (int i = 0; i < document.Nodes.Count; i++)
         {
             STNode node = document.Nodes[i];
+            var (hasSavedLayout, hasLegacyPlaceholder) = portLayouts[i];
             // A saved legacy placeholder had no visible ports. If its plugin has
             // returned, those newly restored ports belong to the archived map,
             // not to the current saved map's global indices.
-            bool wasLegacyPlaceholder = states[i].Properties.ContainsKey(STNodeSavedState.LegacyPlaceholderKey)
-                || legacyConnections != null && !states[i].Properties.ContainsKey(STNodeSavedState.PortLayoutKey)
-                    && legacyPlaceholderIds.Contains(node.Guid);
-            if (!wasLegacyPlaceholder) AddOptions(options, indexedOptions, node);
+            bool wasLegacyPlaceholder = hasLegacyPlaceholder
+                || legacyConnections != null && !hasSavedLayout && legacyPlaceholderIds.Contains(node.Guid);
+            if (!wasLegacyPlaceholder)
+            {
+                AddOptions(options, indexedOptions, node.InputOptions);
+                AddOptions(options, indexedOptions, node.OutputOptions);
+                if (legacyConnections == null && node is STMissingNode { HasSavedPortLayout: false })
+                    archiveOriginalConnections = true;
+            }
             if (options.Count > 1_000_000) throw new InvalidDataException("流程端口总数量超过限制。");
         }
 
@@ -146,26 +153,28 @@ internal static class STNodeCanvasReader
             ref body,
             MaximumConnectionCount,
             "连接");
-        var connectionKeys = new HashSet<long>();
-        bool archiveOriginalConnections = legacyConnections == null && document.Nodes.Select((node, index) => (node, index))
-            .Any(item => item.node is STMissingNode { HasSavedPortLayout: false }
-                && !states[item.index].Properties.ContainsKey(STNodeSavedState.LegacyPlaceholderKey));
-        var packedConnections = new long[connectionCount];
+        // Nearby port indices often differ only by a few bits. Hash the two indices as a pair.
+        var connectionKeys = new HashSet<(int Output, int Input)>();
+        long[] packedConnections = archiveOriginalConnections ? new long[connectionCount] : null;
         for (int i = 0; i < connectionCount; i++)
         {
             long packed = ReadInt64(ref body);
-            packedConnections[i] = packed;
-            long outputIndex = packed >> 32;
-            long inputIndex = unchecked((uint)packed);
-            if (outputIndex < 0 || outputIndex >= 1_000_000 || inputIndex >= 1_000_000 || !connectionKeys.Add(packed))
+            int outputIndex = (int)(packed >> 32);
+            int inputIndex = unchecked((int)packed);
+            if (outputIndex is < 0 or >= 1_000_000 || inputIndex is < 0 or >= 1_000_000
+                || !connectionKeys.Add((outputIndex, inputIndex)))
                 throw new InvalidDataException($"第 {i + 1} 条连接编号无效或重复");
-            if (archiveOriginalConnections) continue;
-            if (!options.TryGetValue(outputIndex, out STNodeOption output)
-                || !options.TryGetValue(inputIndex, out STNodeOption input))
+            if (packedConnections != null)
+            {
+                packedConnections[i] = packed;
+                continue;
+            }
+            if (outputIndex >= options.Count || inputIndex >= options.Count)
             {
                 throw new InvalidDataException(
                     $"第 {i + 1} 条连接引用了不存在的端口");
             }
+            STNodeOption output = options[outputIndex], input = options[inputIndex];
             if (output.IsInput || !input.IsInput || output.Owner == input.Owner)
             {
                 throw new InvalidDataException(
@@ -177,7 +186,7 @@ internal static class STNodeCanvasReader
         if (!body.IsEmpty)
             throw new InvalidDataException("流程数据包含未识别的尾部内容");
 
-        if (archiveOriginalConnections)
+        if (packedConnections != null)
             legacyConnections = STNodeLegacyConnections.Capture(document.Nodes, packedConnections);
         if (legacyConnections != null && !legacyConnections.TryRestore(document.Nodes, document.Connections))
             foreach (STMissingNode node in document.Nodes.OfType<STMissingNode>()) node.LegacyConnections = legacyConnections;
@@ -185,63 +194,83 @@ internal static class STNodeCanvasReader
         return document;
     }
 
-    private static byte[] ReadToEnd(Stream stream, int maximumLength)
+    private static ArraySegment<byte> ReadCompressed(Stream stream)
     {
-        using var output = new MemoryStream();
-        byte[] buffer = new byte[81_920];
-        while (true)
+        if (stream is MemoryStream memory && memory.GetType() == typeof(MemoryStream)
+            && memory.TryGetBuffer(out ArraySegment<byte> buffer))
         {
-            int read = stream.Read(buffer, 0, buffer.Length);
-            if (read <= 0)
-                break;
-            if (output.Length + read > maximumLength)
-                throw new InvalidDataException("压缩流程数据超过限制");
-            output.Write(buffer, 0, read);
+            int position = (int)memory.Position;
+            int remaining = buffer.Count - position;
+            if ((uint)remaining <= MaximumCompressedGraphLength)
+            {
+                memory.Position = memory.Length;
+                return buffer.Slice(position, remaining);
+            }
         }
-        return output.ToArray();
+
+        return ReadBounded(stream, MaximumCompressedGraphLength, "压缩流程数据超过限制");
     }
 
-    private static byte[] DecompressGZip(byte[] compressed)
+    private static ArraySegment<byte> ReadBounded(Stream stream, int maximumLength, string limitMessage)
     {
-        if (compressed.Length < 18)
+        using var output = new MemoryStream();
+        const int bufferLength = 64 * 1024;
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
+        try
+        {
+            while (true)
+            {
+                int read = stream.Read(buffer, 0, bufferLength);
+                if (read <= 0)
+                    break;
+                if (output.Length + read > maximumLength)
+                    throw new InvalidDataException(limitMessage);
+                output.Write(buffer, 0, read);
+            }
+            return new ArraySegment<byte>(output.GetBuffer(), 0, checked((int)output.Length));
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static ArraySegment<byte> DecompressGZip(ArraySegment<byte> compressed)
+    {
+        if (compressed.Count < 18)
             throw new InvalidDataException("压缩流程数据不完整");
 
-        using var input = new MemoryStream(compressed, writable: false);
+        using var input = new MemoryStream(compressed.Array, compressed.Offset, compressed.Count, writable: false);
         using var gzip = new GZipStream(
             input,
             CompressionMode.Decompress,
             leaveOpen: true);
-        using var output = new MemoryStream();
-        byte[] buffer = new byte[81_920];
-        while (true)
-        {
-            int read = gzip.Read(buffer, 0, buffer.Length);
-            if (read <= 0)
-                break;
-            if (output.Length + read > MaximumDecompressedGraphLength)
-                throw new InvalidDataException("解压后的流程数据超过限制");
-            output.Write(buffer, 0, read);
-        }
+        ArraySegment<byte> decompressed = ReadBounded(gzip, MaximumDecompressedGraphLength, "解压后的流程数据超过限制");
 
-        byte[] decompressed = output.ToArray();
-        uint expectedCrc = BitConverter.ToUInt32(
-            compressed,
-            compressed.Length - 8);
-        uint expectedLength = BitConverter.ToUInt32(
-            compressed,
-            compressed.Length - 4);
-        if (expectedLength != unchecked((uint)decompressed.Length)
-            || expectedCrc != ComputeCrc32(decompressed))
+        ReadOnlySpan<byte> trailer = compressed.AsSpan(compressed.Count - 8);
+        uint expectedCrc = BitConverter.ToUInt32(trailer);
+        uint expectedLength = BitConverter.ToUInt32(trailer[4..]);
+        if (expectedLength != unchecked((uint)decompressed.Count)
+            || expectedCrc != ComputeCrc32(decompressed.AsSpan()))
         {
             throw new InvalidDataException("压缩流程数据校验失败");
         }
         return decompressed;
     }
 
-    private static uint ComputeCrc32(byte[] data)
+    private static uint ComputeCrc32(ReadOnlySpan<byte> data)
     {
         uint crc = uint.MaxValue;
-        foreach (byte value in data)
+        int offset = 0;
+        for (; offset <= data.Length - sizeof(ulong); offset += sizeof(ulong))
+        {
+            ulong block = BinaryPrimitives.ReadUInt64LittleEndian(data[offset..]) ^ crc;
+            crc = Crc32Table[7 * 256 + (byte)block] ^ Crc32Table[6 * 256 + (byte)(block >> 8)]
+                ^ Crc32Table[5 * 256 + (byte)(block >> 16)] ^ Crc32Table[4 * 256 + (byte)(block >> 24)]
+                ^ Crc32Table[3 * 256 + (byte)(block >> 32)] ^ Crc32Table[2 * 256 + (byte)(block >> 40)]
+                ^ Crc32Table[256 + (byte)(block >> 48)] ^ Crc32Table[(byte)(block >> 56)];
+        }
+        foreach (byte value in data[offset..])
         {
             crc = Crc32Table[(crc ^ value) & byte.MaxValue]
                 ^ crc >> 8;
@@ -251,8 +280,8 @@ internal static class STNodeCanvasReader
 
     private static uint[] CreateCrc32Table()
     {
-        uint[] table = new uint[256];
-        for (uint i = 0; i < table.Length; i++)
+        uint[] table = new uint[8 * 256];
+        for (uint i = 0; i < 256; i++)
         {
             uint value = i;
             for (int bit = 0; bit < 8; bit++)
@@ -263,23 +292,27 @@ internal static class STNodeCanvasReader
             }
             table[i] = value;
         }
+
+        // Each slice accounts for one additional byte between the input and the final CRC.
+        for (int slice = 1; slice < 8; slice++)
+            for (int i = 0; i < 256; i++)
+            {
+                uint previous = table[(slice - 1) * 256 + i];
+                table[slice * 256 + i] = table[previous & byte.MaxValue] ^ (previous >> 8);
+            }
         return table;
     }
 
     private static void AddOptions(
-        Dictionary<long, STNodeOption> options,
+        List<STNodeOption> options,
         HashSet<STNodeOption> indexedOptions,
-        STNode node)
+        STNodeOptionCollection ports)
     {
-        foreach (STNodeOption option in node.GetAllInputOptions())
+        for (int i = 0; i < ports.Count; i++)
         {
+            STNodeOption option = ports[i];
             if (option != null && indexedOptions.Add(option))
-                options.Add(options.Count, option);
-        }
-        foreach (STNodeOption option in node.GetAllOutputOptions())
-        {
-            if (option != null && indexedOptions.Add(option))
-                options.Add(options.Count, option);
+                options.Add(option);
         }
     }
 

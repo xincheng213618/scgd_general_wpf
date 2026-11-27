@@ -92,7 +92,6 @@
                     <Button Content="{display:EngineLang Key='设备配置'}" Command="{Binding EditCommand}" Margin="0,0,4,0"/>
                     <Button Content="{display:EngineLang Key='校正组'}" Command="{Binding OpenCalibrationGroupWindowCommand}" Margin="4,0,0,0"/>
                 </UniformGrid>
-                <Button Content="{display:EngineLang Key='更多采集设置'}" Command="{Binding EditDisplayConfigCommand}"/>
                 <TextBlock Text="{display:EngineLang Key='结果'}" FontWeight="SemiBold" Margin="0,20,0,10"/>
                 <Button Content="{display:EngineLang Key='导出当前结果'}" Click="Export_Click"/>
                 <Button x:Name="ApplyNodeButton" Content="{display:EngineLang Key='应用到节点'}" Click="ApplyNode_Click" Visibility="Collapsed" Margin="0,8,0,0"/>

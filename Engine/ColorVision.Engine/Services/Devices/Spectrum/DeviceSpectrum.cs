@@ -451,7 +451,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EmissionSP100SettingCommand = new RelayCommand(a => EmissionSP100Setting());
 
             GetSpectrSerialNumberCommand = new RelayCommand(async _ => await GetSpectrSerialNumberAsync(), _ => !IsDiscoveringSpectrometers);
-            EditDisplayConfigCommand = new RelayCommand(a => EditDisplayConfig());
             OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
             ApplyCalibrationGroupCommand = new RelayCommand(a => ApplyActiveCalibrationGroup(true));
             OpenSpectrumCorrectionCommand = new RelayCommand(async _ => await OpenSpectrumCorrectionAsync());
@@ -1338,23 +1337,23 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
         }
 
-        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 0)]
-        [Category("DeviceConnection")]
-        [Description("SpectrumDisplayHint")]
-        public RelayCommand EditDisplayConfigCommand { get; set; }
-        public void EditDisplayConfig()
-        {
-            new PropertyEditorWindow(DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
         public IReadOnlyList<HoleMap> GetNDHoleMappings()
         {
-            var cfwPort = GetBoundCfwPort();
-            var holeMapping = cfwPort?.FilterWheelConfig.HoleMapping;
-            if (holeMapping != null && holeMapping.Count > 0)
-                return holeMapping.ToList();
+            var wheel = GetBoundCfwPort();
+            int? directPortCount = IsLocalSpectrumBackend && wheel == null ? Local.LocalSpectrumNd.GetDirectPortCount(Config.NDConfig) : null;
+            return ResolveNdHoleMappings(wheel, directPortCount);
+        }
 
-            return new FilterWheelConfig().HoleMapping.ToList();
+        internal static IReadOnlyList<HoleMap> ResolveNdHoleMappings(DeviceCfwPort? cfwPort, int? directPortCount = null)
+        {
+            if (cfwPort != null)
+                return cfwPort.FilterWheelConfig.HoleMapping?.Where(hole => hole.HoleIndex >= 0 && hole.HoleIndex < cfwPort.Config.Ports)
+                    .DistinctBy(hole => hole.HoleIndex).ToArray() ?? [];
+
+            var holeMapping = new FilterWheelConfig().HoleMapping;
+            if (directPortCount is not (6 or 12)) return holeMapping.ToList();
+            return Enumerable.Range(0, directPortCount.Value).Select(index => holeMapping.FirstOrDefault(hole => hole.HoleIndex == index)
+                ?? new HoleMap { HoleIndex = index, HoleName = string.Format(Properties.Resources.FilterWheelHoleDefaultNameFormat, index) }).ToArray();
         }
 
         public string? GetNDHoleName(int holeIndex)
@@ -1382,7 +1381,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
             var nd = optics.Configuration.NDConfig;
             var cfwPort = optics.NdDevice;
-            if (nd.IsNDPort && (SpectrumBackend.OpensLocally || cfwPort?.CfwBackend.OpensLocally == true))
+            if (nd.HasConfiguredWheel && (SpectrumBackend.OpensLocally || cfwPort?.CfwBackend.OpensLocally == true))
             {
                 msgRecord = RunLocalNdCommand("SetPort", holeIndex, optics);
                 return true;
@@ -1414,8 +1413,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public void OpenCalibrationGroupWindow()
         {
-            Config.EnsureCalibrationGroups();
-            new SpectrumCalibrationGroupWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            var owner = Application.Current.GetActiveWindow();
+            if (!TryAdmitConfigurationEdit(CaptureConfigurationTarget(), owner)) return;
+            new SpectrumCalibrationGroupWindow(this) { Owner = owner, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             if (DisplayLazy.IsValueCreated)
                 DisplayLazy.Value.RefreshNDHoleMappings();
         }
@@ -1442,16 +1442,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 group.WavelengthFile, group.MaguideFile, restartService, forceRestart, true, out bool changed) && changed;
         }
 
-        internal bool TrySaveCalibrationGroupConfiguration(SpectrumCalibrationGroup? group, bool ndBindingChanged,
-            DeviceConfigurationTarget target)
+        internal bool TrySaveCalibrationGroupConfiguration(ConfigSpectrum draft, DeviceConfigurationTarget target)
         {
-            if (!TryApplyCalibrationSelection(target, group?.GroupName, group?.WavelengthFile ?? Config.WavelengthFile,
-                group?.MaguideFile ?? Config.MaguideFile, true, false, true, out bool changed, persistUnchanged: true)) return false;
-            if (!changed && ndBindingChanged)
-            {
-                if (!SpectrumBackend.OpensLocally) QueueCalibrationRestart(target);
-                if (IsConfigurationTargetCurrent(target)) NotifyConfigChanged();
-            }
+            bool ndChanged = !JToken.DeepEquals(JObject.FromObject(Config.NDConfig), JObject.FromObject(draft.NDConfig));
+            if (!TryApplyCalibrationSelection(target, draft.ActiveCalibrationGroupName, draft.WavelengthFile, draft.MaguideFile,
+                true, false, true, out bool changed, persistUnchanged: true, groupSettings: draft)) return false;
+            if (!changed && ndChanged && !SpectrumBackend.OpensLocally) QueueCalibrationRestart(target);
+            if (IsConfigurationTargetCurrent(target)) NotifyConfigChanged();
             return true;
         }
 
@@ -1473,7 +1470,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private bool TryApplyCalibrationSelection(DeviceConfigurationTarget target, string? groupName, string wavelengthFile,
             string magnitudeFile, bool restartService, bool forceRestart, bool saveFullConfiguration, out bool changed,
-            bool persistUnchanged = false)
+            bool persistUnchanged = false, ConfigSpectrum? groupSettings = null)
         {
             changed = false;
             if (!IsConfigurationTargetCurrent(target)) return false;
@@ -1494,6 +1491,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     using var reader = new JsonTextReader(new StringReader(previous)) { DateParseHandling = DateParseHandling.None };
                     json = JObject.Load(reader);
                 }
+                if (groupSettings != null)
+                {
+                    json[nameof(ConfigSpectrum.CalibrationGroups)] = JArray.FromObject(groupSettings.CalibrationGroups);
+                    json[nameof(ConfigSpectrum.NDConfig)] = JObject.FromObject(groupSettings.NDConfig);
+                }
                 if (groupName != null)
                     json[nameof(ConfigSpectrum.ActiveCalibrationGroupName)] = groupName;
                 json[nameof(ConfigSpectrum.WavelengthFile)] = wavelengthFile;
@@ -1513,10 +1515,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
 
             if (!target.TrySave(this, UpdateCalibration) || !IsConfigurationTargetCurrent(target)) return false;
+            if (groupSettings != null) Config.ApplyCalibrationAndNdSettings(groupSettings);
             if (!changed) return true;
-            if (groupName != null) Config.ActiveCalibrationGroupName = groupName;
-            Config.WavelengthFile = wavelengthFile;
-            Config.MaguideFile = magnitudeFile;
+            if (groupSettings == null)
+            {
+                if (groupName != null) Config.ActiveCalibrationGroupName = groupName;
+                Config.WavelengthFile = wavelengthFile;
+                Config.MaguideFile = magnitudeFile;
+            }
 
             if (restartService && !SpectrumBackend.OpensLocally)
                 QueueCalibrationRestart(target);

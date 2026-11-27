@@ -31,6 +31,21 @@ public sealed class FlowRepeatDagTests
     }
 
     [Fact]
+    public void RegionUsesTheOriginalEntryAndExitPortsWhenConnectedToOutsideNodes()
+    {
+        var graph = new DagGraph(2);
+        var upstream = Node("outside upstream");
+        Connect(upstream.Output, graph.Source.Inputs[0]);
+
+        Assert.True(FlowRepeatRegion.TryCreate(new[] { graph.Join, graph.Source, graph.Branch, graph.Source }, out var region, out _));
+        Assert.Equal(new[] { graph.Source, graph.Branch, graph.Join }, region.Nodes);
+        Assert.Same(graph.Source.Inputs[0], region.Input);
+        Assert.Same(graph.Join.Output, region.Output);
+        Assert.Contains(upstream.Output, region.Input.ConnectedOption);
+        Assert.Contains(graph.After.Inputs[0], region.Output.ConnectedOption);
+    }
+
+    [Fact]
     public void DistinctInputsFromSameSourceAreBothRequiredWithoutDuplicatingTheJoin()
     {
         var source = Node("camera");

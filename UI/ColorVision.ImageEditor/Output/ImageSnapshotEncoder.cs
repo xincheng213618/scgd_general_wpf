@@ -334,9 +334,11 @@ namespace ColorVision.ImageEditor.Output
                     finally { heatmapElapsed = heatmapStopwatch.Elapsed; }
                 }
 
-                if (options.RenderedOptions.UseHeatmap && snapshot.Scene.Children.Count == 0)
+                bool encodeOpaqueBackground = usedOpaqueRgb48Source && background?.IsFrozen == true;
+                if (snapshot.Scene.Children.Count == 0 && (options.RenderedOptions.UseHeatmap || encodeOpaqueBackground))
                 {
                     rendered = background;
+                    canUseAdaptivePng = encodeOpaqueBackground;
                 }
                 else
                 {
@@ -413,7 +415,8 @@ namespace ColorVision.ImageEditor.Output
                 && IsPixelAligned(snapshot))
             {
                 // In a 1:1 render, WPF takes the high byte of each RGB48 channel before compositing.
-                BitmapSource? opaque = buffer.TryCreateOpaqueRgb48Bitmap(snapshot.PixelWidth, snapshot.PixelHeight, snapshot.DpiX, snapshot.DpiY);
+                BitmapSource? opaque = buffer.TryCreateOpaqueRgb48Bitmap(snapshot.PixelWidth, snapshot.PixelHeight, snapshot.DpiX, snapshot.DpiY,
+                    freezeForEncoding: snapshot.Scene.Children.Count == 0);
                 if (opaque != null)
                 {
                     usedOpaqueRgb48Source = true;

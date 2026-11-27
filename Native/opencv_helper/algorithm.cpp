@@ -8,32 +8,33 @@
 
 #include <vector>
 #include <algorithm>
+#include <cfenv>
 #include <cmath>
 #include <ctime>
 #include <numeric>
+#if defined(_M_X64)
+#include <xmmintrin.h>
+#endif
 using namespace cv;
 
 cv::Mat removeMoire(const cv::Mat& image) {
-    // Step 1: Apply Gaussian Blur
-    cv::Mat blurred;
-    cv::GaussianBlur(image, blurred, cv::Size(5, 5), 0);
+    cv::Mat filtered;
+    cv::GaussianBlur(image, filtered, cv::Size(5, 5), 0);
+    {
+        cv::Mat downsampled, smoothed;
+        cv::pyrDown(filtered, downsampled);
+        cv::GaussianBlur(downsampled, smoothed, cv::Size(5, 5), 0);
+        // After downsampling, the same full-frame storage holds the upsampled image.
+        cv::pyrUp(smoothed, filtered, image.size());
+    }
+    if (image.depth() == CV_8U || image.depth() == CV_16U) {
+        cv::addWeighted(image, 1.5, filtered, -0.5, 0, filtered);
+        return filtered;
+    }
 
-    // Step 2: Downsample the image
-    cv::Mat downsampled;
-    cv::pyrDown(blurred, downsampled);
-
-    // Step 3: Apply Gaussian Blur again
-    cv::Mat blurredAgain;
-    cv::GaussianBlur(downsampled, blurredAgain, cv::Size(5, 5), 0);
-
-    // Step 4: Upsample the image
-    cv::Mat upsampled;
-    cv::pyrUp(blurredAgain, upsampled, image.size());
-
-    // Step 5: Sharpen the image
+    // Keep the original sharpening arithmetic for floating-point layouts.
     cv::Mat sharpened;
-    cv::addWeighted(image, 1.5, upsampled, -0.5, 0, sharpened);
-
+    cv::addWeighted(image, 1.5, filtered, -0.5, 0, sharpened);
     return sharpened;
 }
 
@@ -558,9 +559,14 @@ struct PseudoColorLutCache
     int minTh = 0;
     int maxTh = 0;
     cv::Mat lut;
+    bool expandedValid = false;
+    int roundingMode = 0;
+    double scale = 0.0;
+    double offset = 0.0;
+    cv::Mat expandedLut;
 };
 
-static void GetCachedPseudoColorLUT(cv::ColormapTypes mapType, int minTh, int maxTh, bool stretched, cv::Mat& outLut)
+static PseudoColorLutCache& GetCachedPseudoColorLUT(cv::ColormapTypes mapType, int minTh, int maxTh, bool stretched)
 {
     thread_local PseudoColorLutCache cache;
     const int mapTypeValue = static_cast<int>(mapType);
@@ -570,10 +576,11 @@ static void GetCachedPseudoColorLUT(cv::ColormapTypes mapType, int minTh, int ma
         && cache.mapType == mapTypeValue
         && cache.minTh == minTh
         && cache.maxTh == maxTh) {
-        outLut = cache.lut;
-        return;
+        return cache;
     }
 
+    cache.valid = false;
+    cache.expandedValid = false;
     if (stretched) {
         GetStretchedLUT(mapType, minTh, maxTh, cache.lut);
     }
@@ -586,22 +593,50 @@ static void GetCachedPseudoColorLUT(cv::ColormapTypes mapType, int minTh, int ma
     cache.mapType = mapTypeValue;
     cache.minTh = minTh;
     cache.maxTh = maxTh;
-    outLut = cache.lut;
+    return cache;
 }
 
-static void applyLUT16U(const cv::Mat& image, const cv::Mat& lut, cv::Mat& result, double scale, double offset, int channel)
+static void applyLUT16U(const cv::Mat& image, PseudoColorLutCache& cache, cv::Mat& result, double scale, double offset, int channel)
 {
     result.create(image.rows, image.cols, CV_8UC3);
-    const cv::Vec3b* lutPtr = lut.ptr<cv::Vec3b>();
-    cv::Mat expandedLut(65536, 1, CV_8UC3);
-    cv::Vec3b* expandedLutPtr = expandedLut.ptr<cv::Vec3b>();
-    for (int value = 0; value < 65536; value++) {
-        expandedLutPtr[value] = lutPtr[cv::saturate_cast<uint8_t>(value * scale + offset)];
-    }
-
+    const cv::Vec3b* lutPtr = cache.lut.ptr<cv::Vec3b>();
     const int channels = image.channels();
     const int sourceChannel = channel >= 0 ? channel : 0;
 
+    // Small regions have fewer pixels than a full expansion. Map them directly
+    // without scheduling workers or allocating a 65,536-entry table.
+    constexpr size_t directPixelLimit = 32768;
+    if (image.total() <= directPixelLimit) {
+        for (int y = 0; y < image.rows; ++y) {
+            const uint16_t* src = image.ptr<uint16_t>(y) + sourceChannel;
+            cv::Vec3b* dstRow = result.ptr<cv::Vec3b>(y);
+            for (int x = 0; x < image.cols; ++x, src += channels) {
+                dstRow[x] = lutPtr[cv::saturate_cast<uint8_t>(*src * scale + offset)];
+            }
+        }
+        return;
+    }
+
+    // Keep one expanded table in the caller's existing color-map cache; bounds
+    // and palette changes invalidate it together with the compact lookup table.
+#if defined(_M_X64)
+    // MSVC x64 cvRound converts with SSE and observes the MXCSR rounding bits.
+    const int roundingMode = static_cast<int>(_MM_GET_ROUNDING_MODE());
+#else
+    const int roundingMode = std::fegetround();
+#endif
+    if (!cache.expandedValid || cache.scale != scale || cache.offset != offset || cache.roundingMode != roundingMode) {
+        cache.expandedLut.create(65536, 1, CV_8UC3);
+        auto* entries = cache.expandedLut.ptr<cv::Vec3b>();
+        for (int value = 0; value < 65536; ++value) {
+            entries[value] = lutPtr[cv::saturate_cast<uint8_t>(value * scale + offset)];
+        }
+        cache.scale = scale;
+        cache.offset = offset;
+        cache.roundingMode = roundingMode;
+        cache.expandedValid = roundingMode >= 0;
+    }
+    const auto* expandedLutPtr = cache.expandedLut.ptr<cv::Vec3b>();
     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range) {
         for (int y = range.start; y < range.end; y++) {
             const uint16_t* src = image.ptr<uint16_t>(y) + sourceChannel;
@@ -661,9 +696,8 @@ static int pseudoColorCore(const cv::Mat& image, cv::Mat& dst, uint min1, uint m
         min1 = std::min(min1, 255u);
         max1 = std::min(max1, 255u);
 
-        cv::Mat customLut;
-        GetCachedPseudoColorLUT(types, (int)min1, (int)max1, autoRange, customLut);
-        applyLUT16U(*source, customLut, dst, scale, offset, sourceChannel);
+        auto& cache = GetCachedPseudoColorLUT(types, (int)min1, (int)max1, autoRange);
+        applyLUT16U(*source, cache, dst, scale, offset, sourceChannel);
         return 0;
     }
         break;
@@ -687,9 +721,8 @@ static int pseudoColorCore(const cv::Mat& image, cv::Mat& dst, uint min1, uint m
     min1 = std::min(min1, 255u);
     max1 = std::min(max1, 255u);
 
-    cv::Mat customLut;
-    GetCachedPseudoColorLUT(types, (int)min1, (int)max1, autoRange, customLut);
-    applyLUT(*source, customLut, dst, sourceChannel);
+    const auto& cache = GetCachedPseudoColorLUT(types, (int)min1, (int)max1, autoRange);
+    applyLUT(*source, cache.lut, dst, sourceChannel);
     return 0;
 }
 
@@ -1143,38 +1176,37 @@ int findLightBeads(
         }
     }
 
+    // Direct dark candidates need a size cap. Grid inference needs dimensions and bright centers.
+    if (maxSize <= 0 && (rows <= 0 || cols <= 0 || centers.empty())) return 0;
+
     // 计算凸包
     std::vector<cv::Point> hull;
     if (!centers.empty()) {
         cv::convexHull(centers, hull);
     }
 
-    // 创建掩码
-    cv::Mat mask = cv::Mat::zeros(src.size(), CV_8UC1);
-
-    // 在掩码上绘制凸包区域
+    const cv::Rect hullBounds = hull.empty() ? cv::Rect{} : cv::boundingRect(hull);
+    const bool cropMissing = hullBounds.x > 0 && hullBounds.y > 0
+        && hullBounds.br().x < binary.cols && hullBounds.br().y < binary.rows;
+    const cv::Point missingOffset = cropMissing ? hullBounds.tl() : cv::Point{};
+    cv::Mat missing = cropMissing ? binary(hullBounds) : binary;
     if (!hull.empty()) {
-        std::vector<std::vector<cv::Point>> hulls = { hull };
-        cv::fillPoly(mask, hulls, cv::Scalar(255));
-
-        // 遍历图像的所有点，将凸包外的点设为255
-        for (int y = 0; y < binary.rows; ++y) {
-            uchar* maskRow = mask.ptr<uchar>(y);
-            uchar* imgRow = binary.ptr<uchar>(y);
-            for (int x = 0; x < binary.cols; ++x) {
-                if (maskRow[x] == 0) {
-                    imgRow[x] = 255;
-                }
-            }
-        }
+        cv::Mat outside(missing.size(), CV_8UC1, cv::Scalar(255));
+        const std::vector<std::vector<cv::Point>> hulls{ hull };
+        cv::fillPoly(outside, hulls, cv::Scalar(0), cv::LINE_8, 0, -missingOffset);
+        cv::bitwise_or(missing, outside, missing);
     }
 
-    // 查找缺失的灯珠
-    cv::dilate(binary, binary, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(12, 12)));
-    binary = 255 - binary;
+    // An interior crop has white neighbours after masking. Isolate it from the
+    // unmodified parent pixels and use the same white border for dilation.
+    cv::dilate(missing, missing, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(12, 12)),
+        cv::Point(-1, -1), 1,
+        cropMissing ? cv::BORDER_CONSTANT | cv::BORDER_ISOLATED : cv::BORDER_CONSTANT,
+        cropMissing ? cv::Scalar(255) : cv::morphologyDefaultBorderValue());
+    cv::bitwise_not(missing, missing);
 
     std::vector<std::vector<cv::Point>> contourless;
-    cv::findContours(binary, contourless, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(missing, contourless, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE, missingOffset);
 
     // 遍历轮廓，找到缺失的灯珠
     for (const auto& contour : contourless) {
@@ -1191,9 +1223,8 @@ int findLightBeads(
         }
         else if (!hull.empty()) {
             // 对于较大的区域，计算单个灯珠的尺寸并填充网格点
-            cv::Rect hullBoundingRect = cv::boundingRect(hull);
-            double width = hullBoundingRect.width;
-            double height = hullBoundingRect.height;
+            double width = hullBounds.width;
+            double height = hullBounds.height;
 
             if (cols > 0 && rows > 0)
             {
@@ -1218,6 +1249,46 @@ int findLightBeads(
 	return 0;   
 }
 
+static cv::Mat prepareKeyRegionGray(const cv::Mat& source)
+{
+    constexpr double scale16To8 = 255.0 / 65535.0;
+    const int channels = source.channels();
+
+    if (source.depth() == CV_16U && (channels == 3 || channels == 4) && source.total() >= 1024 * 1024) {
+        // Keep the original 16-to-8 bit conversion before computing luminance.
+        constexpr size_t scratchBytes = 512 * 1024;
+        const auto rowBytes = static_cast<size_t>(source.cols) * channels;
+        const int bandRows = static_cast<int>((std::max)(size_t{1}, scratchBytes / rowBytes));
+        const int bandCount = 1 + (source.rows - 1) / bandRows;
+        const int stripes = (std::min)({bandCount, 8, cv::getNumThreads()});
+        cv::Mat gray(source.size(), CV_8UC1);
+        cv::parallel_for_(cv::Range(0, bandCount), [&](const cv::Range& range) {
+            cv::Mat color8;
+            for (int band = range.start; band < range.end; ++band) {
+                const int top = band * bandRows;
+                const int bottom = top + (std::min)(bandRows, source.rows - top);
+                source.rowRange(top, bottom).convertTo(color8, CV_8U, scale16To8);
+                cv::Mat destination = gray.rowRange(top, bottom);
+                cv::cvtColor(color8, destination, cv::COLOR_BGR2GRAY);
+            }
+        }, stripes);
+        return gray;
+    }
+
+    cv::Mat work;
+    if (source.depth() == CV_8U) {
+        work = source;
+    }
+    else {
+        source.convertTo(work, CV_8U, source.depth() == CV_16U ? scale16To8 : 1.0);
+    }
+    if (channels < 3) return work;
+
+    cv::Mat gray;
+    cv::cvtColor(work, gray, cv::COLOR_BGR2GRAY);
+    return gray;
+}
+
 int detectKeyRegions(
     cv::Mat& src,
     std::vector<cv::Rect>& keyRects,
@@ -1229,35 +1300,14 @@ int detectKeyRegions(
     keyRects.clear();
     if (src.empty()) return -1;
 
-    // 转为8位灰度图
-    cv::Mat gray;
-    cv::Mat work;
-    if (src.depth() == CV_16U) {
-        cv::Mat temp;
-        src.convertTo(temp, (src.channels() == 1) ? CV_8UC1 : CV_8UC3, 255.0 / 65535.0);
-        work = temp;
-    }
-    else if (src.depth() != CV_8U) {
-        cv::Mat temp;
-        src.convertTo(temp, (src.channels() == 1) ? CV_8UC1 : CV_8UC3);
-        work = temp;
-    }
-    else {
-        work = src;
-    }
-
-    if (work.channels() >= 3) {
-        cv::cvtColor(work, gray, cv::COLOR_BGR2GRAY);
-    }
-    else {
-        gray = work;
-    }
-
-    // 高斯模糊降噪
+    cv::Mat gray = prepareKeyRegionGray(src);
     cv::GaussianBlur(gray, gray, cv::Size(5, 5), 0);
 
-    // 阈值化
+    // Threshold owned pixels in place. Borrowed input retains its blurred values.
     cv::Mat binary;
+    if (gray.data != src.data) {
+        binary = gray;
+    }
     if (threshold < 0) {
         cv::threshold(gray, binary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     }

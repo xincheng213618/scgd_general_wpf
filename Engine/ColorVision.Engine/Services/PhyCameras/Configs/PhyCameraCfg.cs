@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [JsonProperty("tempCtlChecked")]
         [LocalizedDisplayName(nameof(Resources.TemperatureCtrl))]
         public bool TempCtlChecked { get => _TempCtlChecked; set { _TempCtlChecked = value; OnPropertyChanged(); } }
-        private bool _TempCtlChecked = true;
+        private bool _TempCtlChecked;
 
         /// <summary>
         /// 目标温度

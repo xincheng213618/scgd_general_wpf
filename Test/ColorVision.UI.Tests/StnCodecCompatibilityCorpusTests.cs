@@ -156,6 +156,26 @@ public class StnCodecCompatibilityCorpusTests
         Assert.Equal(original, replacement);
     }
 
+    [Fact]
+    public void CanvasSnapshotHonorsReadableMemorySegmentAndStartingPosition()
+    {
+        const int segmentStart = 7, startingPosition = 11;
+        byte[] stn = Convert.FromBase64String(CurrentFullModelCorpus);
+        byte[] framed = new byte[segmentStart + startingPosition + stn.Length + 13];
+        Array.Fill(framed, byte.MaxValue);
+        stn.CopyTo(framed, segmentStart + startingPosition);
+        using var stream = new MemoryStream(framed, segmentStart, startingPosition + stn.Length,
+            writable: false, publiclyVisible: true) { Position = startingPosition };
+        using var registry = new CVNodeContainer();
+        Assert.True(registry.LoadAssembly(typeof(StnCorpusSourceNode).Assembly));
+
+        using STNodeCanvasSnapshot snapshot = STNodeEditor.ReadCanvasSnapshot(stream);
+
+        Assert.Equal(stream.Length, stream.Position);
+        Assert.Equal(new[] { SourceNodeId, SinkNodeId }, snapshot.Nodes.Select(node => node.Guid));
+        Assert.Same(snapshot.Nodes[1], Assert.Single(snapshot.GetConnectedOutputNodes(snapshot.Nodes[0])));
+    }
+
     private static void AssertFrozenSnapshot(
         CanvasSnapshot snapshot,
         bool usesFullModelName,

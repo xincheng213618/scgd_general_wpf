@@ -59,6 +59,7 @@ namespace ColorVision.Copilot
             var source = (conversations ?? Array.Empty<CopilotConversationRecord>())
                 .Where(conversation => conversation != null)
                 .ToArray();
+            var branchParents = IndexBranchParents(source);
             var today = DateOnly.FromDateTime(now.DateTime);
             var requestedStartDate = window switch
             {
@@ -74,7 +75,7 @@ namespace ColorVision.Copilot
             {
                 var conversation = source[conversationIndex];
                 var messages = conversation.Messages ?? [];
-                var ownedStartIndex = ResolveOwnedMessageStartIndex(source, conversation, messages);
+                var ownedStartIndex = ResolveOwnedMessageStartIndex(branchParents, conversation, messages);
                 for (var messageIndex = ownedStartIndex; messageIndex < messages.Count; messageIndex++)
                 {
                     var message = messages[messageIndex];
@@ -195,8 +196,33 @@ namespace ColorVision.Copilot
             return builder.ToString().TrimEnd();
         }
 
+        private static Dictionary<string, CopilotConversationRecord?>? IndexBranchParents(CopilotConversationRecord[] conversations)
+        {
+            Dictionary<string, CopilotConversationRecord?>? parents = null;
+            foreach (var conversation in conversations)
+            {
+                if (conversation.BranchOrigin?.ParentConversationId is { Length: > 0 } parentId)
+                    (parents ??= new(StringComparer.Ordinal)).TryAdd(parentId, null);
+            }
+            if (parents == null)
+                return null;
+
+            int remaining = parents.Count;
+            foreach (var conversation in conversations)
+            {
+                if (conversation.Id is not { } id || !parents.TryGetValue(id, out var parent) || parent != null)
+                    continue;
+
+                // Restored duplicate IDs use the first source record, as in the linear lookup.
+                parents[id] = conversation;
+                if (--remaining == 0)
+                    break;
+            }
+            return parents;
+        }
+
         private static int ResolveOwnedMessageStartIndex(
-            IReadOnlyList<CopilotConversationRecord> conversations,
+            IReadOnlyDictionary<string, CopilotConversationRecord?>? branchParents,
             CopilotConversationRecord conversation,
             IReadOnlyList<CopilotChatMessage> messages)
         {
@@ -204,24 +230,14 @@ namespace ColorVision.Copilot
             if (origin?.IsStructurallyValid(conversation.Id) != true)
                 return 0;
 
-            var parent = conversations.FirstOrDefault(candidate => string.Equals(
-                candidate.Id,
-                origin.ParentConversationId,
-                StringComparison.Ordinal));
-            if (parent != null)
+            if (branchParents?.GetValueOrDefault(origin.ParentConversationId) is { } parent)
             {
-                var throughIndex = parent.Messages
-                    .Select((message, index) => (message, index))
-                    .FirstOrDefault(item => string.Equals(
-                        item.message?.Id,
-                        origin.ThroughMessageId,
-                        StringComparison.Ordinal))
-                    .index;
-                if (throughIndex >= 0
-                    && throughIndex < parent.Messages.Count
-                    && string.Equals(parent.Messages[throughIndex]?.Id, origin.ThroughMessageId, StringComparison.Ordinal))
+                var parentMessages = parent.Messages;
+                ArgumentNullException.ThrowIfNull(parentMessages, "source");
+                for (int throughIndex = 0; throughIndex < parentMessages.Count; throughIndex++)
                 {
-                    return Math.Min(messages.Count, throughIndex + 1);
+                    if (string.Equals(parentMessages[throughIndex]?.Id, origin.ThroughMessageId, StringComparison.Ordinal))
+                        return Math.Min(messages.Count, throughIndex + 1);
                 }
             }
 

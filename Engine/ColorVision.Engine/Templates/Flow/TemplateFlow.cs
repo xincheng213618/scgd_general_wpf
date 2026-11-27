@@ -58,11 +58,9 @@ namespace ColorVision.Engine.Templates.Flow
         public static FlowParam? GetParamOrDefault(int index) => Params.ElementAtOrDefault(index)?.Value;
 
         private readonly LocalFlowTemplateStorage localStorage;
-        private readonly Func<bool> isMySqlConnected;
-        private readonly Func<SqlSugarClient> openMySql;
+        private readonly TemplateStorageSource source;
         private PreparedFlowPackage? preparedPackage;
-        private bool localReadMode;
-        private bool UseLocalStorage => localReadMode || !isMySqlConnected();
+        private bool UseLocalStorage => source.UseLocal;
 
         public TemplateFlow() : this(LocalFlowTemplateStorage.Default) { }
 
@@ -71,8 +69,8 @@ namespace ColorVision.Engine.Templates.Flow
         public TemplateFlow(LocalFlowTemplateStorage localStorage, Func<bool>? isMySqlConnected = null, Func<SqlSugarClient>? openMySql = null)
         {
             this.localStorage = localStorage;
-            this.isMySqlConnected = isMySqlConnected ?? (() => MySqlSetting.IsConnect);
-            this.openMySql = openMySql ?? (() => new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true }));
+            source = isMySqlConnected == null && openMySql == null
+                ? TemplateStorageSource.Workstation : new TemplateStorageSource(isMySqlConnected, openMySql);
             IsSideHide = false;
             IsUserControl = true;
             Title = ColorVision.Engine.Properties.Resources.WorkflowEngineTemplateManagement;
@@ -105,29 +103,21 @@ namespace ColorVision.Engine.Templates.Flow
         {
             IReadOnlyList<FlowParam> values;
             IReadOnlyList<UnavailableLocalFlowTemplate> unavailable = [];
-            bool isLocal = !isMySqlConnected();
-            if (!isLocal)
-            {
-                try { values = LoadMySql(); }
-                catch (Exception ex)
-                {
-                    log.Warn("MySQL flow templates unavailable; using local flow templates.", ex);
-                    isLocal = true;
-                    (values, unavailable) = localStorage.LoadAvailable();
-                }
-            }
-            else (values, unavailable) = localStorage.LoadAvailable();
+            bool isLocal = UseLocalStorage;
+            TemplateDatabase? database = isLocal ? null : source.CaptureDatabase();
+            if (database == null) (values, unavailable) = localStorage.LoadAvailable();
+            else values = LoadMySql(database);
 
             foreach (FlowParam value in values)
                 TryAttachCatalogRevision(value);
             foreach (UnavailableLocalFlowTemplate item in unavailable)
                 log.Warn($"Local flow template '{item.Name}' ({item.Id}) could not be loaded.", item.Error);
-            return new FlowTemplateLoadResult(values, unavailable, isLocal);
+            return new FlowTemplateLoadResult(values, unavailable, database);
         }
 
         private void ApplyValues(FlowTemplateLoadResult result)
         {
-            localReadMode = result.IsLocal;
+            if (result.Database is { IsCurrent: false }) return;
             UnavailableLocalTemplates = result.Unavailable;
             IReadOnlyList<FlowParam> values = result.Values;
             var ids = values.Select(value => value.Id).ToHashSet();
@@ -146,18 +136,18 @@ namespace ColorVision.Engine.Templates.Flow
                     if (oldIndex != index) TemplateParams.Move(oldIndex, index);
                 }
             }
-            Title = Properties.Resources.WorkflowEngineTemplateManagement + (localReadMode ? LocalizedText.Get(" · 本地") : " · MySQL");
+            Title = Properties.Resources.WorkflowEngineTemplateManagement + (result.Database == null ? LocalizedText.Get(" · 本地") : " · MySQL");
             SaveIndex.Clear();
         }
 
         private sealed record FlowTemplateLoadResult(
             IReadOnlyList<FlowParam> Values,
             IReadOnlyList<UnavailableLocalFlowTemplate> Unavailable,
-            bool IsLocal);
+            TemplateDatabase? Database);
 
-        private IReadOnlyList<FlowParam> LoadMySql()
+        private static IReadOnlyList<FlowParam> LoadMySql(TemplateDatabase database)
         {
-            using var Db = openMySql();
+            using var Db = database.Open();
             List<ModMasterModel> flows = Db.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).OrderBy(x => x.Id).ToList();
             var values = new List<FlowParam>();
             foreach (var dbModel in flows)
@@ -176,7 +166,7 @@ namespace ColorVision.Engine.Templates.Flow
                             .Select(r => r.Value)
                     })
                     .ToList();
-                var param = new FlowParam(dbModel, details);
+                var param = new FlowParam(dbModel, details) { Database = database };
                 AssignRuntimeIdentity(Db, param, details);
                 values.Add(param);
             }
@@ -203,8 +193,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else
             {
-                if (!isMySqlConnected()) throw new InvalidOperationException("MySQL 未连接，不能删除服务器流程。");
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var Db = (value.Database ?? source.CaptureDatabase()).Open();
                 List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
                 Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
 
@@ -264,13 +253,12 @@ namespace ColorVision.Engine.Templates.Flow
                 TryRecordCatalogRevision(flowParam);
                 return;
             }
-            if (!MySqlSetting.IsConnect) throw new InvalidOperationException("MySQL 未连接，服务器流程尚未保存。请连接数据库后重试。");
             string? expectedContentHash =
                 ResolveExpectedContentHash(flowParam, condition);
             log.Info($"Save2DB: 开始保存, FlowParam.Id={flowParam.Id}, Name={flowParam.Name}, DataBase64长度={flowParam.DataBase64?.Length ?? 0}");
             try
             {
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var Db = (flowParam.Database ?? TemplateStorageSource.Workstation.CaptureDatabase()).Open();
                 SysResourceModel? savedResource = null;
                 Db.Ado.BeginTran();
                 try
@@ -591,10 +579,11 @@ namespace ColorVision.Engine.Templates.Flow
                 TryRecordCatalogRevision(local);
                 return;
             }
+            var database = source.CaptureDatabase();
             string? importData = ImportTemp?.DataBase64;
             if (package != null)
             {
-                ValidatePackageDestination(templateName);
+                ValidatePackageDestination(templateName, database);
                 if (package.Manifest is { Templates.Count: > 0 } manifest)
                 {
                     var nameMap = FlowPackageHelper.ImportTemplates(manifest, package.FlowName);
@@ -602,7 +591,7 @@ namespace ColorVision.Engine.Templates.Flow
                         importData = Convert.ToBase64String(FlowPackageHelper.ReplaceTemplateNames(Convert.FromBase64String(package.Draft.DataBase64), nameMap));
                 }
             }
-            FlowParam? param = AddServerFlowParam(templateName);
+            FlowParam? param = AddServerFlowParam(templateName, database);
             if (param != null)
             {
                 if (importData != null)
@@ -621,13 +610,13 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        private void ValidatePackageDestination(string templateName)
+        private void ValidatePackageDestination(string templateName, TemplateDatabase database)
         {
             if (string.IsNullOrWhiteSpace(templateName))
                 throw new ArgumentException(Properties.Resources.InputTemplateName, nameof(templateName));
             if (!ExitsTemplateName(templateName))
             {
-                using var db = openMySql();
+                using var db = database.Open();
                 if (!db.Queryable<ModMasterModel>().Any(item => item.Pid == 11 && item.TenantId == 0 && !item.IsDelete && item.Name == templateName))
                     return;
             }
@@ -645,12 +634,12 @@ namespace ColorVision.Engine.Templates.Flow
                 localStorage.Save(local);
                 return local;
             }
-            return AddServerFlowParam(templateName);
+            return AddServerFlowParam(templateName, source.CaptureDatabase());
         }
 
-        private FlowParam? AddServerFlowParam(string templateName)
+        private static FlowParam? AddServerFlowParam(string templateName, TemplateDatabase database)
         {
-            using var Db = openMySql();
+            using var Db = database.Open();
             FlowParam? created = null;
             Db.Ado.BeginTran();
             try
@@ -668,8 +657,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                 List<ModDetailModel> list = new();
                 foreach (var item in
-                    SysDictionaryModDetailDao.Instance.GetAllByPid(
-                        flowMaster.Pid))
+                    Db.Queryable<SysDictionaryModDetaiModel>().Where(item => item.PId == flowMaster.Pid).ToList())
                 {
                     list.Add(new ModDetailModel
                     {
@@ -710,7 +698,7 @@ namespace ColorVision.Engine.Templates.Flow
                     }
                 }
 
-                created = new FlowParam(flowMaster, flowDetail);
+                created = new FlowParam(flowMaster, flowDetail) { Database = database };
                 AssignRuntimeIdentity(Db, created, flowDetail);
                 Db.Ado.CommitTran();
             }

@@ -65,7 +65,7 @@ namespace ColorVision.Engine
         ARVR_BinocularFusion = 54,
         KB_Output_Lv = 55,
         KB_Output_CIE = 56,
-        ARVR_SFR_FindROI = 60,
+        // Result ID 60 is reserved after retirement.
         ARVR_AAFindPoints = 61,
         PoiAnalysis = 62,
         FindCross = 63,

@@ -78,22 +78,24 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public Dictionary<string, object> ToDictionary()
         {
             Dictionary<string, object> keyValuePairs = new();
-            if (DarkNoise.IsSelected)
+            if (DarkNoise.IsSelected && !DSNU.IsSelected)
                 keyValuePairs.Add(nameof(DarkNoise), DarkNoise.FilePath);
             if (DefectPoint.IsSelected)
                 keyValuePairs.Add(nameof(DefectPoint), DefectPoint.FilePath);
             if (DSNU.IsSelected)
                 keyValuePairs.Add(nameof(DSNU), DSNU.FilePath);
+            if (DarkNoise.IsSelected && DSNU.IsSelected)
+                keyValuePairs.Add(nameof(DarkNoise), DarkNoise.FilePath);
             if (Uniformity.IsSelected)
                 keyValuePairs.Add(nameof(Uniformity), Uniformity.FilePath);
-            if (Distortion.IsSelected)
-                keyValuePairs.Add(nameof(Distortion), Distortion.FilePath);
             if (ColorShift.IsSelected)
                 keyValuePairs.Add(nameof(ColorShift), ColorShift.FilePath);
+            if (Distortion.IsSelected)
+                keyValuePairs.Add(nameof(Distortion), Distortion.FilePath);
+            if (LineArity.IsSelected)
+                keyValuePairs.Add(nameof(LineArity), LineArity.FilePath);
             if (ColorDiff.IsSelected)
                 keyValuePairs.Add(nameof(ColorDiff), ColorDiff.FilePath);
-            if (LineArity.IsSelected)
-                keyValuePairs.Add(nameof(LineArity), LineArity.FilePath);        
             if (AngleShift.IsSelected)
                 keyValuePairs.Add(nameof(AngleShift), AngleShift.FilePath);
             return keyValuePairs;
@@ -227,10 +229,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
     {
         public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId) where T : ParamModBase, new()
         {
-            if (!MySqlSetting.IsConnect)
+            if (SysResourceDao.IsLocalId(resourceId) || WorkstationConfiguration.ConnectedEndpoint is not { } endpoint)
                 return;
             var existingParams = ResourceParams.ToDictionary(rp => rp.Id, rp => rp);
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            using var Db = endpoint.CreateDbClient();
 
             List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x=>x.Pid ==2).Where(x => x.ResourceId == resourceId).Where(x=>x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
             foreach (var dbModel in smus)

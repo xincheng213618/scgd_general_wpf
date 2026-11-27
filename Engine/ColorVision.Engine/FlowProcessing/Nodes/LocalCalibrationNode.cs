@@ -116,7 +116,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             => ExecuteCalibrationCore(action, useInputColor, LocalFlowResultPersistence.ResolveEndpoint(action));
 
         private protected LocalCalibrationExecution ExecuteCalibrationCore(CVStartCFC action, bool useInputColor,
-            MySqlConnectedEndpoint? endpoint)
+            MySqlConnectedEndpoint? endpoint, bool requireColor = false)
         {
             LocalFlowFrame sourceFrame;
             bool ownsSourceFrame;
@@ -146,6 +146,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalFlowFrame? outputFrame = null;
             bool ownsOutputFrame = false;
             CalibrationParam? calibration = null;
+            LocalColorCalibrationOutput colorOutput = AllowAcceleration
+                ? LocalColorCalibrationOutput.Deferred : LocalColorCalibrationOutput.FullCie;
             string sourceFrameId = sourceFrame.FrameId.ToString("N");
             bool calibrated = false;
             try
@@ -165,6 +167,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         || string.Equals(sourceFrame.Metadata.CalibrationTemplate, CalibTempName, StringComparison.Ordinal));
                 if (useInputColor || canReuseExistingCie || canReuseCalibratedRaw)
                 {
+                    outputFrame = sourceFrame;
                     if (useInputColor)
                     {
                         if (!sourceFrame.HasCie && (!sourceFrame.HasRaw || sourceFrame.ColorCalibration?.CanReplay != true))
@@ -172,12 +175,16 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         if (loadedFromFile && TryGetInputMasterResult(action, 0, out int imageMasterId, out _, out _))
                             sourceFrame.MasterId = imageMasterId;
                     }
-                    else if (sourceFrame.HasRaw && (AllowAcceleration || !sourceFrame.HasCie))
+                    else if (sourceFrame.HasRaw && sourceFrame.HasCie != (colorOutput == LocalColorCalibrationOutput.FullCie))
                     {
-                        LocalFrameCalibrationService.ReuseColorCalibration(sourceFrame, AllowAcceleration);
+                        if (!ownsSourceFrame)
+                        {
+                            outputFrame = sourceFrame.ForkForCalibration();
+                            ownsOutputFrame = true;
+                        }
+                        LocalFrameCalibrationService.ReuseColorCalibration(outputFrame, colorOutput);
                     }
-                    outputFrame = sourceFrame;
-                    ownsOutputFrame = ownsSourceFrame;
+                    ownsOutputFrame |= ownsSourceFrame;
                     ownsSourceFrame = false;
                     if (!outputFrame.IsFlipApplied)
                     {
@@ -194,16 +201,18 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     {
                         throw new InvalidOperationException(errorMessage ?? "校正模板无效。");
                     }
-                    LocalFrameCalibrationService.CalibrateInPlace(
-                        sourceFrame,
-                        device.LocalCalibrationCacheManager,
-                        calibrationFiles,
-                        calibration.Name,
-                        LocalCalibrationRoi.ResolveForFrame(sourceFrame.Metadata, device.PhyCamera?.Config?.CameraCfg),
-                        ResolveZeroExposureFallback(action, sourceFrame, endpoint),
-                        AllowAcceleration);
+                    var plan = device.LocalCalibrationCacheManager.Prepare(calibrationFiles, calibration.Name);
                     outputFrame = sourceFrame;
-                    ownsOutputFrame = ownsSourceFrame;
+                    if (!ownsSourceFrame)
+                    {
+                        outputFrame = sourceFrame.ForkForCalibration();
+                        ownsOutputFrame = true;
+                    }
+                    plan.Apply(outputFrame, plan.OutputFor(colorOutput, requireColor),
+                        LocalCalibrationRoi.FromCameraConfig(device.PhyCamera?.Config?.CameraCfg),
+                        ResolveZeroExposureFallback(action, sourceFrame, endpoint));
+                    LocalFrameFileService.SaveColorParametersToInput(outputFrame);
+                    ownsOutputFrame |= ownsSourceFrame;
                     ownsSourceFrame = false;
                     calibrated = true;
                 }

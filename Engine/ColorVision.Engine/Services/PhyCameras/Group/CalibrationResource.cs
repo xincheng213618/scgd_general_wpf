@@ -143,8 +143,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             ServiceAuthorization.Demand("calibration.write", SysResourceModel);
             SysResourceModel.Remark = JsonConvert.SerializeObject(Config);
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
-            Db.Updateable(SysResourceModel).ExecuteCommand();
+            if (SysResourceDao.Instance.Save(SysResourceModel) <= 0)
+                throw new InvalidOperationException("未能保存工位的校正文件配置。");
         }
     }
 }

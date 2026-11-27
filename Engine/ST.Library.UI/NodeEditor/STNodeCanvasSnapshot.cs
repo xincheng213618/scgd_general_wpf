@@ -52,7 +52,7 @@ public partial class STNodeEditor
     public static STNodeCanvasSnapshot ReadCanvasSnapshot(byte[] data)
     {
         ArgumentNullException.ThrowIfNull(data);
-        using var stream = new MemoryStream(data, writable: false);
+        using var stream = new MemoryStream(data, 0, data.Length, writable: false, publiclyVisible: true);
         return ReadCanvasSnapshot(stream);
     }
 

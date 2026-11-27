@@ -672,22 +672,25 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     }
 
     [Theory]
-    [InlineData(8, 1, RealtimeFramePresenter.TransformNone)]
-    [InlineData(16, 1, RealtimeFramePresenter.TransformFlipX)]
-    [InlineData(8, 3, RealtimeFramePresenter.TransformFlipY)]
-    [InlineData(16, 3, RealtimeFramePresenter.TransformFlipXY)]
-    public async Task BackgroundVideoCopyPreservesPixelLayoutAndFlipWithPaddedBorrowedRows(int depth, int channels, int transform)
+    [InlineData(8, 1, RealtimeFramePresenter.TransformNone, 3)]
+    [InlineData(16, 1, RealtimeFramePresenter.TransformFlipX, 3)]
+    [InlineData(16, 1, RealtimeFramePresenter.TransformFlipY, 35)]
+    [InlineData(8, 3, RealtimeFramePresenter.TransformFlipY, 3)]
+    [InlineData(8, 3, RealtimeFramePresenter.TransformFlipXY, 19)]
+    [InlineData(16, 3, RealtimeFramePresenter.TransformFlipXY, 19)]
+    public async Task BackgroundVideoCopyPreservesPixelLayoutAndFlipWithPaddedBorrowedRows(int depth, int channels, int transform, int width)
     {
+        const int height = 2;
         int pixelBytes = channels * (depth / 8);
-        int rowBytes = 3 * pixelBytes;
+        int rowBytes = width * pixelBytes;
         int stride = rowBytes + 5;
-        byte[] samples = Enumerable.Range(0, stride * 2).Select(i => (byte)(i + 1)).ToArray();
-        byte[] expected = new byte[rowBytes * 2];
-        for (int y = 0; y < 2; y++)
-            for (int x = 0; x < 3; x++)
+        byte[] samples = Enumerable.Range(0, (height - 1) * stride + rowBytes).Select(i => (byte)(i + 1)).ToArray();
+        byte[] expected = new byte[rowBytes * height];
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
             {
-                int sourceY = (transform & RealtimeFramePresenter.TransformFlipX) != 0 ? 1 - y : y;
-                int sourceX = (transform & RealtimeFramePresenter.TransformFlipY) != 0 ? 2 - x : x;
+                int sourceY = (transform & RealtimeFramePresenter.TransformFlipX) != 0 ? height - 1 - y : y;
+                int sourceX = (transform & RealtimeFramePresenter.TransformFlipY) != 0 ? width - 1 - x : x;
                 Array.Copy(samples, sourceY * stride + sourceX * pixelBytes, expected, y * rowBytes + x * pixelBytes, pixelBytes);
             }
         IntPtr borrowed = Marshal.AllocCoTaskMem(samples.Length);
@@ -697,7 +700,7 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
             WpfTestHost.Invoke(() =>
             {
                 pipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false);
-                Assert.True(view.Realtime.SubmitFrame(borrowed, 3, 2, RealtimeFramePresenter.GetPixelFormat(channels, depth), stride, samples.Length, transform));
+                Assert.True(view.Realtime.SubmitFrame(borrowed, width, height, RealtimeFramePresenter.GetPixelFormat(channels, depth), stride, samples.Length, transform));
             });
         }
         finally { Marshal.FreeCoTaskMem(borrowed); }
@@ -713,22 +716,26 @@ public sealed class CameraPreviewFileHandoffTests : IDisposable
     }
 
     [Theory]
-    [InlineData(1, 8, false, false)]
-    [InlineData(1, 16, true, false)]
-    [InlineData(3, 8, true, false)]
-    [InlineData(3, 16, true, false)]
-    [InlineData(3, 8, true, true)]
-    public async Task LargeFrameDisplayCopyDrawsTheSamePixelsWithoutReplacingTheSource(int channels, int depth, bool expectsProxy, bool rgb24)
+    [InlineData(1, 8, false, false, false)]
+    [InlineData(1, 16, true, false, false)]
+    [InlineData(3, 8, true, false, false)]
+    [InlineData(3, 16, true, false, false)]
+    [InlineData(3, 8, true, true, false)]
+    [InlineData(3, 16, true, false, true)]
+    [InlineData(1, 16, true, false, true)]
+    public async Task LargeFrameDisplayCopyDrawsTheSamePixelsWithoutReplacingTheSource(int channels, int depth, bool expectsProxy, bool rgb24, bool large)
     {
         PixelFormat format = rgb24 ? PixelFormats.Rgb24 : RealtimeFramePresenter.GetPixelFormat(channels, depth);
-        // Exercise full vector groups and a tail on odd-width color inputs, and WIC gray quantization.
-        int width = channels == 3 || depth == 16 ? 19 : 3;
+        // Exercise odd-width inputs, including tails in color conversion and WIC gray quantization.
+        int width = large ? 2049 : channels == 3 || depth == 16 ? 19 : 3;
+        int height = large ? 513 : 2;
         int stride = RealtimeFramePresenter.GetDefaultStride(width, format) + 5;
-        byte[] samples = Enumerable.Range(0, stride * 2).Select(i => (byte)(i * 11 + 1)).ToArray();
+        byte[] samples = new byte[stride * height];
+        for (int index = 0; index < samples.Length; index++) samples[index] = (byte)(index * 11 + 1);
         WpfTestHost.Invoke(() =>
         {
             pipeline.Start(view, showOverlayRoi: false, showOverlayMetrics: false);
-            Assert.True(view.Realtime.SubmitFrame(samples, width, 2, format, stride, samples.Length, RealtimeFramePresenter.TransformFlipY));
+            Assert.True(view.Realtime.SubmitFrame(samples, width, height, format, stride, samples.Length, RealtimeFramePresenter.TransformFlipY));
         });
         await view.Realtime.Completion.WaitAsync(TimeSpan.FromSeconds(10));
         WpfTestHost.Invoke(() =>

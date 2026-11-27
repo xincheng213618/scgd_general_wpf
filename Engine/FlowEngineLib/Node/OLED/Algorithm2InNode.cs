@@ -95,9 +95,6 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 		case Algorithm2Type.SFR:
 			operatorCode = "SFR";
 			break;
-		case Algorithm2Type.SFR_FindROI:
-			operatorCode = "ARVR.SFR.FindROI";
-			break;
 		case Algorithm2Type.十字计算:
 			operatorCode = "FindCross";
 			break;

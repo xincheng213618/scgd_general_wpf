@@ -1726,15 +1726,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 查看耗时统计 的本地化字符串。
-        /// </summary>
-        public static string TimedOp_ViewStats {
-            get {
-                return ResourceManager.GetString("TimedOp_ViewStats", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 预热: 的本地化字符串。
         /// </summary>
         public static string TimedOp_Warmup {

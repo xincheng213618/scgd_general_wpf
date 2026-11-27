@@ -31,9 +31,16 @@ public sealed class EditorMinimap : FrameworkElement, IDisposable
     private double _dragAnchor;
     private double _hoverY;
     private int[] _searchLines = [];
+    private readonly List<double> _searchMarkerPositions = new();
+    private double _searchMarkerRowHeight = double.NaN;
     private int? _errorLine;
     internal int? ErrorLine { get => _errorLine; set { _errorLine = value; InvalidateVisual(); } }
-    internal void SetSearchLines(IEnumerable<int> lines) { _searchLines = lines.Distinct().Order().ToArray(); InvalidateVisual(); }
+    internal void SetSearchLines(IEnumerable<int> lines)
+    {
+        _searchLines = lines.Distinct().Order().ToArray();
+        _searchMarkerRowHeight = double.NaN;
+        InvalidateVisual();
+    }
     private double RowHeight => _editor?.Document is { } document ? Math.Min(2.8, ActualHeight / Math.Max(1, document.LineCount)) : 0;
     public bool ShowPreview { get; set; } = true;
     internal bool BoldKeywords { get; set; }
@@ -202,21 +209,33 @@ public sealed class EditorMinimap : FrameworkElement, IDisposable
         Rect viewport = ViewportRectangle;
         if (!viewport.IsEmpty)
             dc.DrawRectangle(FindBrush("EditorOverviewViewportBrush", Brushes.Transparent), new Pen(FindBrush("EditorOverviewBorderBrush", Brushes.Gray), 1), viewport);
-        if (_editor?.Document != null && RowHeight > 0)
+        double rowHeight = RowHeight;
+        if (_editor?.Document != null && rowHeight > 0)
         {
-            double previous = -10;
+            UpdateSearchMarkers(rowHeight);
             var matchBrush = FindBrush("EditorSearchMarkerBrush", Brushes.Goldenrod);
-            foreach (int line in _searchLines)
-            {
-                double markerY = Math.Floor((line - 1) * RowHeight);
-                if (markerY - previous < 2) continue;
-                dc.DrawRectangle(matchBrush, null, new Rect(Math.Max(0, ActualWidth - 6), markerY, 5, 2));
-                previous = markerY;
-            }
+            double markerX = Math.Max(0, ActualWidth - 6);
+            foreach (double markerY in _searchMarkerPositions)
+                dc.DrawRectangle(matchBrush, null, new Rect(markerX, markerY, 5, 2));
             if (ErrorLine is int errorLine)
-                dc.DrawRectangle(FindBrush("EditorSyntaxErrorBrush", Brushes.Red), null, new Rect(0, (errorLine - 1) * RowHeight, ActualWidth, 2));
-            double y = (_editor.TextArea.Caret.Line - 1) * RowHeight;
+                dc.DrawRectangle(FindBrush("EditorSyntaxErrorBrush", Brushes.Red), null, new Rect(0, (errorLine - 1) * rowHeight, ActualWidth, 2));
+            double y = (_editor.TextArea.Caret.Line - 1) * rowHeight;
             dc.DrawLine(new Pen(FindBrush("EditorCaretBrush", Brushes.Gray), 1), new Point(0, y), new Point(ActualWidth, y));
+        }
+    }
+
+    private void UpdateSearchMarkers(double rowHeight)
+    {
+        if (_searchMarkerRowHeight == rowHeight) return;
+        _searchMarkerRowHeight = rowHeight;
+        _searchMarkerPositions.Clear();
+        double previous = -10;
+        foreach (int line in _searchLines)
+        {
+            double markerY = Math.Floor((line - 1) * rowHeight);
+            if (markerY - previous < 2) continue;
+            _searchMarkerPositions.Add(markerY);
+            previous = markerY;
         }
     }
 

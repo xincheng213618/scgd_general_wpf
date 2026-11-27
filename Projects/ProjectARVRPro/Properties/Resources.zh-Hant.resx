@@ -1071,6 +1071,9 @@
   <data name="没有可导出的数据" xml:space="preserve">
     <value>沒有可導出的數據</value>
   </data>
+  <data name="流程分析" xml:space="preserve">
+    <value>流程分析</value>
+  </data>
   <data name="流程执行分析" xml:space="preserve">
     <value>流程執行分析</value>
   </data>
@@ -1306,4 +1309,13 @@
   <data name="双击打开流程模板，右键编辑配置。" xml:space="preserve"><value>按兩下開啟流程模板，右鍵編輯設定。</value></data>
   <data name="现场数据副本" xml:space="preserve"><value>現場資料副本</value></data>
   <data name="清理已结束应用会话的过期只读副本，原始反馈资料保留；本次运行导入的副本受保护。" xml:space="preserve"><value>清理已結束應用程式工作階段的過期唯讀副本，原始回饋資料保留；本次執行匯入的副本受保護。</value></data>
+  <data name="点阵画面识别失败，未找到符合要求的完整点阵。" xml:space="preserve"><value>點陣畫面辨識失敗，未找到符合要求的完整點陣。</value></data>
+  <data name="流程 {0} · SN {1} · {2:yyyy/MM/dd HH:mm:ss}" xml:space="preserve"><value>流程 {0} · SN {1} · {2:yyyy/MM/dd HH:mm:ss}</value></data>
+  <data name="该记录未保存具体原因。" xml:space="preserve"><value>這筆記錄未儲存具體原因。</value></data>
+  <data name="原始错误" xml:space="preserve"><value>原始錯誤</value></data>
+  <data name="上一个报错" xml:space="preserve"><value>上一筆錯誤</value></data>
+  <data name="下一个报错" xml:space="preserve"><value>下一筆錯誤</value></data>
+  <data name="跳转到当前筛选中的报错记录。" xml:space="preserve"><value>跳至目前篩選範圍內的錯誤記錄。</value></data>
+  <data name="该方向没有可查看的报错记录。已跳过缺图 {0} 条。" xml:space="preserve"><value>此方向沒有可查看的錯誤記錄。已略過 {0} 筆缺少影像的記錄。</value></data>
+  <data name="历史异常：{0}" xml:space="preserve"><value>歷史異常：{0}</value></data>
 </root>

@@ -134,8 +134,10 @@ public sealed class GridDistortionTests
         Assert.Empty(result.Points);
     }
 
-    [Fact]
-    public void PositiveNativeReturnWithAlgorithmRejectionDoesNotProduceZeroMetrics()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PositiveNativeReturnWithAlgorithmRejectionPreservesOptionalCandidateEvidence(bool hasCandidatePoints)
     {
         JsonObject json = ValidJson();
         json["success"] = false;
@@ -144,6 +146,11 @@ public sealed class GridDistortionTests
         json["points"] = new JsonArray();
         json["referencePointIds"] = new JsonArray();
         json["selectedCount"] = 0;
+        json["candidateCount"] = 8;
+        if (hasCandidatePoints)
+            json["candidatePoints"] = JsonNode.Parse("""[{"x":100.25,"y":110.75}]""");
+        else
+            json.Remove("candidatePoints");
         int released = 0;
         GridDistortionResult result = GridDistortionNative.Invoke(
             (out IntPtr pointer) => { pointer = new IntPtr(123); return 456; },
@@ -152,6 +159,12 @@ public sealed class GridDistortionTests
         Assert.Equal("missing_points", result.StatusCode);
         Assert.Equal(456, result.NativeReturnCode);
         Assert.Null(result.Metrics);
+        Assert.Empty(result.Points);
+        Assert.Equal(8, result.CandidateCount);
+        if (hasCandidatePoints)
+            Assert.Equal(new GridDistortionCandidatePoint(100.25, 110.75), Assert.Single(result.CandidatePoints));
+        else
+            Assert.Empty(result.CandidatePoints);
         Assert.Equal(1, released);
     }
 

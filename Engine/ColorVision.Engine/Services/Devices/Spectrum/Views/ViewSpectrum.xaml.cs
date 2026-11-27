@@ -377,6 +377,24 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             DrawSpectrum(wpfplot2, result, result.AbsoluteScatterPlot, true);
         }
 
+        // The display palette is device-independent and uses the same steps as the plot fill.
+        private static readonly Lazy<Color[]> SpectrumFillColors = new(() =>
+            Enumerable.Range(0, 201).Select(index => GetSpectrumColor(380 + 2 * index)).ToArray());
+
+        private static Color GetSpectrumFillColor(double wavelength)
+        {
+            double index = (wavelength - 380) / 2;
+            return index >= 0 && index < 201 && index == (int)index
+                ? SpectrumFillColors.Value[(int)index]
+                : GetSpectrumColor(wavelength);
+        }
+
+        private static Color GetSpectrumColor(double wavelength)
+        {
+            var rgb = SpectrumChromaticity.DisplayRgb(wavelength);
+            return new Color(rgb.red, rgb.green, rgb.blue);
+        }
+
         private void DrawSpectrum(ScottPlot.WPF.WpfPlot control, ViewResultSpectrum result, Scatter curve, bool absolute)
         {
             if (curve == null) return;
@@ -399,11 +417,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 control.Plot.Remove(LastMulSelectComparsion);
                 control.Plot.Remove(curve);
                 if (Config.IsShowSpectrumFill)
-                    SpectrumPlotStyle.AddFill(control.Plot, curve, wavelength =>
-                    {
-                        var rgb = SpectrumChromaticity.DisplayRgb(wavelength);
-                        return new Color(rgb.red, rgb.green, rgb.blue);
-                    });
+                    SpectrumPlotStyle.AddFill(control.Plot, curve, GetSpectrumFillColor);
                 curve.Color = spectrumCurveColor;
                 curve.LineWidth = 1.2f;
             }

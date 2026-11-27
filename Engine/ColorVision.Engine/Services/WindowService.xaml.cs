@@ -72,6 +72,29 @@ namespace ColorVision.Engine.Services
             this.DataContext = this;
             ApplyServiceListMode();
             _initialConfiguration = CaptureConfiguration(ServiceManager.GetInstance().TypeServices);
+            ConfigurationSourceSelector.SelectedValue = WorkstationConfigurationSettings.Instance.Source;
+            ConfigurationSourceSelector.IsEnabled = AccessControl.Evaluate("device.configure", PermissionMode.Administrator).Allowed;
+            ConfigurationSourceSelector.SelectionChanged += ConfigurationSourceChanged;
+            string active = WorkstationConfiguration.ActiveSource == WorkstationConfigurationSource.Local
+                ? EngineLocalization.Get("WorkstationSourceLocal") : "MySQL";
+            ActiveConfigurationSource.Text = string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                EngineLocalization.Get("WorkstationSourceActive"), active);
+        }
+
+        private void ConfigurationSourceChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var settings = WorkstationConfigurationSettings.Instance;
+            if (ConfigurationSourceSelector.SelectedValue is not WorkstationConfigurationSource source || settings.Source == source) return;
+
+            string error;
+            if (!AccessControl.Evaluate("device.configure", PermissionMode.Administrator).Allowed)
+                error = EngineLocalization.Get("当前权限不足，无法保存设备配置。");
+            else if (ConfigHandler.GetInstance().TrySaveAndPublish(new WorkstationConfigurationSettings { Source = source },
+                () => settings.Source = source, out error) == ConfigSavePublicationStatus.PersistedAndPublished)
+                return;
+
+            ConfigurationSourceSelector.SelectedValue = settings.Source;
+            MessageBox.Show(this, error, Properties.Resources.MenuService, MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -107,6 +130,18 @@ namespace ColorVision.Engine.Services
                 PublishCopilotDeviceContext(device);
             else
                 ClearCopilotDeviceContext();
+        }
+
+        private void ConfigureDataPath_Click(object sender, RoutedEventArgs e)
+        {
+            var services = ServiceManager.GetInstance();
+            bool pathOnlyChange = _initialConfiguration?.SequenceEqual(CaptureConfiguration(services.TypeServices)) == true;
+            var dialog = new DeviceDataPathWindow(new DeviceDataPathConfiguration(ConfigHandler.GetInstance(), () => ServiceManager.GetInstance().DeviceServices))
+            {
+                Owner = this,
+            };
+            dialog.ShowDialog();
+            if (dialog.HasApplied && pathOnlyChange) _initialConfiguration = CaptureConfiguration(services.TypeServices);
         }
 
         protected override void OnClosed(EventArgs e)

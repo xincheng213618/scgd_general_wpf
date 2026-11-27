@@ -230,19 +230,45 @@ namespace ColorVision.Engine.Media
         }
 
         internal static WriteableBitmap RenderFloatChannel(CvcieDiskPixels plane, int width, int height, int bpp, CancellationToken token)
-            => RenderFloatChannel(new FloatChannelInput(default, plane), width, height, bpp, token);
+        {
+            using PreparedFloatChannelWriter writer = PrepareFloatChannelWriter(plane, width, height, bpp, token);
+            return CreateFrozenDisplayBitmap(width, height, PixelFormats.Gray8, writer.Write, token);
+        }
 
         private static WriteableBitmap RenderFloatChannel(FloatChannelInput source, int width, int height, int bpp, CancellationToken token)
             => CreateFrozenDisplayBitmap(width, height, PixelFormats.Gray8, PrepareFloatChannelWriter(source, width, height, bpp, token), token);
 
-        internal static Action<IntPtr, int> PrepareFloatChannelWriter(CvcieDiskPixels plane, int width, int height, int bpp, CancellationToken token)
-            => PrepareFloatChannelWriter(new FloatChannelInput(default, plane), width, height, bpp, token);
+        internal static PreparedFloatChannelWriter PrepareFloatChannelWriter(CvcieDiskPixels plane, int width, int height, int bpp, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            int pixelCount = checked(width * height);
+            CvcieDiskPixels.MappedPlane? mapping = pixelCount >= LargeFloatChannelPixelCount
+                ? plane.TryMapFixedVolume((long)pixelCount * (bpp / 8)) : null;
+            try
+            {
+                Action<IntPtr, int> write = PrepareFloatChannelWriter(new FloatChannelInput(default, plane, mapping), width, height, bpp, token);
+                return new PreparedFloatChannelWriter(write, mapping);
+            }
+            catch
+            {
+                mapping?.Dispose();
+                throw;
+            }
+        }
+
+        // Keep the mapped plane open from range discovery until the bitmap writer has returned.
+        internal sealed class PreparedFloatChannelWriter(Action<IntPtr, int> write, CvcieDiskPixels.MappedPlane? mapping) : IDisposable
+        {
+            public void Write(IntPtr buffer, int stride) => write(buffer, stride);
+            public void Dispose() => mapping?.Dispose();
+        }
 
         private static Action<IntPtr, int> PrepareFloatChannelWriter(FloatChannelInput source, int width, int height, int bpp, CancellationToken token)
             => bpp == 32 ? PrepareFloatChannelWriter<float>(source, width, height, token) : PrepareFloatChannelWriter<double>(source, width, height, token);
 
         private const int FloatChannelChunkSize = 65536;
-        private readonly record struct FloatChannelInput(ReadOnlyMemory<byte> Samples, CvcieDiskPixels? File);
+        private const int LargeFloatChannelPixelCount = 1024 * 1024;
+        private readonly record struct FloatChannelInput(ReadOnlyMemory<byte> Samples, CvcieDiskPixels? File, CvcieDiskPixels.MappedPlane? Mapping = null);
 
         private static Action<IntPtr, int> PrepareFloatChannelWriter<T>(FloatChannelInput source, int width, int height,
             CancellationToken cancellationToken)
@@ -348,7 +374,8 @@ namespace ColorVision.Engine.Media
             public FloatChannelChunk(FloatChannelInput source, int pixelCount, int start, CancellationToken token)
             {
                 int count = Math.Min(FloatChannelChunkSize, pixelCount - start);
-                if (source.File is { } file)
+                if (source.Mapping is { } mapping) Samples = mapping.GetSamples<T>(start, count);
+                else if (source.File is { } file)
                 {
                     _rented = new CvcieDiskPixels.Chunk<T>(file, pixelCount, 1, start, count, token);
                     Samples = _rented.Samples;
@@ -361,7 +388,7 @@ namespace ColorVision.Engine.Media
 
         private static void RunFloatChannelChunks(int chunkCount, int pixelCount, int workers, CancellationToken cancellationToken, Action<int> action)
         {
-            if (pixelCount < 1024 * 1024 || workers == 1)
+            if (pixelCount < LargeFloatChannelPixelCount || workers == 1)
             {
                 for (int chunk = 0; chunk < chunkCount; chunk++)
                 {

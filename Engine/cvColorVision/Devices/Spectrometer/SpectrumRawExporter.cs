@@ -52,6 +52,7 @@ public static class SpectrumRawExporter
         "Interval(nm)", "PointCount", "StoredEndWavelength(nm)", "StoredArrayLength", "AbsoluteScale", "GridSource", "SpectrumSource",
         "AcquisitionParametersJson", "CCT(K)", "Duv", "Ra"
     }.Concat(Enumerable.Range(1, 15).Select(i => $"R{i}")).Append("ColorRenderingStatus").ToArray();
+    private static readonly char[] CsvSpecialCharacters = [',', '"', '\r', '\n'];
 
     public static SpectrumRawExportRecord CaptureStoredSpectrum(float[]? samples, float start, float end, float interval, float absoluteScale)
     {
@@ -116,10 +117,24 @@ public static class SpectrumRawExporter
 
     private static void Write(TextWriter writer, SpectrumRawExportRecord[] records, CancellationToken cancellationToken)
     {
-        WriteRow(writer, Headers);
+        writer.WriteLine(JoinCsvFields(Headers));
+        Span<char> numberBuffer = stackalloc char[64];
         foreach (var record in records)
         {
-            string? parameters = ParametersForExport(record);
+            // Encode the record-wide fields once on either side of the four sample fields.
+            string prefix = JoinCsvFields([
+                record.MeasurementId.ToString(Culture), record.MeasuredAt?.ToString("O", Culture) ?? "",
+                record.DeviceCode ?? "", record.Mode, record.ModeSource
+            ]) + ",";
+            string suffix = "," + JoinCsvFields([
+                record.AbsoluteUnit, record.StartWavelength.ToString("R", Culture), record.Interval.ToString("R", Culture),
+                record.Samples.Length.ToString(Culture), record.StoredEndWavelength.ToString("R", Culture),
+                record.StoredArrayLength.ToString(Culture), record.AbsoluteScale.ToString("R", Culture),
+                record.GridSource, "StoredSpectrumAfterAcquisitionProcessing", ParametersForExport(record) ?? "",
+                Number(record.ColorTemperature), Number(record.Duv), Number(record.Ra),
+                .. Enumerable.Range(0, 15).Select(index => Number(index < record.RenderingIndices.Length ? record.RenderingIndices[index] : null)),
+                record.RenderingStatus ?? ""
+            ]);
             // Use the round-trip decimal representation of SDK float metadata for nominal wavelengths,
             // avoiding an artificial 780.00000596 nm endpoint from 4000 * (double)0.1f.
             bool gridValid = float.IsFinite(record.StartWavelength) && record.StartWavelength > 0 && float.IsFinite(record.Interval) && record.Interval > 0;
@@ -134,21 +149,27 @@ public static class SpectrumRawExporter
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 float relative = record.Samples[i];
-                var row = new List<string>(Headers.Length)
-                {
-                    record.MeasurementId.ToString(Culture), record.MeasuredAt?.ToString("O", Culture) ?? "", record.DeviceCode ?? "", record.Mode, record.ModeSource,
-                    i.ToString(Culture), gridValid ? (start + i * interval).ToString("0.############", Culture) : "",
-                    relative.ToString("R", Culture), ((double)relative * record.AbsoluteScale).ToString("R", Culture), record.AbsoluteUnit,
-                    record.StartWavelength.ToString("R", Culture), record.Interval.ToString("R", Culture), record.Samples.Length.ToString(Culture),
-                    record.StoredEndWavelength.ToString("R", Culture), record.StoredArrayLength.ToString(Culture),
-                    record.AbsoluteScale.ToString("R", Culture), record.GridSource, "StoredSpectrumAfterAcquisitionProcessing",
-                    parameters ?? "", Number(record.ColorTemperature), Number(record.Duv), Number(record.Ra)
-                };
-                row.AddRange(Enumerable.Range(0, 15).Select(index => Number(index < record.RenderingIndices.Length ? record.RenderingIndices[index] : null)));
-                row.Add(record.RenderingStatus ?? "");
-                WriteRow(writer, row);
+                writer.Write(prefix);
+                WriteNumber(writer, i, default, numberBuffer);
+                writer.Write(',');
+                if (gridValid)
+                    WriteNumber(writer, start + i * interval, "0.############", numberBuffer);
+                writer.Write(',');
+                WriteNumber(writer, relative, "R", numberBuffer);
+                writer.Write(',');
+                WriteNumber(writer, (double)relative * record.AbsoluteScale, "R", numberBuffer);
+                writer.WriteLine(suffix);
             }
         }
+    }
+
+    private static void WriteNumber<T>(TextWriter writer, T value, ReadOnlySpan<char> format, Span<char> buffer)
+        where T : ISpanFormattable
+    {
+        if (value.TryFormat(buffer, out int length, format, Culture))
+            writer.Write(buffer[..length]);
+        else
+            writer.Write(value.ToString(format.ToString(), Culture));
     }
 
     private static readonly HashSet<string> ElectricalParameters = new(StringComparer.OrdinalIgnoreCase)
@@ -195,6 +216,6 @@ public static class SpectrumRawExporter
     }
 
     private static string Number(double? value) => value.HasValue && double.IsFinite(value.Value) ? value.Value.ToString("R", Culture) : "";
-    private static void WriteRow(TextWriter writer, IEnumerable<string> row)
-        => writer.WriteLine(string.Join(",", row.Select(value => value.IndexOfAny(new[] { ',', '"', '\r', '\n' }) >= 0 ? "\"" + value.Replace("\"", "\"\"") + "\"" : value)));
+    private static string JoinCsvFields(IEnumerable<string> fields)
+        => string.Join(",", fields.Select(value => value.IndexOfAny(CsvSpecialCharacters) >= 0 ? "\"" + value.Replace("\"", "\"\"") + "\"" : value));
 }

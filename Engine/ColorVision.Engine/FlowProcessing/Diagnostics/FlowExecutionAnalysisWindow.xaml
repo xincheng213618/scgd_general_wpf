@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:display="clr-namespace:ColorVision.Engine"
         xmlns:engine="clr-namespace:ColorVision.Engine"
-        Title="{engine:EngineLang Key='流程执行分析'}"
+        Title="{engine:EngineLang Key='流程分析'}"
         Width="1480"
         Height="900"
         MinWidth="1100"
@@ -94,7 +94,7 @@
                 <StackPanel Grid.Column="1" Margin="16,0,12,0" VerticalAlignment="Center">
                     <WrapPanel>
                         <TextBlock x:Name="HeaderTitleText"
-                                   Text="{engine:EngineLang Key='流程执行分析'}"
+                                   Text="{engine:EngineLang Key='流程分析'}"
                                    FontSize="21"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -122,6 +122,10 @@
                             Style="{StaticResource ShellActionButtonStyle}"/>
                     <Button x:Name="ExportButton" Content="{engine:EngineLang Key='导出'}"
                             Click="ExportButton_Click"
+                            Style="{StaticResource ShellActionButtonStyle}"/>
+                    <Button x:Name="DatabaseCleanupButton"
+                            Content="{engine:EngineLang Key='数据库清理'}"
+                            Click="OpenDatabaseCleanupButton_Click"
                             Style="{StaticResource ShellActionButtonStyle}"/>
                 </StackPanel>
             </Grid>

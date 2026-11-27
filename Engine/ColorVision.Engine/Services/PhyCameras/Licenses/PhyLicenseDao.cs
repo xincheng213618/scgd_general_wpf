@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             int[] remoteIds = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Where(licenseIds, id => id > 0));
             if (remoteIds.Length == 0) return DeleteExpiredLocal(licenseIds, cutoff);
 
-            MySqlConnectedEndpoint? endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+            MySqlConnectedEndpoint? endpoint = WorkstationConfiguration.ConnectedEndpoint;
             if (UseLocal || endpoint is not { IsCurrent: true })
                 throw new InvalidOperationException("MySQL 未连接，不能删除服务器许可证。");
 
@@ -143,6 +143,19 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
             var document = LocalStore.Find(StoreKind, checked(-1 - id));
             return document != null && LocalStore.TryDelete(StoreKind, document);
         }
+
+        internal bool TryRemoveSpectrumLicense(LicenseModel expected) =>
+            TryDeleteLocal(expected.Id, current => MatchesSpectrumSerial(current, expected.MacAddress) && HasSameLicense(current, expected),
+                current => MatchesSpectrumSerial(current, expected.MacAddress), static () => true);
+
+        internal static bool MatchesSpectrumSerial(LicenseModel license, string? serial) =>
+            license.LiceType == 1 && MatchesSpectrumSerial(license.MacAddress, serial);
+
+        internal static bool MatchesSpectrumSerial(string? candidate, string? serial) =>
+            !string.IsNullOrWhiteSpace(serial) && string.Equals(candidate?.Trim(), serial.Trim(), StringComparison.OrdinalIgnoreCase);
+
+        internal static bool HasSameLicense(LicenseModel current, LicenseModel expected) =>
+            string.Equals(current.LicenseValue, expected.LicenseValue, StringComparison.Ordinal) && current.ExpiryDate == expected.ExpiryDate;
 
         internal int DeleteExpiredLocal(int[] licenseIds, DateTime cutoff)
         {
@@ -169,7 +182,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
         public LicenseModel? GetByMAC(string Code, bool? local = null)
         {
            if (local ?? UseLocal) return System.Linq.Enumerable.FirstOrDefault(GetLocal(), model => string.Equals(model.MacAddress, Code, StringComparison.OrdinalIgnoreCase));
-           using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+           using var Db = OpenDatabase();
            return GetByMAC(Db, Code);
         }
 

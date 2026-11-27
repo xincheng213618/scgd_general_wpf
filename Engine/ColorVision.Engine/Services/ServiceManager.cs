@@ -33,6 +33,7 @@ namespace ColorVision.Engine.Services
         private static readonly object _locker = new();
         private readonly Dispatcher _dispatcher;
         private long _reloadGeneration;
+        private MySqlConnectedEndpoint? _directoryEndpoint;
         private readonly Dictionary<IDisPlayControl, DeviceService> _copilotDisplayDevices = new();
         private IDisposable? _copilotAgentExtensionRegistration;
         private DeviceService? _currentCopilotDisplayDevice;
@@ -193,13 +194,40 @@ namespace ColorVision.Engine.Services
         {
             try
             {
-                ServiceLoadSource source = ServiceLoadSource.Capture();
-                await ReloadServicesAsync(() => ReadServiceHierarchy(source), source.IsCurrent);
+                await UpdateDirectoryConnectionAsync(WorkstationConfiguration.ConnectedEndpoint);
             }
             catch (Exception error)
             {
                 LogReadFailure(error);
             }
+        }
+
+        internal Task UpdateDirectoryConnectionAsync(MySqlConnectedEndpoint? endpoint)
+        {
+            if (endpoint == null) return Task.CompletedTask;
+            if (_directoryEndpoint != null)
+            {
+                RebindDirectoryEndpoint(endpoint);
+                return Task.CompletedTask;
+            }
+            var source = new ServiceLoadSource(SysResourceDao.Instance, endpoint);
+            return ReloadServicesAsync(() => ReadServiceHierarchy(source), source.IsCurrent);
+        }
+
+        // The directory still belongs to the same workstation database. Keep open device sessions;
+        // commands and editors already holding the old connection remain invalid.
+        private void RebindDirectoryEndpoint(MySqlConnectedEndpoint endpoint)
+        {
+            _dispatcher.VerifyAccess();
+            if (_directoryEndpoint?.DatabaseTarget == null || _directoryEndpoint.DatabaseTarget != endpoint.DatabaseTarget || !endpoint.IsCurrent)
+                return;
+            foreach (var terminal in TerminalServices)
+                if (ReferenceEquals(terminal.ResourceDatabaseEndpoint, _directoryEndpoint))
+                    terminal.ResourceDatabaseEndpoint = endpoint;
+            foreach (var device in DeviceServices)
+                if (ReferenceEquals(device.ResultDatabaseEndpoint, _directoryEndpoint))
+                    device.ResultDatabaseEndpoint = endpoint;
+            _directoryEndpoint = endpoint;
         }
 
         internal async Task<bool> ReloadServicesAsync(Func<ServiceHierarchySnapshot> read, Func<bool> sourceIsCurrent)
@@ -361,6 +389,7 @@ namespace ColorVision.Engine.Services
                 LoadGroupResource(groupResource, resourceSnapshot, new HashSet<int>());
             }
             long childResourceBuildMs = phaseStopwatch.ElapsedMilliseconds;
+            _directoryEndpoint = snapshot.Endpoint;
             ServiceChanged?.Invoke(this, new EventArgs());
             totalStopwatch.Stop();
             string deviceTimings = string.Join(", ", deviceCreationStats
@@ -378,7 +407,7 @@ namespace ColorVision.Engine.Services
             {
                 SysResourceDao resourceDao = SysResourceDao.Instance;
                 if (resourceDao.UseLocal) return new(resourceDao, null);
-                MySqlConnectedEndpoint? endpoint = MySqlControl.GetInstance().ConnectedEndpoint;
+                MySqlConnectedEndpoint? endpoint = WorkstationConfiguration.ConnectedEndpoint;
                 if (endpoint is not { IsCurrent: true })
                     throw new InvalidOperationException("A verified MySQL connection is required for the remote service hierarchy.");
                 return new(resourceDao, endpoint);

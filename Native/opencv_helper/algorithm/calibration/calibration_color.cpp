@@ -14,6 +14,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #if defined(_M_X64) && !defined(_M_ARM64EC)
@@ -24,6 +25,8 @@
 #pragma float_control(precise, on, push)
 #pragma fp_contract(off)
 #endif
+
+#include "calibration_color_eval.h"
 
 namespace cvcore::calibration {
 namespace {
@@ -138,14 +141,9 @@ bool validateColorImage(
     CalibrationType type,
     const std::optional<std::int32_t>& configuredBpp,
     const ImageView& raw,
-    float* cieData,
-    std::uint32_t expectedChannels,
     std::string& error)
 {
-    if (cieData == nullptr) {
-        error = std::string(calibrationName(type)) + " CIE output pointer is null";
-        return false;
-    }
+    const std::uint32_t expectedChannels = type == CalibrationType::Luminance ? 1 : 3;
     if (raw.channels != expectedChannels) {
         error = std::string(calibrationName(type)) + " requires "
             + std::to_string(expectedChannels) + " source channel(s)";
@@ -189,9 +187,8 @@ void transformInterleavedPlane(
     const Source* const end = current + width * 3;
     float* output = destination + rowOffset;
     for (; current < end; current += 3) {
-        *output++ = static_cast<float>(redCoefficient * current[2]
-            + greenCoefficient * current[1]
-            + blueCoefficient * current[0]);
+        *output++ = color::matrixPlane(redCoefficient, greenCoefficient, blueCoefficient,
+            current[2], current[1], current[0]);
     }
 }
 
@@ -209,9 +206,8 @@ void transformPlanarPlane(
 {
     const std::size_t end = rowOffset + width;
     for (std::size_t index = rowOffset; index < end; ++index) {
-        destination[index] = static_cast<float>(redCoefficient * red[index]
-            + greenCoefficient * green[index]
-            + blueCoefficient * blue[index]);
+        destination[index] = color::matrixPlane(redCoefficient, greenCoefficient, blueCoefficient,
+            red[index], green[index], blue[index]);
     }
 }
 
@@ -224,20 +220,56 @@ public:
 
     [[nodiscard]] CalibrationType type() const noexcept override { return type_; }
     [[nodiscard]] bool isColorTransform() const noexcept override { return true; }
+    [[nodiscard]] std::optional<std::int32_t> requiredInputDepth() const noexcept override { return configuredBpp_; }
     [[nodiscard]] bool shareInstanceAcrossContexts() const noexcept override { return true; }
 
-protected:
-    // options.roi/options.ob remain in the shared ABI for the basic correction
-    // groups. Legacy luminance/color transforms ignored both and always wrote
-    // the complete frame, so the color group deliberately preserves that
-    // behavior for byte-for-byte replacement.
-    bool validate(
+    bool prepareColorTransform(
+        const ImageView& raw,
+        const ExecutionOptions& options,
+        ColorTransform& transform,
+        std::string& error) const override
+    {
+        if (!validateColorImage(type_, configuredBpp_, raw, error)) return false;
+        if (!std::all_of(options.exposure.begin(), options.exposure.end(),
+            [](float exposure) { return std::isfinite(exposure) && exposure > 0; })) {
+            error = "Color calibration exposure must be finite and positive";
+            return false;
+        }
+        ColorTransform prepared;
+        if (!colorTransform(options, prepared)) {
+            error = "Unable to prepare color calibration factors";
+            return false;
+        }
+        if (!std::all_of(prepared.coefficients.begin(), prepared.coefficients.end(),
+            [](double factor) { return std::isfinite(factor); })) {
+            error = "Non-finite color calibration factor";
+            return false;
+        }
+        transform = prepared;
+        return true;
+    }
+
+    bool apply(
         const ImageView& raw,
         float* cieData,
-        std::uint32_t expectedChannels,
-        std::string& error) const
+        const ExecutionOptions& options,
+        std::string& error) override
     {
-        return validateColorImage(type_, configuredBpp_, raw, cieData, expectedChannels, error);
+        if (cieData == nullptr) {
+            error = std::string(calibrationName(type_)) + " CIE output pointer is null";
+            return false;
+        }
+        if (!validateColorImage(type_, configuredBpp_, raw, error)) return false;
+
+        // V1 writers preserve exceptional legacy arithmetic. V2 calls
+        // prepareColorTransform before any frame writes to reject invalid factors.
+        ColorTransform transform;
+        if (!colorTransform(options, transform)) {
+            error = "Unable to prepare color calibration factors";
+            return false;
+        }
+        writeColorTransform(raw, options.interleavedBgr, transform, cieData);
+        return true;
     }
 
 private:
@@ -259,42 +291,22 @@ public:
         return true;
     }
 
-    bool apply(
-        const ImageView& raw,
-        float* cieData,
-        const ExecutionOptions& options,
-        std::string& error) override
-    {
-        if (!validate(raw, cieData, 1, error)) {
-            return false;
-        }
-
-        const double factor = coefficient_ / options.exposure[0];
-        if (raw.bitsPerChannel == 8) {
-            applyTyped(reinterpret_cast<const std::uint8_t*>(raw.data), cieData, raw, factor);
-        }
-        else {
-            applyTyped(reinterpret_cast<const std::uint16_t*>(raw.data), cieData, raw, factor);
-        }
-        return true;
-    }
-
 private:
-    template <typename Source>
-    static void applyTyped(const Source* source, float* destination, const ImageView& raw, double factor)
-    {
-        const std::size_t width = raw.width;
-        parallelRows(raw.height, [=](std::uint32_t row) {
-            const std::size_t begin = static_cast<std::size_t>(row) * width;
-            const std::size_t end = begin + width;
-            for (std::size_t index = begin; index < end; ++index) {
-                destination[index] = static_cast<float>(factor * source[index]);
-            }
-        });
-    }
-
     double coefficient_;
 };
+
+template <typename Source>
+void writeLuminance(const Source* source, float* destination, const ImageView& raw, double factor)
+{
+    const std::size_t width = raw.width;
+    parallelRows(raw.height, [=](std::uint32_t row) {
+        const std::size_t begin = static_cast<std::size_t>(row) * width;
+        const std::size_t end = begin + width;
+        for (std::size_t index = begin; index < end; ++index) {
+            destination[index] = color::scale(factor, source[index]);
+        }
+    });
+}
 
 class OneColorCalibration final : public ColorCalibrationItem {
 public:
@@ -317,90 +329,55 @@ public:
         return true;
     }
 
-    bool apply(
-        const ImageView& raw,
-        float* cieData,
-        const ExecutionOptions& options,
-        std::string& error) override
-    {
-        if (!validate(raw, cieData, 3, error)) {
-            return false;
-        }
-
-        const std::array<double, 4> factor = {
-            coefficient_[0] / options.exposure[0] / gain_[0],
-            coefficient_[1] / options.exposure[1] / gain_[1],
-            coefficient_[2] / options.exposure[2] / gain_[2],
-            coefficient_[3] / options.exposure[2] / gain_[2]
-        };
-
-        if (raw.bitsPerChannel == 8) {
-            applyTyped(reinterpret_cast<const std::uint8_t*>(raw.data), cieData, raw, options.interleavedBgr, factor);
-        }
-        else {
-            applyTyped(reinterpret_cast<const std::uint16_t*>(raw.data), cieData, raw, options.interleavedBgr, factor);
-        }
-        return true;
-    }
-
 private:
-    template <typename Source>
-    static void applyTyped(
-        const Source* source,
-        float* destination,
-        const ImageView& raw,
-        bool interleavedBgr,
-        const std::array<double, 4>& factor)
-    {
-        const std::size_t width = raw.width;
-        const std::size_t pixels = width * raw.height;
-        float* const outX = destination;
-        float* const outY = destination + pixels;
-        float* const outZ = destination + pixels * 2;
-
-        parallelRows(raw.height, [=, &factor](std::uint32_t row) {
-            const std::size_t begin = static_cast<std::size_t>(row) * width;
-            const std::size_t end = begin + width;
-            if (interleavedBgr) {
-                const Source* current = source + begin * 3;
-                const Source* const sourceEnd = current + width * 3;
-                float* output = outX + begin;
-                for (; current < sourceEnd; current += 3) {
-                    *output++ = static_cast<float>(factor[0] * current[2] + factor[3] * current[0]);
-                }
-
-                current = source + begin * 3 + 1;
-                output = outY + begin;
-                for (; current < sourceEnd; current += 3) {
-                    *output++ = static_cast<float>(factor[1] * *current);
-                }
-
-                current = source + begin * 3;
-                output = outZ + begin;
-                for (; current < sourceEnd; current += 3) {
-                    *output++ = static_cast<float>(factor[2] * *current);
-                }
-                return;
-            }
-
-            const Source* const red = source;
-            const Source* const green = source + pixels;
-            const Source* const blue = source + pixels * 2;
-            for (std::size_t index = begin; index < end; ++index) {
-                outX[index] = static_cast<float>(factor[0] * red[index] + factor[3] * blue[index]);
-            }
-            for (std::size_t index = begin; index < end; ++index) {
-                outY[index] = static_cast<float>(factor[1] * green[index]);
-            }
-            for (std::size_t index = begin; index < end; ++index) {
-                outZ[index] = static_cast<float>(factor[2] * blue[index]);
-            }
-        });
-    }
-
     std::array<double, 3> gain_;
     std::array<double, 4> coefficient_;
 };
+
+template <typename Source>
+void writeOneColor(const Source* source, float* destination, const ImageView& raw, bool interleavedBgr,
+    const std::array<double, 9>& factor)
+{
+    const std::size_t width = raw.width;
+    const std::size_t pixels = width * raw.height;
+    float* const outX = destination;
+    float* const outY = destination + pixels;
+    float* const outZ = destination + pixels * 2;
+
+    parallelRows(raw.height, [=, &factor](std::uint32_t row) {
+        const std::size_t begin = static_cast<std::size_t>(row) * width;
+        const std::size_t end = begin + width;
+        if (interleavedBgr) {
+            const Source* rowStart = source + begin * 3;
+            float* x = outX + begin;
+            float* y = outY + begin;
+            float* z = outZ + begin;
+            for (std::size_t i = 0; i < width; ++i) {
+                x[i] = color::oneColorX(factor.data(), rowStart[i * 3 + 2], rowStart[i * 3]);
+            }
+            for (std::size_t i = 0; i < width; ++i) {
+                y[i] = color::scale(factor[1], rowStart[i * 3 + 1]);
+            }
+            for (std::size_t i = 0; i < width; ++i) {
+                z[i] = color::scale(factor[2], rowStart[i * 3]);
+            }
+            return;
+        }
+
+        const Source* const red = source;
+        const Source* const green = source + pixels;
+        const Source* const blue = source + pixels * 2;
+        for (std::size_t index = begin; index < end; ++index) {
+            outX[index] = color::oneColorX(factor.data(), red[index], blue[index]);
+        }
+        for (std::size_t index = begin; index < end; ++index) {
+            outY[index] = color::scale(factor[1], green[index]);
+        }
+        for (std::size_t index = begin; index < end; ++index) {
+            outZ[index] = color::scale(factor[2], blue[index]);
+        }
+    });
+}
 
 #if defined(_M_X64) && !defined(_M_ARM64EC)
 __declspec(noinline) void streamMatrixBlocks(
@@ -516,78 +493,60 @@ public:
         return true;
     }
 
-    bool apply(
-        const ImageView& raw,
-        float* cieData,
-        const ExecutionOptions& options,
-        std::string& error) override
-    {
-        if (!validate(raw, cieData, 3, error)) {
-            return false;
-        }
-
-        std::array<double, 9> factor{};
-        for (std::size_t index = 0; index < factor.size(); ++index) {
-            const std::size_t channel = index % 3;
-            factor[index] = coefficient_[index] / options.exposure[channel];
-            if (usesGain_) {
-                factor[index] = factor[index] / gain_[channel];
-            }
-        }
-
-        if (raw.bitsPerChannel == 8) {
-            applyTyped(reinterpret_cast<const std::uint8_t*>(raw.data), cieData, raw, options.interleavedBgr, factor);
-        }
-        else {
-            const auto* source = reinterpret_cast<const std::uint16_t*>(raw.data);
-#if defined(_M_X64) && !defined(_M_ARM64EC)
-            if (options.interleavedBgr && tryStreamInterleavedMatrix(
-                source, cieData, static_cast<std::size_t>(raw.width) * raw.height, factor)) {
-                return true;
-            }
-#endif
-            applyTyped(source, cieData, raw, options.interleavedBgr, factor);
-        }
-        return true;
-    }
-
 private:
-    template <typename Source>
-    static void applyTyped(
-        const Source* source,
-        float* destination,
-        const ImageView& raw,
-        bool interleavedBgr,
-        const std::array<double, 9>& factor)
-    {
-        const std::size_t width = raw.width;
-        const std::size_t pixels = width * raw.height;
-        float* const outX = destination;
-        float* const outY = destination + pixels;
-        float* const outZ = destination + pixels * 2;
-
-        parallelRows(raw.height, [=, &factor](std::uint32_t row) {
-            const std::size_t begin = static_cast<std::size_t>(row) * width;
-            if (interleavedBgr) {
-                transformInterleavedPlane(source, outX, begin, width, factor[0], factor[1], factor[2]);
-                transformInterleavedPlane(source, outY, begin, width, factor[3], factor[4], factor[5]);
-                transformInterleavedPlane(source, outZ, begin, width, factor[6], factor[7], factor[8]);
-                return;
-            }
-
-            const Source* const red = source;
-            const Source* const green = source + pixels;
-            const Source* const blue = source + pixels * 2;
-            transformPlanarPlane(red, green, blue, outX, begin, width, factor[0], factor[1], factor[2]);
-            transformPlanarPlane(red, green, blue, outY, begin, width, factor[3], factor[4], factor[5]);
-            transformPlanarPlane(red, green, blue, outZ, begin, width, factor[6], factor[7], factor[8]);
-        });
-    }
-
     std::array<double, 9> coefficient_;
     std::array<double, 3> gain_;
     bool usesGain_;
 };
+
+template <typename Source>
+void writeMatrixColor(const Source* source, float* destination, const ImageView& raw, bool interleavedBgr,
+    const std::array<double, 9>& factor)
+{
+    const std::size_t width = raw.width;
+    const std::size_t pixels = width * raw.height;
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    if constexpr (std::is_same_v<Source, std::uint16_t>) {
+        if (interleavedBgr && tryStreamInterleavedMatrix(source, destination, pixels, factor)) return;
+    }
+#endif
+    float* const outX = destination;
+    float* const outY = destination + pixels;
+    float* const outZ = destination + pixels * 2;
+
+    parallelRows(raw.height, [=, &factor](std::uint32_t row) {
+        const std::size_t begin = static_cast<std::size_t>(row) * width;
+        if (interleavedBgr) {
+            transformInterleavedPlane(source, outX, begin, width, factor[0], factor[1], factor[2]);
+            transformInterleavedPlane(source, outY, begin, width, factor[3], factor[4], factor[5]);
+            transformInterleavedPlane(source, outZ, begin, width, factor[6], factor[7], factor[8]);
+            return;
+        }
+
+        const Source* const red = source;
+        const Source* const green = source + pixels;
+        const Source* const blue = source + pixels * 2;
+        transformPlanarPlane(red, green, blue, outX, begin, width, factor[0], factor[1], factor[2]);
+        transformPlanarPlane(red, green, blue, outY, begin, width, factor[3], factor[4], factor[5]);
+        transformPlanarPlane(red, green, blue, outZ, begin, width, factor[6], factor[7], factor[8]);
+    });
+}
+
+template <typename Source>
+void writeColor(const ImageView& raw, bool interleavedBgr, const ColorTransform& transform, float* cieData)
+{
+    const auto* source = reinterpret_cast<const Source*>(raw.data);
+    switch (transform.kind) {
+    case 2:
+        writeLuminance(source, cieData, raw, transform.coefficients[0]);
+        break;
+    case 1:
+        writeOneColor(source, cieData, raw, interleavedBgr, transform.coefficients);
+        break;
+    default:
+        writeMatrixColor(source, cieData, raw, interleavedBgr, transform.coefficients);
+    }
+}
 
 std::unique_ptr<CalibrationItem> loadLuminance(const Json& root)
 {
@@ -659,6 +618,14 @@ std::unique_ptr<CalibrationItem> loadMultiColor(const Json& root)
 }
 
 } // namespace
+
+// Color consumes the complete frame. ROI and optical-black bounds apply to
+// the spatial stages in the calibration plan.
+void writeColorTransform(const ImageView& raw, bool interleavedBgr, const ColorTransform& transform, float* cieData)
+{
+    if (raw.bitsPerChannel == 8) writeColor<std::uint8_t>(raw, interleavedBgr, transform, cieData);
+    else writeColor<std::uint16_t>(raw, interleavedBgr, transform, cieData);
+}
 
 std::unique_ptr<CalibrationItem> loadColorCalibration(
     CalibrationType type,

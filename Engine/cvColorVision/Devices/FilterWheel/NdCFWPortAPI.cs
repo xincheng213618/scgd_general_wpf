@@ -55,12 +55,5 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetEmissionAutoExpTime", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_GetEmissionAutoExpTime(IntPtr handle, ref int nNewPort, ref int nOldPort, ref float dExpTime);
-
-        // 以下两个接口是根据 cpp 文件最后两行导出的函数额外补充的（.h 中未提供）
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_AddNdItemFile", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern int CM_AddNdItemFile(IntPtr handle, int nIndex, CalibrationType eCaliType, string filename);
-
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_DeleteNdAllItems", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern int CM_DeleteNdAllItems(IntPtr handle, int nIndex);
     }
 }

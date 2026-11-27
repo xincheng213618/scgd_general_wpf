@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="SqlSugarCore" Version="5.1.4.221" />
-    <PackageReference Include="QRCoder.Xaml" Version="1.8.0" />
+    <PackageReference Include="QRCoder.Xaml" Version="1.9.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ColorVisionActivationHttpPublicKeyFile)' != ''">

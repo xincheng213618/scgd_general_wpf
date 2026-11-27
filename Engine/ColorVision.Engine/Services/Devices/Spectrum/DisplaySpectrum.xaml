@@ -152,7 +152,24 @@
                                         Visibility="{Binding IsLocalSpectrumBackend, Converter={StaticResource bool2VisibilityConverter}}" />
                             </DockPanel>
 
-                            <DockPanel Margin="0,2" Visibility="{Binding DisplayConfig.IsWithND, Converter={StaticResource bool2VisibilityConverter}}">
+                            <DockPanel Margin="0,2">
+                                <DockPanel.Style>
+                                    <Style TargetType="DockPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Config.NDConfig.HasConfiguredWheel}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsLocalSpectrumBackend}" Value="False" />
+                                                    <Condition Binding="{Binding DisplayConfig.IsWithND}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DockPanel.Style>
                                 <Button Click="GetNDport_Click" Content="{x:Static properties:Resources.FilterWheelReadPosition}" DockPanel.Dock="Right" />
                                 <Button Click="NDport_Click" Content="{x:Static properties:Resources.ChangeNDPort}" DockPanel.Dock="Right" />
                                 <TextBlock Text="{x:Static properties:Resources.NDFilterPosition}" />

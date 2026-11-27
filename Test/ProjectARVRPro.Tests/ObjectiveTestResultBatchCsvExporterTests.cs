@@ -84,7 +84,7 @@ public class ObjectiveTestResultBatchCsvExporterTests
             var records = new[]
             {
                 CreateRecord("SN-1", start, CreateDynamicResult(("A", "first-a"), ("B", "first-b"))),
-                CreateRecord("SN-2", start.AddMinutes(1), CreateDynamicResult(("B", "second-b"), ("A", "second-a"), ("C", "ignored"))),
+                CreateRecord("SN-2", start.AddMinutes(1), CreateDynamicResult(("B", "second-b"), (" a ", "second-a"), ("A", "duplicate"), ("C", "ignored"))),
                 CreateRecord("SN-3", start.AddMinutes(2), CreateDynamicResult(("B", "third-b"))),
                 new ObjectiveTestResultRecord
                 {

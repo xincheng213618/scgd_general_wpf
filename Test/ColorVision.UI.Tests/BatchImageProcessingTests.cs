@@ -594,14 +594,16 @@ public class BatchImageProcessingTests
     }
 
     [Theory]
-    [InlineData(3, false)]
-    [InlineData(4, false)]
-    [InlineData(3, true)]
-    [InlineData(4, true)]
-    public void HistogramEqualizationMatchesLegacyOutput(int channels, bool sixteenBit)
+    [InlineData(3, false, 23, 19)]
+    [InlineData(4, false, 23, 19)]
+    [InlineData(3, true, 23, 19)]
+    [InlineData(4, true, 23, 19)]
+    [InlineData(3, false, 1101, 719)]
+    [InlineData(4, true, 1101, 719)]
+    public void HistogramEqualizationMatchesLegacyOutput(int channels, bool sixteenBit, int width, int height)
     {
         MatType type = MatType.MakeType(sixteenBit ? MatType.CV_16U : MatType.CV_8U, channels);
-        using Mat source = new(19, 23, type);
+        using Mat source = new(height, width, type);
         Cv2.Randu(source, Scalar.All(0), Scalar.All(sixteenBit ? ushort.MaxValue + 1d : byte.MaxValue + 1d));
         using Mat original = source.Clone();
         using Mat expected = ApplyLegacyHistogramEqualization(source);

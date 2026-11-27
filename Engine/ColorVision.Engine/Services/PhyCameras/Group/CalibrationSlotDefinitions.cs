@@ -61,9 +61,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
     {
         public static IReadOnlyList<CalibrationSlotDefinition> NormalSlots { get; } = new CalibrationSlotDefinition[]
         {
-            new(nameof(GroupResource.DarkNoise), ServiceTypes.DarkNoise, group => group.DarkNoise, (group, resource) => group.DarkNoise = resource, param => param.Normal.DarkNoise),
             new(nameof(GroupResource.DefectPoint), ServiceTypes.DefectPoint, group => group.DefectPoint, (group, resource) => group.DefectPoint = resource, param => param.Normal.DefectPoint),
             new(nameof(GroupResource.DSNU), ServiceTypes.DSNU, group => group.DSNU, (group, resource) => group.DSNU = resource, param => param.Normal.DSNU),
+            new(nameof(GroupResource.DarkNoise), ServiceTypes.DarkNoise, group => group.DarkNoise, (group, resource) => group.DarkNoise = resource, param => param.Normal.DarkNoise),
             new(nameof(GroupResource.Uniformity), ServiceTypes.Uniformity, group => group.Uniformity, (group, resource) => group.Uniformity = resource, param => param.Normal.Uniformity),
             new(nameof(GroupResource.ColorShift), ServiceTypes.ColorShift, group => group.ColorShift, (group, resource) => group.ColorShift = resource, param => param.Normal.ColorShift),
             new(nameof(GroupResource.Distortion), ServiceTypes.Distortion, group => group.Distortion, (group, resource) => group.Distortion = resource, param => param.Normal.Distortion),
@@ -81,6 +81,20 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         };
 
         public static IReadOnlyList<CalibrationSlotDefinition> AllSlots { get; } = NormalSlots.Concat(ColorSlots).ToArray();
+
+        private static readonly IReadOnlyList<CalibrationSlotDefinition> SlotsWithoutDarkSubtraction =
+            NormalSlots.OrderBy(slot => slot.ServiceType switch { ServiceTypes.DSNU => 0, ServiceTypes.DarkNoise => 1, _ => 2 }).ToArray();
+
+        public static IReadOnlyList<CalibrationSlotDefinition> NormalSlotsFor(CalibrationNormal normal) =>
+            normal.DSNU?.IsSelected != true && normal.DarkNoise?.IsSelected == true && normal.DefectPoint?.IsSelected == true
+                ? SlotsWithoutDarkSubtraction : NormalSlots;
+
+        public static IEnumerable<CalibrationSlotDefinition> SelectedSlots(CalibrationParam param)
+        {
+            IEnumerable<CalibrationSlotDefinition> slots = param.Normal == null ? [] : NormalSlotsFor(param.Normal);
+            if (param.Color != null) slots = slots.Concat(ColorSlots);
+            return slots.Where(slot => slot.ParamGetter(param)?.IsSelected == true);
+        }
 
         public static IReadOnlyDictionary<ServiceTypes, CalibrationSlotDefinition> ByServiceType { get; } =
             AllSlots.ToDictionary(slot => slot.ServiceType);

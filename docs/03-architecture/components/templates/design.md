@@ -31,7 +31,7 @@ related: ["engine.index","algorithms.template-management","algorithms.json-templ
 
 ## 发现和加载是两个阶段
 
-`TemplateInitializer.Order = 4`，声明等待 MySQL、工作区与 RC 后，经 UI Dispatcher 调用 `TemplateControl.InitializeForStartupAsync`。启动按约 32 ms 时间片在加载器之间让出 UI，实现 `IAsyncTemplateLoad` 的加载器可使用异步路径；Flow 将存储读取移到后台，集合更新仍在 UI 线程。直接构造和运行期间的 MySQL 重连保持同步加载；启动进行中的重载请求合并后补做，避免重入发布。未连接时只加载支持 SQLite 的本地流程，不构造其它依赖 MySQL 的模板加载器。POI 的本地加载仍由其管理器和 ImageView 入口负责。
+`TemplateInitializer.Order = 4`，声明等待 MySQL、工作区与 RC 后，经 UI Dispatcher 调用 `TemplateControl.InitializeForStartupAsync`。启动按约 32 ms 时间片在加载器之间让出 UI，实现 `IAsyncTemplateLoad` 的加载器可使用异步路径；Flow 将存储读取移到后台，集合更新仍在 UI 线程。本地工位加载支持 SQLite 的流程和 POI。数据库连接变化不会刷新本地目录。MySQL 工位用固定的原库载入模板，启动期间的重载请求合并后补做。
 
 本地流程和 POI 不代表所有模板已经支持 SQLite。普通 `ITemplate<T>` 仍依赖 MySQL 的主表、明细和 `SymbolCache` 字典；`ITemplateJson<T>` 的载荷及默认 JSON 仍从 MySQL 获取；校正模板的资源组合、第三方算法的定义和参数也各有数据库访问。节点参数齿轮和 `DisplayAlgorithmTemplateSelection.EditCommand` 本身不检查 MySQL，离线新建失败应继续追到这些存储 owner，不能只删除 `TemplateControl` 或基类 DAO 的连接检查。接入本地配置时还需处理默认值、嵌套资源引用、存储身份和保存失败语义，服务数据库结构保持兼容。
 

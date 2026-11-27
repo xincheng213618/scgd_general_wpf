@@ -2,6 +2,7 @@
 using System.Linq;
 using ColorVision.Common.MVVM;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using ColorVision.Engine.Services.Types;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -261,6 +262,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void RefreshRows(GroupResource? groupResource)
         {
+            foreach (var row in NormalRows)
+                PropertyChangedEventManager.RemoveHandler(row.Calibration, SelectionOrderChanged, nameof(CalibrationBase.IsSelected));
             NormalRows.Clear();
             PrimaryColorRows.Clear();
             SecondaryColorRows.Clear();
@@ -268,11 +271,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             if (groupResource == null)
                 return;
 
-            foreach (var slot in CalibrationSlotDefinitions.NormalSlots)
+            foreach (var slot in CalibrationSlotDefinitions.NormalSlotsFor(CalibrationParam.Normal))
             {
-                if (string.IsNullOrWhiteSpace(slot.ParamGetter(CalibrationParam).FilePath))
+                var calibration = slot.ParamGetter(CalibrationParam);
+                if (string.IsNullOrWhiteSpace(calibration.FilePath))
                     continue;
-                NormalRows.Add(new CalibrationControlRow(slot, slot.ParamGetter(CalibrationParam), PhyCamera.VisualChildren.OfType<CalibrationResource>()));
+                NormalRows.Add(new CalibrationControlRow(slot, calibration, PhyCamera.VisualChildren.OfType<CalibrationResource>()));
+                if (slot.ServiceType is ServiceTypes.DSNU or ServiceTypes.DarkNoise or ServiceTypes.DefectPoint)
+                    PropertyChangedEventManager.AddHandler(calibration, SelectionOrderChanged, nameof(CalibrationBase.IsSelected));
             }
 
             foreach (var slot in CalibrationSlotDefinitions.ColorSlots)
@@ -284,6 +290,19 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     ? PrimaryColorRows
                     : SecondaryColorRows;
                 target.Add(new CalibrationControlRow(slot, slot.ParamGetter(CalibrationParam), PhyCamera.VisualChildren.OfType<CalibrationResource>()));
+            }
+        }
+
+        private void SelectionOrderChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            int index = 0;
+            foreach (var slot in CalibrationSlotDefinitions.NormalSlotsFor(CalibrationParam.Normal))
+            {
+                var row = NormalRows.FirstOrDefault(item => item.SlotKey == slot.Key);
+                if (row == null) continue;
+                int current = NormalRows.IndexOf(row);
+                if (current != index) NormalRows.Move(current, index);
+                index++;
             }
         }
 

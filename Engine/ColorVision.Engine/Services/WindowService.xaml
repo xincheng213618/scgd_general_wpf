@@ -4,6 +4,7 @@
         xmlns:devices="clr-namespace:ColorVision.Engine.Services"
         xmlns:core="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         xmlns:terminal="clr-namespace:ColorVision.Engine.Services.Terminal"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         Title="{x:Static properties:Resources.WindowServiceTitle}"
         Height="680" Width="1040" MinHeight="520" MinWidth="820"
@@ -114,6 +115,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Margin="0,0,0,16">
             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -126,6 +128,8 @@
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
+                <Button x:Name="ConfigureDataPathButton" Style="{StaticResource NavButton}" Click="ConfigureDataPath_Click"
+                        Content="{engine:EngineLang DeviceDataPathConfigure}"/>
                 <Button Style="{StaticResource NavButton}" Click="ButtonPhyCameraManager_Click">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource IconText}" Text="&#xE722;"/>
@@ -211,5 +215,15 @@
                 </Grid>
             </Border>
         </Grid>
+        <WrapPanel Grid.Row="2" Margin="0,12,0,0" VerticalAlignment="Center">
+            <Label Target="{Binding ElementName=ConfigurationSourceSelector}" VerticalAlignment="Center"
+                   Content="{engine:EngineLang WorkstationSourceNext}"/>
+            <ComboBox x:Name="ConfigurationSourceSelector" MinWidth="145" VerticalAlignment="Center" SelectedValuePath="Tag">
+                <ComboBoxItem Tag="{x:Static devices:WorkstationConfigurationSource.AutomaticAtStartup}" Content="{engine:EngineLang WorkstationSourceAutomatic}"/>
+                <ComboBoxItem Tag="{x:Static devices:WorkstationConfigurationSource.Local}" Content="{engine:EngineLang WorkstationSourceLocal}"/>
+                <ComboBoxItem Tag="{x:Static devices:WorkstationConfigurationSource.MySql}" Content="MySQL"/>
+            </ComboBox>
+            <TextBlock x:Name="ActiveConfigurationSource" Margin="14,0,0,0" VerticalAlignment="Center"/>
+        </WrapPanel>
     </Grid>
 </Window>

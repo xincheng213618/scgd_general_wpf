@@ -3,16 +3,21 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Types;
-using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
+using System.Reflection;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.UI.Tests;
 
@@ -32,6 +37,17 @@ public class LocalDeviceDisplayConfigTests
         Assert.Equal(false, (bool?)JObject.FromObject(config)[field]);
     }
 
+    [Theory]
+    [InlineData("{}", false)]
+    [InlineData("{\"IsAutoOpen\":false}", false)]
+    [InlineData("{\"IsAutoOpen\":true}", true)]
+    public void CameraAutoConnectDefaultsOffAndHonorsSavedValue(string json, bool expected)
+    {
+        var config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigCamera>(json);
+
+        Assert.Equal(expected, config.IsAutoOpen);
+    }
+
     [Fact]
     public void NewPgAndFilterWheelSeedOnlyMissingDisplayConfigs()
     {
@@ -40,47 +56,110 @@ public class LocalDeviceDisplayConfigTests
     }
 
     [Fact]
-    public void SpectrumBackendAndFluxModeAreEditableInDisplayConfiguration()
-    {
-        var properties = PropertyEditorHelper.GetEditableProperties(typeof(DisplaySpectrumConfig));
-        Assert.Contains(properties, property => property.Name == nameof(DisplaySpectrumConfig.UseLocalSpectrum));
-        Assert.Contains(properties, property => property.Name == nameof(DisplaySpectrumConfig.IsLuminousFluxMode));
-    }
-
-    [Theory]
-    [InlineData("4", ReferenceLineMode.SimpleCross)]
-    [InlineData("5", ReferenceLineMode.SimpleCross)]
-    [InlineData("\"CrossMask\"", ReferenceLineMode.SimpleCross)]
-    [InlineData("\"GridLines\"", ReferenceLineMode.SimpleCross)]
-    [InlineData("3", ReferenceLineMode.DiagonalCross)]
-    public void CameraReferenceLineModeReloadPreservesTheOtherSettings(string modeJson, ReferenceLineMode expected)
+    public void CameraAcquisitionDraftPersistsEditedPreferencesAndPreservesLiveState()
     {
         WpfTestHost.Invoke(() =>
         {
-            var manager = new DisplayConfigManager
-            {
-                Object = new JObject
-                {
-                    ["camera"] = new JObject
-                    {
-                        [nameof(DisplayCameraConfig.UseLocalCamera)] = false,
-                        [nameof(DisplayCameraConfig.ReferenceLineParam)] = new JObject
-                        {
-                            [nameof(ReferenceLineParam.Mode)] = JToken.Parse(modeJson),
-                            [nameof(ReferenceLineParam.PointX)] = 123.5,
-                            [nameof(ReferenceLineParam.IsMapping)] = true,
-                            ["MaskSize"] = 75
-                        }
-                    }
-                }
-            };
+            string[] editableProperties =
+            [
+                nameof(DisplayCameraConfig.UseLocalCamera),
+                nameof(DisplayCameraConfig.HikBayerQuality),
+                nameof(DisplayCameraConfig.UseMotorReadbackForVid),
+                nameof(DisplayCameraConfig.SaveLocalAutoFocusChart),
+                nameof(DisplayCameraConfig.LocalAutoFocusChartDirectory)
+            ];
+            Assert.Equal(editableProperties, CameraAcquisitionSettingsDraft.EditableProperties);
 
+            var manager = new DisplayConfigManager();
             var config = manager.GetDisplayConfig<DisplayCameraConfig>("camera");
-            Assert.False(config.UseLocalCamera);
-            Assert.Equal(expected, config.ReferenceLineParam.Mode);
-            Assert.Equal(123.5, config.ReferenceLineParam.PointX);
-            Assert.True(config.ReferenceLineParam.IsMapping);
-            Assert.Equal((int)expected, (int?)JObject.FromObject(config.ReferenceLineParam)[nameof(ReferenceLineParam.Mode)]);
+            config.LocalAutoFocusChartDirectory = @"C:\FocusResults";
+            config.UseHikMvs = false;
+            config.HikOutputBgr = false;
+            config.SaveLocalCaptureFiles = false;
+            var draft = new CameraAcquisitionSettingsDraft(config);
+            Assert.False(draft.Apply(config));
+            Assert.Equal(config.LocalAutoFocusChartDirectory, draft.Settings.LocalAutoFocusChartDirectory);
+            Assert.Equal(HikBayerQuality.OptimalPlus, draft.Settings.HikBayerQuality);
+            Assert.Equal(HikBayerQuality.OptimalPlus, JsonConvert.DeserializeObject<DisplayCameraConfig>("{}")!.HikBayerQuality);
+
+            draft.Settings.UseLocalCamera = false;
+            draft.Settings.HikBayerQuality = HikBayerQuality.Fast;
+            draft.Settings.SaveLocalAutoFocusChart = true;
+            draft.Settings.LocalAutoFocusChartDirectory = string.Empty;
+            Assert.True(config.UseLocalCamera);
+            Assert.False(config.SaveLocalAutoFocusChart);
+
+            config.UseMotorReadbackForVid = false;
+            config.TakePictureDelay = 75;
+
+            var beforeFailedSave = JObject.FromObject(config);
+            Assert.Throws<InvalidOperationException>(() => draft.Apply(config, () => throw new InvalidOperationException()));
+            Assert.True(JToken.DeepEquals(beforeFailedSave, JObject.FromObject(config)));
+
+            Assert.True(draft.Apply(config));
+            Assert.Equal(75, config.TakePictureDelay);
+            Assert.False(config.UseMotorReadbackForVid);
+
+            var restoredManager = JsonConvert.DeserializeObject<DisplayConfigManager>(JsonConvert.SerializeObject(manager))!;
+            var restored = restoredManager.GetDisplayConfig<DisplayCameraConfig>("camera");
+            Assert.False(restored.UseLocalCamera);
+            Assert.False(restored.UseHikMvs);
+            Assert.Equal(HikBayerQuality.Fast, restored.HikBayerQuality);
+            Assert.False(restored.HikOutputBgr);
+            Assert.False(restored.SaveLocalCaptureFiles);
+            Assert.False(restored.UseMotorReadbackForVid);
+            Assert.True(restored.SaveLocalAutoFocusChart);
+            Assert.Empty(restored.LocalAutoFocusChartDirectory);
+            Assert.Equal(75, restored.TakePictureDelay);
+            Assert.Equal(HikBayerQuality.Fast, new CameraAcquisitionSettingsDraft(restored).Settings.HikBayerQuality);
+        });
+    }
+
+    [Fact]
+    public void CameraEditorShowsFocusPreferencesOnlyForTheDraftLocalBackend()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var previousConfig = ConfigService.Instance;
+            var dictionaries = ThemeManager.ResourceDictionaryWhite.Concat(ThemeManager.ResourceDictionaryBase)
+                .Select(uri => new ResourceDictionary { Source = new Uri(uri, UriKind.RelativeOrAbsolute) }).ToArray();
+            foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Add(dictionary);
+            TestEnvironment.SetConfig(new ConfigHandler { IsAutoSave = false });
+            try
+            {
+                using var camera = new DeviceCamera(new SysResourceModel { Id = -2, Code = "camera-focus-visibility", Value = "{}" });
+                var window = new EditCamera(camera) { Left = -10000, Top = -10000, ShowActivated = false, ShowInTaskbar = false };
+                try
+                {
+                    window.Show();
+                    var section = Assert.IsType<StackPanel>(window.FindName("AcquisitionFields"));
+                    var fields = section.Children.OfType<DockPanel>().ToDictionary(field => Assert.IsAssignableFrom<PropertyInfo>(field.Tag).Name);
+                    var toggle = Assert.Single(fields[nameof(DisplayCameraConfig.UseLocalCamera)].Children.OfType<ToggleSwitch>());
+                    DockPanel[] focusFields =
+                    [
+                        fields[nameof(DisplayCameraConfig.UseMotorReadbackForVid)],
+                        fields[nameof(DisplayCameraConfig.SaveLocalAutoFocusChart)],
+                        fields[nameof(DisplayCameraConfig.LocalAutoFocusChartDirectory)]
+                    ];
+                    var binding = toggle.GetBindingExpression(ToggleSwitch.IsCheckedProperty)!;
+                    Assert.All(focusFields, field => Assert.Equal(Visibility.Visible, field.Visibility));
+
+                    toggle.SetCurrentValue(ToggleSwitch.IsCheckedProperty, false);
+                    binding.UpdateSource();
+                    Assert.All(focusFields, field => Assert.Equal(Visibility.Collapsed, field.Visibility));
+                    Assert.True(camera.DisplayConfig.UseLocalCamera);
+
+                    toggle.SetCurrentValue(ToggleSwitch.IsCheckedProperty, true);
+                    binding.UpdateSource();
+                    Assert.All(focusFields, field => Assert.Equal(Visibility.Visible, field.Visibility));
+                }
+                finally { window.Close(); }
+            }
+            finally
+            {
+                TestEnvironment.SetConfig(previousConfig);
+                foreach (var dictionary in dictionaries) Application.Current.Resources.MergedDictionaries.Remove(dictionary);
+            }
         });
     }
 

@@ -282,18 +282,13 @@ public class LocalCameraOwnershipTests
     }
 
     [Fact]
-    public void CalibrationCacheInvalidatesOnReopenAndDisposeIsIdempotent()
+    public void DisposeAfterReopeningReleasesHandleOnce()
     {
         var native = new FakeNative();
         var session = new LocalCameraSession(native, new CameraBackendState(true));
         session.Open("camera", TakeImageMode.Measure_Normal, 16);
-        session.UpdateCalibration("{}");
-        session.UpdateCalibration("{}");
-        Assert.Equal(1, native.CalibrationUpdates);
         session.Close(true);
         session.Open("camera", TakeImageMode.Measure_Normal, 16);
-        session.UpdateCalibration("{}");
-        Assert.Equal(2, native.CalibrationUpdates);
         session.Dispose();
         session.Dispose();
         Assert.Equal(1, native.Releases);
@@ -312,7 +307,7 @@ public class LocalCameraOwnershipTests
 
     private sealed class FakeNative : ILocalCameraNative
     {
-        public int Initializations, Opens, Releases, CalibrationUpdates;
+        public int Initializations, Opens, Releases;
         public int OpenResult = cvErrorDefine.CV_ERR_SUCCESS;
         public bool FailClose;
         private bool opened;
@@ -326,7 +321,6 @@ public class LocalCameraOwnershipTests
             bool useHikMvs, int hikBayerQuality, bool hikOutputBgr) { Opens++; opened = OpenResult == cvErrorDefine.CV_ERR_SUCCESS; return OpenResult; }
         public void Close(IntPtr handle) { if (!FailClose) opened = false; }
         public void DetachCallback(IntPtr handle) { }
-        public bool UpdateCalibration(IntPtr handle, string json) { CalibrationUpdates++; return true; }
         public void Release(IntPtr handle) { Releases++; }
     }
 }

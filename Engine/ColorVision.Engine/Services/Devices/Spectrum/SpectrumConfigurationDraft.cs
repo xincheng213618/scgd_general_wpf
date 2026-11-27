@@ -30,7 +30,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 DisplayConfig.UseLocalSpectrum = displaySource.UseLocalSpectrum;
                 DisplayConfig.IsLuminousFluxMode = displaySource.IsLuminousFluxMode;
             }
-            ReloadConnection();
+            IsSerialConnection = !string.IsNullOrWhiteSpace(Config.ComPort) && Config.ComPort.Trim() != "0";
+            SerialPortName = IsSerialConnection ? Config.ComPortView : string.Empty;
             appliedServiceSettings = GetServiceSettings();
             appliedDisplaySettings = (DisplayConfig.UseLocalSpectrum, DisplayConfig.IsLuminousFluxMode);
         }
@@ -41,12 +42,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [DisplayName("SpectrumComPort"), PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
         public string SerialPortName { get => serialPortName; set { serialPortName = value; OnPropertyChanged(); } }
         private string serialPortName = string.Empty;
-
-        internal void ReloadConnection()
-        {
-            IsSerialConnection = !string.IsNullOrWhiteSpace(Config.ComPort) && Config.ComPort.Trim() != "0";
-            SerialPortName = IsSerialConnection ? Config.ComPortView : string.Empty;
-        }
 
         internal bool TryGetPort(out int port)
         {
@@ -101,7 +96,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (Config.NDConfig.IsBingNDDevice) Config.NDConfig.SzComName = string.Empty;
                 else Config.NDConfig.NDBindDeviceCode = string.Empty;
                 var serviceSettings = JObject.FromObject(Config);
-                ServiceSettingsChanged = !JToken.DeepEquals(serviceSettings, JObject.FromObject(target));
+                var liveSettings = JObject.FromObject(target);
+                serviceSettings.Remove(nameof(ConfigSpectrum.FileServerCfg));
+                liveSettings.Remove(nameof(ConfigSpectrum.FileServerCfg));
+                ServiceSettingsChanged = !JToken.DeepEquals(serviceSettings, liveSettings);
                 if (ServiceSettingsChanged)
                 {
                     // Keep the live config identity and its subscribers; never copy event fields from the draft.
@@ -131,6 +129,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private JObject GetServiceSettings()
         {
             var settings = JObject.FromObject(Config);
+            settings.Remove(nameof(ConfigSpectrum.FileServerCfg));
             // The editor normalizes these inputs when loading and validating a draft.
             settings[nameof(ConfigSpectrum.SN)] = Config.SN?.Trim() ?? string.Empty;
             settings.Remove(nameof(ConfigSpectrum.ComPortView));

@@ -30,6 +30,9 @@ namespace ColorVision.Engine.Templates.Flow
         [System.Text.Json.Serialization.JsonIgnore]
         internal LocalFlowTemplateStorage? LocalStorage { get; set; }
 
+        [JsonIgnore, System.Text.Json.Serialization.JsonIgnore]
+        internal TemplateDatabase? Database { get; set; }
+
         /// <summary>
         /// Runtime-only identity of the resource that owns <see cref="DataBase64"/>.
         /// These members are deliberately excluded from template serialization so

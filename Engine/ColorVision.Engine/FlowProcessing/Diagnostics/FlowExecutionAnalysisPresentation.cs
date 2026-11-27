@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
@@ -153,52 +155,67 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     {
         private static readonly TimeSpan LegacyMessageMatchTolerance = TimeSpan.FromMilliseconds(250);
 
-        internal static IReadOnlyList<FlowNodeDurationAnalysis> BuildDurationItems(
-            IEnumerable<FlowNodeRecord> source,
+        internal static (IReadOnlyList<FlowNodeDurationAnalysis> Durations, FlowExecutionAnalysisSummary Summary) BuildOverviewFromOrderedRecords(
+            IReadOnlyList<FlowNodeRecord> records,
             DateTime now,
             long warningThresholdMs,
             NodeMessageLookup messages)
         {
-            List<FlowNodeRecord> records = source?
-                .OrderBy(item => item.StartTime)
-                .ThenBy(item => item.Id)
-                .ToList() ?? new List<FlowNodeRecord>();
-            List<FlowNodeDurationAnalysis> items = records
-                .Select(record =>
-                {
-                    IReadOnlyList<FlowNodeMessage> executionMessages =
-                        messages.GetMessages(record, records);
-                    bool isTimedOut = !record.EndTime.HasValue
-                        || executionMessages.Any(message =>
-                            message.State == FlowMessageState.Timeout
-                            || message.StatusCode == -2);
-                    long elapsedMs = isTimedOut
-                        ? 0
-                        : GetEffectiveElapsedMs(record, now);
-                    return new FlowNodeDurationAnalysis(
-                        record,
-                        elapsedMs,
-                        isTimedOut,
-                        !isTimedOut && elapsedMs > warningThresholdMs);
-                })
-                .OrderByDescending(item => item.ElapsedMs)
-                .ThenBy(item => item.Record.StartTime)
-                .ThenBy(item => item.Record.Id)
-                .ToList();
+            if (records.Count == 0)
+                return ([], new(0, 0, 0, 0, 0, 0, 0, 0, "—", 0));
 
-            long totalNodeWorkMs = items.Sum(item => item.ElapsedMs);
-            long slowestMs = items.FirstOrDefault()?.ElapsedMs ?? 0;
-            foreach (FlowNodeDurationAnalysis item in items)
+            var items = new List<FlowNodeDurationAnalysis>(records.Count);
+            DateTime wallStart = records[0].StartTime;
+            DateTime wallEnd = records[0].EndTime ?? wallStart;
+            DateTime? activeStart = null;
+            DateTime activeEnd = default;
+            long activeMs = 0;
+            long nodeWorkMs = 0;
+            int timeoutCount = 0, warningCount = 0;
+            foreach (FlowNodeRecord record in records)
             {
+                DateTime end = record.EndTime ?? record.StartTime;
+                if (end > wallEnd) wallEnd = end;
+                bool hasTimeoutMessage = messages.HasTimeout(record);
+                bool isTimedOut = !record.EndTime.HasValue || hasTimeoutMessage;
+                long elapsedMs = isTimedOut ? 0 : GetEffectiveElapsedMs(record, now);
+                bool isWarning = !isTimedOut && elapsedMs > warningThresholdMs;
+                items.Add(new(record, elapsedMs, isTimedOut, isWarning));
+                nodeWorkMs = checked(nodeWorkMs + elapsedMs);
+                if (isTimedOut) timeoutCount++;
+                if (isWarning) warningCount++;
+
+                if (isTimedOut || end < record.StartTime) continue;
+                // Records arrive in start-time order, so overlapping intervals can be joined as we read them.
+                if (activeStart.HasValue && record.StartTime > activeEnd)
+                {
+                    activeMs += (long)(activeEnd - activeStart.Value).TotalMilliseconds;
+                    activeStart = null;
+                }
+                if (!activeStart.HasValue || end > activeEnd) activeEnd = end;
+                activeStart ??= record.StartTime;
+            }
+            if (activeStart.HasValue) activeMs += (long)(activeEnd - activeStart.Value).TotalMilliseconds;
+
+            // Stable ordering retains the snapshot's start-time and record-ID tie breaks.
+            List<FlowNodeDurationAnalysis> ordered = items.OrderByDescending(item => item.ElapsedMs).ToList();
+            FlowNodeDurationAnalysis? slowest = null;
+            long slowestMs = ordered[0].ElapsedMs;
+            foreach (FlowNodeDurationAnalysis item in ordered)
+            {
+                if (!item.IsTimedOut) slowest ??= item;
                 item.RelativeToSlowestPercent = slowestMs > 0
                     ? item.ElapsedMs * 100d / slowestMs
                     : 0;
-                item.ShareOfNodeWorkPercent = totalNodeWorkMs > 0
-                    ? item.ElapsedMs * 100d / totalNodeWorkMs
+                item.ShareOfNodeWorkPercent = nodeWorkMs > 0
+                    ? item.ElapsedMs * 100d / nodeWorkMs
                     : 0;
             }
 
-            return items;
+            long wallClockMs = Math.Max(0, (long)(wallEnd - wallStart).TotalMilliseconds);
+            return (ordered, new(wallClockMs, activeMs, Math.Max(0, wallClockMs - activeMs),
+                Math.Max(0, nodeWorkMs - activeMs), nodeWorkMs, ordered.Count, timeoutCount, warningCount,
+                slowest?.NodeName ?? "—", slowest?.ElapsedMs ?? 0));
         }
 
         internal static IReadOnlyList<FlowNodeHistoryAnalysis> BuildNodeHistoryItems(
@@ -210,13 +227,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 .OrderByDescending(item => item.StartTime)
                 .ThenByDescending(item => item.Id)
                 .ToList() ?? new List<FlowNodeRecord>();
-            var messageLookup = new NodeMessageLookup(messages);
+            var messageLookup = new NodeMessageLookup(records, messages);
 
             return records
                 .Select(record =>
                 {
-                    IReadOnlyList<FlowNodeMessage> executionMessages =
-                        messageLookup.GetMessages(record, records);
+                    IReadOnlyList<FlowNodeMessage> executionMessages = messageLookup.GetMessages(record);
                     FlowNodeExecutionOutcome outcome =
                         GetNodeExecutionOutcome(record, executionMessages);
                     bool isTimedOut =
@@ -267,13 +283,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 CalculateP95(failedElapsed));
         }
 
-        internal static FlowExecutionPhaseSummary BuildPhaseSummary(
-            IEnumerable<FlowExecutionEvent>? source)
+        internal static FlowExecutionPhaseSummary BuildPhaseSummaryFromOrderedEvents(
+            IReadOnlyList<FlowExecutionEvent> events)
         {
-            List<FlowExecutionEvent> events = source?
-                .OrderBy(item => item.OccurredTimeUtc)
-                .ThenBy(item => item.SequenceNo)
-                .ToList() ?? new List<FlowExecutionEvent>();
             return new FlowExecutionPhaseSummary(
                 GetPhaseDurationMs(
                     events,
@@ -317,51 +329,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
 
             return FlowNodeExecutionOutcome.Completed;
-        }
-
-        internal static FlowExecutionAnalysisSummary BuildSummary(
-            IEnumerable<FlowNodeRecord> source,
-            IReadOnlyList<FlowNodeDurationAnalysis> durationItems,
-            DateTime now)
-        {
-            List<FlowNodeRecord> records = source?.ToList() ?? new List<FlowNodeRecord>();
-            if (records.Count == 0)
-            {
-                return new FlowExecutionAnalysisSummary(
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    "—",
-                    0);
-            }
-
-            DateTime start = records.Min(item => item.StartTime);
-            DateTime end = records.Max(item => item.EndTime ?? item.StartTime);
-            long wallClockMs = Math.Max(0, (long)(end - start).TotalMilliseconds);
-            long activeMs = CalculateActiveTimeMs(
-                durationItems
-                    .Where(item => !item.IsTimedOut)
-                    .Select(item => item.Record));
-            long nodeWorkMs = durationItems.Sum(item => item.ElapsedMs);
-            FlowNodeDurationAnalysis? slowest =
-                durationItems.FirstOrDefault(item => !item.IsTimedOut);
-
-            return new FlowExecutionAnalysisSummary(
-                wallClockMs,
-                activeMs,
-                Math.Max(0, wallClockMs - activeMs),
-                Math.Max(0, nodeWorkMs - activeMs),
-                nodeWorkMs,
-                durationItems.Count,
-                durationItems.Count(item => item.IsTimedOut),
-                durationItems.Count(item => item.IsWarning),
-                slowest?.NodeName ?? "—",
-                slowest?.ElapsedMs ?? 0);
         }
 
         private static long? GetPhaseDurationMs(
@@ -431,15 +398,35 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         internal sealed class NodeMessageLookup
         {
             private readonly ILookup<(int BatchId, int? NodeRecordId), FlowNodeMessage> _byExecution;
+            private readonly Lazy<LegacyMessageOwners> _legacyOwners;
 
-            internal NodeMessageLookup(IEnumerable<FlowNodeMessage>? messages)
+            internal NodeMessageLookup(IReadOnlyList<FlowNodeRecord> records, IEnumerable<FlowNodeMessage>? messages, bool messagesOrdered = false)
             {
-                _byExecution = (messages ?? [])
-                    .OrderBy(message => message.SendTime)
+                IEnumerable<FlowNodeMessage> source = messages ?? [];
+                _byExecution = (messagesOrdered ? source : source.OrderBy(message => message.SendTime))
                     .ToLookup(message => (message.BatchId, message.NodeRecordId));
+                _legacyOwners = new(() => new LegacyMessageOwners(records));
             }
 
-            internal IReadOnlyList<FlowNodeMessage> GetMessages(FlowNodeRecord record, IEnumerable<FlowNodeRecord> runRecords)
+            internal bool HasTimeout(FlowNodeRecord record)
+            {
+                if (record.Id > 0)
+                {
+                    bool foundExact = false;
+                    foreach (FlowNodeMessage message in _byExecution[(record.BatchId, record.Id)])
+                    {
+                        if (!IsSameRun(record, message)) continue;
+                        if (IsTimeout(message)) return true;
+                        foundExact = true;
+                    }
+                    if (foundExact) return false;
+                }
+                return GetLegacyMessages(record).Any(IsTimeout);
+
+                static bool IsTimeout(FlowNodeMessage message) => message.State == FlowMessageState.Timeout || message.StatusCode == -2;
+            }
+
+            internal IReadOnlyList<FlowNodeMessage> GetMessages(FlowNodeRecord record)
             {
                 if (record.Id > 0)
                 {
@@ -449,31 +436,147 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     if (exact.Count > 0)
                         return exact;
                 }
+                return GetLegacyMessages(record);
+            }
 
+            private IReadOnlyList<FlowNodeMessage> GetLegacyMessages(FlowNodeRecord record)
+            {
                 // Rows predating node_record_id still use the original matching window.
                 var legacyKey = (record.BatchId, (int?)null);
                 if (!_byExecution.Contains(legacyKey))
                     return [];
-                List<FlowNodeMessage> legacyMessages = _byExecution[legacyKey]
-                    .Where(message => IsSameRun(record, message) && IsSameNode(record, message))
-                    .ToList();
-                if (legacyMessages.Count == 0)
-                    return legacyMessages;
 
-                // Match against the message's identity so every row considers the same owners.
-                List<FlowNodeRecord> candidateRecords = runRecords
-                    .Where(candidate => candidate.BatchId == record.BatchId)
-                    .ToList();
-                if (!candidateRecords.Any(candidate => IsSameRecord(candidate, record)))
-                    candidateRecords.Add(record);
+                LegacyMessageOwners legacyOwners = _legacyOwners.Value;
+                IEnumerable<FlowNodeRecord> candidates = legacyOwners.RecordsByBatch[record.BatchId];
+                IEnumerable<FlowNodeMessage> legacyMessages = _byExecution[legacyKey];
+                LegacyBatchWindows? windows = legacyOwners.GetBatchWindows(record.BatchId, candidates, legacyMessages);
+                FlowNodeRecord? snapshotRecord = null;
+                bool inSnapshot = windows != null && record.Id > 0
+                    ? windows.RecordsById.TryGetValue(record.Id, out snapshotRecord)
+                    : candidates.Any(candidate => IsSameRecord(candidate, record));
+                if (!inSnapshot)
+                    candidates = candidates.Append(record);
 
-                return legacyMessages
-                    .Where(message =>
+                // A caller can pass the same ID with different timestamps. Use the range only for a snapshot row.
+                if (windows != null && ReferenceEquals(snapshotRecord, record))
+                    legacyMessages = windows.MessagesInWindow(record);
+
+                List<FlowNodeMessage>? matches = null;
+                foreach (FlowNodeMessage message in legacyMessages)
+                {
+                    if (!IsSameRun(record, message) || !IsSameNode(record, message))
+                        continue;
+
+                    // A legacy message has the same owner across lookups of the same snapshot.
+                    FlowNodeRecord? owner = inSnapshot
+                        ? legacyOwners.ByMessage.GetOrAdd(message,
+                            static (item, state) => FindLegacyMessageOwner(item, state.Windows?.CandidateRecords(item.SendTime) ?? state.Candidates),
+                            (Windows: windows, Candidates: candidates))
+                        : FindLegacyMessageOwner(message, candidates);
+                    if (owner != null && IsSameRecord(owner, record))
+                        (matches ??= []).Add(message);
+                }
+                return matches ?? [];
+            }
+
+            private sealed class LegacyMessageOwners(IReadOnlyList<FlowNodeRecord> records)
+            {
+                private const int MinimumIndexedRecords = 16;
+                private ConcurrentDictionary<int, LegacyBatchWindows?>? _batchWindows;
+
+                internal ILookup<int, FlowNodeRecord> RecordsByBatch { get; } = records.ToLookup(record => record.BatchId);
+                internal ConcurrentDictionary<FlowNodeMessage, FlowNodeRecord?> ByMessage { get; } =
+                    new(ReferenceEqualityComparer.Instance);
+
+                internal LegacyBatchWindows? GetBatchWindows(int batchId, IEnumerable<FlowNodeRecord> candidates,
+                    IEnumerable<FlowNodeMessage> messages)
+                {
+                    if (!candidates.TryGetNonEnumeratedCount(out int count) || count < MinimumIndexedRecords)
+                        return null;
+
+                    return LazyInitializer.EnsureInitialized(ref _batchWindows).GetOrAdd(batchId,
+                        static (_, state) => LegacyBatchWindows.Create(state.Candidates, state.Messages, state.Count),
+                        (Candidates: candidates, Messages: messages, Count: count));
+                }
+            }
+
+            private sealed class LegacyBatchWindows(
+                Dictionary<int, FlowNodeRecord> recordsById,
+                FlowNodeRecord[] completed,
+                List<FlowNodeRecord> open,
+                FlowNodeMessage[] messages,
+                long maximumDurationTicks)
+            {
+                private static readonly long ToleranceTicks = LegacyMessageMatchTolerance.Ticks;
+                internal Dictionary<int, FlowNodeRecord> RecordsById { get; } = recordsById;
+
+                internal static LegacyBatchWindows? Create(IEnumerable<FlowNodeRecord> records,
+                    IEnumerable<FlowNodeMessage> messages, int count)
+                {
+                    var byId = new Dictionary<int, FlowNodeRecord>(count);
+                    var completed = new List<FlowNodeRecord>(count);
+                    var open = new List<FlowNodeRecord>();
+                    long maximumDuration = 0;
+                    foreach (FlowNodeRecord record in records)
                     {
-                        FlowNodeRecord? owner = FindLegacyMessageOwner(message, candidateRecords);
-                        return owner != null && IsSameRecord(owner, record);
-                    })
-                    .ToList();
+                        long start = record.StartTime.Ticks;
+                        long end = (record.EndTime ?? DateTime.MaxValue).Ticks;
+                        // The fast path needs unambiguous record identity and valid DateTime arithmetic.
+                        if (record.Id <= 0 || !byId.TryAdd(record.Id, record) || start < ToleranceTicks
+                            || (end != DateTime.MaxValue.Ticks && end > DateTime.MaxValue.Ticks - ToleranceTicks))
+                            return null;
+
+                        if (end == DateTime.MaxValue.Ticks)
+                            open.Add(record);
+                        else
+                        {
+                            completed.Add(record);
+                            maximumDuration = Math.Max(maximumDuration, end - start);
+                        }
+                    }
+
+                    completed.Sort(static (left, right) => left.StartTime.CompareTo(right.StartTime));
+                    return new(byId, completed.ToArray(), open, messages.ToArray(), maximumDuration);
+                }
+
+                internal IEnumerable<FlowNodeRecord> CandidateRecords(DateTime sendTime)
+                {
+                    // A completed row can start at most its duration plus the tolerance before the message.
+                    long start = sendTime.Ticks - maximumDurationTicks - ToleranceTicks;
+                    long end = sendTime.Ticks + ToleranceTicks;
+                    int first = LowerBound(completed, start, static record => record.StartTime.Ticks);
+                    int stop = LowerBound(completed, end + 1, static record => record.StartTime.Ticks);
+                    for (int index = first; index < stop; index++)
+                        yield return completed[index];
+                    foreach (FlowNodeRecord record in open)
+                        yield return record;
+                }
+
+                internal IEnumerable<FlowNodeMessage> MessagesInWindow(FlowNodeRecord record)
+                {
+                    long start = record.StartTime.Ticks - ToleranceTicks;
+                    long end = (record.EndTime ?? DateTime.MaxValue).Ticks;
+                    if (end != DateTime.MaxValue.Ticks)
+                        end += ToleranceTicks;
+                    int first = LowerBound(messages, start, static message => message.SendTime.Ticks);
+                    int stop = LowerBound(messages, end + 1, static message => message.SendTime.Ticks);
+                    return new ArraySegment<FlowNodeMessage>(messages, first, Math.Max(0, stop - first));
+                }
+
+                private static int LowerBound<T>(T[] items, long ticks, Func<T, long> getTicks)
+                {
+                    int first = 0;
+                    int last = items.Length;
+                    while (first < last)
+                    {
+                        int middle = first + (last - first) / 2;
+                        if (getTicks(items[middle]) < ticks)
+                            first = middle + 1;
+                        else
+                            last = middle;
+                    }
+                    return first;
+                }
             }
         }
 
@@ -538,7 +641,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private static FlowNodeRecord? FindLegacyMessageOwner(
             FlowNodeMessage message,
-            List<FlowNodeRecord> candidates)
+            IEnumerable<FlowNodeRecord> candidates)
         {
             FlowNodeRecord? owner = null;
             (long Distance, DateTime Start, int Id) closest = default;
@@ -578,36 +681,5 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 && string.Equals(left.SerialNumber, right.SerialNumber, StringComparison.Ordinal);
         }
 
-        private static long CalculateActiveTimeMs(IEnumerable<FlowNodeRecord> source)
-        {
-            var intervals = source
-                .Select(item => (Start: item.StartTime, End: item.EndTime ?? item.StartTime))
-                .Where(item => item.End >= item.Start)
-                .OrderBy(item => item.Start)
-                .ToList();
-            if (intervals.Count == 0)
-                return 0;
-
-            DateTime currentStart = intervals[0].Start;
-            DateTime currentEnd = intervals[0].End;
-            long activeMs = 0;
-            for (int index = 1; index < intervals.Count; index++)
-            {
-                (DateTime start, DateTime end) = intervals[index];
-                if (start <= currentEnd)
-                {
-                    if (end > currentEnd)
-                        currentEnd = end;
-                    continue;
-                }
-
-                activeMs += Math.Max(0, (long)(currentEnd - currentStart).TotalMilliseconds);
-                currentStart = start;
-                currentEnd = end;
-            }
-
-            activeMs += Math.Max(0, (long)(currentEnd - currentStart).TotalMilliseconds);
-            return activeMs;
-        }
     }
 }

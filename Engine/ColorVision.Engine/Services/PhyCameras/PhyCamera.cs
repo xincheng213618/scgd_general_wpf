@@ -427,6 +427,12 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ClearDatabaseItems, Properties.Resources.Reset, MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
             {
+                var endpoint = SysResourceDao.IsLocalId(Id) ? null : WorkstationConfiguration.ConnectedEndpoint;
+                if (!SysResourceDao.IsLocalId(Id) && endpoint == null)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("原设备或配置库已失效，请关闭窗口后重新选择设备。"), Properties.Resources.Reset);
+                    return;
+                }
                 CalibrationParams.Clear();
                 this.VisualChildren.Clear();
                 Task.Run(() =>
@@ -436,7 +442,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                         foreach (var child in SysResourceDao.Instance.GetAllByPid(Id)) SysResourceDao.Instance.DeleteById(child.Id);
                         return;
                     }
-                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
+                    if (endpoint?.IsCurrent != true) return;
+                    using var Db = endpoint.CreateDbClient();
                     Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
                     var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
                     foreach (var item in ModMasterModels)
@@ -453,6 +460,12 @@ namespace ColorVision.Engine.Services.PhyCameras
             DemandDeleteAccess();
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, Properties.Resources.Delete, MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             DemandDeleteAccess();
+            var endpoint = SysResourceDao.IsLocalId(Id) ? null : WorkstationConfiguration.ConnectedEndpoint;
+            if (!SysResourceDao.IsLocalId(Id) && endpoint == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), EngineLocalization.Get("原资源或配置库已变更，请重新选择后再删除。"), Properties.Resources.Delete);
+                return;
+            }
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
 
@@ -464,7 +477,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 PhyCameraManager.GetInstance().PhyCameras.Remove(this);
                 return;
             }
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
+            using var Db = endpoint!.CreateDbClient();
             Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
 
             var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
@@ -1266,22 +1279,19 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                     Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(ReadCalibrationPackageText(Calibrationcfg));
 
-                    Dictionary<string, CalibrationResource> keyValuePairs2 = new();
+                    Dictionary<CalibrationPackageResourceKey, CalibrationResource> importedResources = new();
                     List<string> importedDistortionFiles = new();
 
-                    var uniqueItems = AllCalFiles.SelectMany(item => item.Value)
-                             .GroupBy(x => new { x.CalibrationType, x.Title })
-                             .Select(g => g.First());
+                    CalibrationPackageManifest manifest = new(AllCalFiles.SelectMany(item => item.Value));
+                    var uploads = manifest.Items.Select(item => (Item: item, Progress: new FileUploadInfo { FileName = item.Title })).ToList();
 
-                    foreach (var item in uniqueItems)
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            UploadList.Add(new FileUploadInfo() { FileName = item.Title });
-                        });
-                    }
+                        foreach (var upload in uploads)
+                            UploadList.Add(upload.Progress);
+                    });
 
-                    foreach (var item in uniqueItems)
+                    foreach (var (item, uploadMeta) in uploads)
                     {
                         string FilePath = string.Empty;
                         switch (item.CalibrationType)
@@ -1339,7 +1349,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 break;
                         }
 
-                        FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == item.Title);
                         uploadMeta.FilePath = FilePath;
                         if (string.IsNullOrWhiteSpace(FilePath) || !File.Exists(FilePath))
                         {
@@ -1361,18 +1370,19 @@ namespace ColorVision.Engine.Services.PhyCameras
                             string FileName = Path.GetFileName(FilePath);
                             string DesFilePath = Path.Combine(DesPath, FileName);
                             File.Copy(FilePath, DesFilePath, true);
-                            File.Delete(FilePath);
                             int resourceType = (int)item.CalibrationType.ToResouceType();
                             string remark = item.ToJsonN(new JsonSerializerSettings());
 
-                            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                            SysResourceModel sysResourceModel = db.Queryable<SysResourceModel>()
+                            using var db = WorkstationConfiguration.RequireEndpoint().CreateDbClient();
+                            List<SysResourceModel> candidates = db.Queryable<SysResourceModel>()
                                 .Where(a => a.Pid == SysResourceModel.Id
                                             && a.Type == resourceType
                                             && a.Name == item.Title
                                             && a.IsDelete == false
                                             && a.IsEnable == true)
-                                .First();
+                                .OrderBy(a => a.Id)
+                                .ToList();
+                            SysResourceModel? sysResourceModel = manifest.FindExistingResource(item, candidates, FileName);
 
                             if (sysResourceModel == null)
                             {
@@ -1427,7 +1437,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 });
                             }
 
-                            keyValuePairs2.TryAdd(item.Title, calibrationResource);
+                            importedResources.Add(item.ResourceKey, calibrationResource);
                             if (item.CalibrationType == CalibrationType.Distortion)
                                 importedDistortionFiles.Add(DesFilePath);
                             uploadMeta.UploadStatus = UploadStatus.Completed;
@@ -1479,9 +1489,10 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                                         foreach (var item1 in zipCalibrationGroup.List)
                                         {
-                                            if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
+                                            ZipCalibrationItem? item = manifest.ResolveGroupItem(item1);
+                                            if (item != null && importedResources.TryGetValue(item.ResourceKey, out var calibrationResource))
                                             {
-                                                groupResource.AddChild(colorVisionVCalibratioItems);
+                                                groupResource.AddChild(calibrationResource);
                                             }
                                         }
                                         groupResource.SetCalibrationResource();

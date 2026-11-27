@@ -182,8 +182,10 @@ public sealed class CopilotFlowRunHistorySourceTests
         Assert.Null(result.PreviousRuns[1].Run.CompletedTimeUtc);
     }
 
-    [Fact]
-    public async Task ExactNodeAttemptsKeepLoopsPerRunAndReturnTheNewestTenInAscendingIdOrder()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ExactNodeAttemptsKeepLoopsPerRunAndReturnTheNewestTenInAscendingIdOrder(bool withRunIndex)
     {
         using var fixture = new DatabaseFixture();
         const string nodeId = "node-A ";
@@ -204,6 +206,11 @@ public sealed class CopilotFlowRunHistorySourceTests
             InsertAttempt(db, previous.Id, "node-A");
             InsertAttempt(db, previous.Id, "NODE-A ");
             InsertAttempt(db, other.Id, nodeId);
+            if (!withRunIndex)
+            {
+                db.Ado.ExecuteCommand("DROP INDEX idx_flow_node_attempt_run_node;");
+                db.Ado.ExecuteCommand("DROP INDEX ux_flow_node_attempt_run_invocation;");
+            }
         }
 
         var result = Assert.IsType<FlowRunHistoryReadResult>(await fixture.Reader.ReadAsync(anchor.Id, nodeId, 10, CancellationToken.None));

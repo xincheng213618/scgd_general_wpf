@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <bcrypt.h>
 #include <io.h>
+#include <nlohmann/json.hpp>
 #include <opencv2/core/utility.hpp>
 #include <share.h>
 
@@ -17,13 +18,11 @@
 
 #include <algorithm>
 #include <bit>
-#include <cctype>
-#include <cerrno>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <limits>
 #include <stdexcept>
 #include <string_view>
@@ -158,81 +157,6 @@ bool openBinary(
     }
     size = static_cast<std::uint64_t>(fileLength.QuadPart);
     return true;
-}
-
-bool readTextFile(const std::filesystem::path& file, std::string& text, std::string& error)
-{
-    BinaryFile stream;
-    std::uint64_t size = 0;
-    if (!openBinary(file, stream, size, error)) {
-        return false;
-    }
-    if (size > static_cast<std::uint64_t>((std::numeric_limits<std::size_t>::max)())) {
-        error = "Calibration JSON is too large";
-        return false;
-    }
-
-    text.resize(static_cast<std::size_t>(size));
-    return seekAndRead(stream, 0, text.data(), size, error);
-}
-
-std::size_t skipWhitespace(std::string_view text, std::size_t position)
-{
-    while (position < text.size()
-        && std::isspace(static_cast<unsigned char>(text[position])) != 0) {
-        ++position;
-    }
-    return position;
-}
-
-bool looksLikeJsonObject(std::string_view text)
-{
-    const auto first = skipWhitespace(text, 0);
-    if (first == text.size() || text[first] != '{') {
-        return false;
-    }
-
-    auto last = text.size();
-    while (last > first + 1
-        && std::isspace(static_cast<unsigned char>(text[last - 1])) != 0) {
-        --last;
-    }
-    return last > first + 1 && text[last - 1] == '}';
-}
-
-bool findJsonNumber(
-    const std::string& text,
-    std::string_view key,
-    double& value,
-    bool& representedAsReal)
-{
-    const std::string quotedKey = "\"" + std::string(key) + "\"";
-    auto position = text.find(quotedKey);
-    while (position != std::string::npos) {
-        position = skipWhitespace(text, position + quotedKey.size());
-        if (position >= text.size() || text[position] != ':') {
-            position = text.find(quotedKey, position);
-            continue;
-        }
-        position = skipWhitespace(text, position + 1);
-        if (position >= text.size()) {
-            return false;
-        }
-
-        const char* begin = text.c_str() + position;
-        char* end = nullptr;
-        errno = 0;
-        const double parsed = std::strtod(begin, &end);
-        if (end == begin || errno == ERANGE || !std::isfinite(parsed)) {
-            return false;
-        }
-
-        const std::string_view token(begin, static_cast<std::size_t>(end - begin));
-        representedAsReal = token.find_first_of(".eE") != std::string_view::npos;
-        value = parsed;
-        return true;
-    }
-    return false;
 }
 
 template <typename TAction>
@@ -1037,6 +961,11 @@ public:
     }
 
     [[nodiscard]] CalibrationType type() const noexcept override { return type_; }
+    [[nodiscard]] std::optional<std::int32_t> requiredInputDepth() const noexcept override
+    {
+        if (header_.version == 0) return std::nullopt;
+        return static_cast<std::int32_t>(header_.sourceBitsPerChannel);
+    }
     [[nodiscard]] bool supportsDistinctOutput() const noexcept override { return true; }
     [[nodiscard]] bool shareInstanceAcrossContexts() const noexcept override { return true; }
     [[nodiscard]] std::uint64_t cacheFootprintBytes() const noexcept override
@@ -1770,8 +1699,8 @@ void MapCalibration<TCorrection, TOperation>::applyFusedMapRows16(
 
 class DarkNoiseCalibration final : public CalibrationItem {
 public:
-    explicit DarkNoiseCalibration(double ratio)
-        : ratio_(static_cast<float>(ratio))
+    explicit DarkNoiseCalibration(float ratio)
+        : ratio_(ratio)
     {
     }
 
@@ -1786,44 +1715,17 @@ public:
     bool apply(
         const ImageView& raw,
         float*,
-        const ExecutionOptions& options,
+        const ExecutionOptions&,
         std::string&) override
     {
-        // This intentionally retains cvCamera's production behavior: the loop
-        // is indexed only by height (not width/channels), and both 8/16-bit
-        // paths clamp to 255. Changing it would break byte-for-byte parity.
-        const auto start = (std::min)(options.roi[2], raw.height);
-        const auto bottom = (std::min)(options.roi[3], raw.height);
-        const auto end = raw.height - bottom;
-        if (start >= end) {
-            return true;
-        }
-
-        if (raw.bitsPerChannel == 8) {
-            auto* data = reinterpret_cast<std::uint8_t*>(raw.data);
-            for (auto index = start; index < end; ++index) {
-                const float corrected = data[index] * ratio_;
-                data[index] = corrected > 255.0F
-                    ? std::uint8_t{ 255 }
-                    : static_cast<std::uint8_t>(corrected);
-            }
-        }
-        else {
-            auto* data = reinterpret_cast<std::uint16_t*>(raw.data);
-            for (auto index = start; index < end; ++index) {
-                const float corrected = data[index] * ratio_;
-                data[index] = corrected > 255.0F
-                    ? std::uint16_t{ 255 }
-                    : static_cast<std::uint16_t>(corrected);
-            }
-        }
+        correct(raw, raw);
         return true;
     }
 
     bool applyOutOfPlace(
         const ImageView& source,
         const ImageView& destination,
-        const ExecutionOptions& options,
+        const ExecutionOptions&,
         std::string& error) override
     {
         std::size_t sampleCount = 0;
@@ -1832,62 +1734,49 @@ public:
                 source, destination, sampleCount, byteCount, error)) {
             return false;
         }
-        if (sampleCount < source.height) {
-            error = "DarkNoise RAW layout is invalid";
-            return false;
-        }
-
-        if (source.bitsPerChannel == 8) {
-            correctTo(
-                reinterpret_cast<const std::uint8_t*>(source.data),
-                reinterpret_cast<std::uint8_t*>(destination.data),
-                sampleCount,
-                source.height,
-                options);
-        }
-        else {
-            correctTo(
-                reinterpret_cast<const std::uint16_t*>(source.data),
-                reinterpret_cast<std::uint16_t*>(destination.data),
-                sampleCount,
-                source.height,
-                options);
-        }
+        correct(source, destination);
         return true;
     }
 
 private:
-    template <typename TPixel>
-    void correctTo(
-        const TPixel* source,
-        TPixel* destination,
-        std::size_t sampleCount,
-        std::uint32_t height,
-        const ExecutionOptions& options) const
+    void correct(const ImageView& source, const ImageView& destination) const
     {
-        const auto start = (std::min)(options.roi[2], height);
-        const auto bottom = (std::min)(options.roi[3], height);
-        const auto end = height - bottom;
-
-        // DarkNoise's historical loop changes only a tiny height-indexed
-        // prefix. The rest still has to be materialized for the next stage,
-        // but copying the two untouched spans and producing the corrected
-        // span directly avoids a separate copy-then-mutate pass.
-        std::memcpy(destination, source, static_cast<std::size_t>(start) * sizeof(TPixel));
-        for (auto index = start; index < end; ++index) {
-            const float corrected = source[index] * ratio_;
-            destination[index] = corrected > 255.0F
-                ? static_cast<TPixel>(255)
-                : static_cast<TPixel>(corrected);
+        const auto bytes = static_cast<std::size_t>(source.width) * source.height * source.channels
+            * (source.bitsPerChannel / 8);
+        if (ratio_ == 1.0F) {
+            if (source.data != destination.data) std::memcpy(destination.data, source.data, bytes);
+            return;
         }
-        const auto suffix = static_cast<std::size_t>((std::max)(start, end));
-        std::memcpy(
-            destination + suffix,
-            source + suffix,
-            (sampleCount - suffix) * sizeof(TPixel));
+        if (ratio_ <= 0.0F) {
+            std::memset(destination.data, 0, bytes);
+            return;
+        }
+        if (source.bitsPerChannel == 8) correctSamples<std::uint8_t>(source, destination);
+        else correctSamples<std::uint16_t>(source, destination);
     }
 
-    float ratio_ = 0.0F;
+    template <typename TPixel>
+    void correctSamples(const ImageView& source, const ImageView& destination) const
+    {
+        const auto* input = reinterpret_cast<const TPixel*>(source.data);
+        auto* output = reinterpret_cast<TPixel*>(destination.data);
+        constexpr float maximum = static_cast<float>((std::numeric_limits<TPixel>::max)());
+        const float gain = ratio_;
+        // A sensor ROI already arrives as a cropped buffer. The same gain applies to every stored sample.
+        const std::size_t samplesPerRow = static_cast<std::size_t>(source.width) * source.channels;
+        parallelRows(source.height, [&](std::uint32_t first, std::uint32_t end) {
+            const std::size_t limit = end * samplesPerRow;
+#ifdef _MSC_VER
+            // Source and destination are either identical or disjoint; successive samples are independent.
+#pragma loop(ivdep)
+#endif
+            for (std::size_t i = first * samplesPerRow; i < limit; ++i) {
+                output[i] = static_cast<TPixel>((std::min)(input[i] * gain, maximum));
+            }
+        });
+    }
+
+    float ratio_;
 };
 
 struct DefectPoint {
@@ -2000,6 +1889,8 @@ private:
 
 class LineArityCalibration final : public CalibrationItem {
 public:
+    [[nodiscard]] std::optional<std::int32_t> requiredInputDepth() const noexcept override { return 16; }
+
     explicit LineArityCalibration(std::vector<float> factors)
         : factors_(std::move(factors))
     {
@@ -2114,26 +2005,23 @@ std::unique_ptr<CalibrationItem> loadDarkNoise(
     const std::filesystem::path& file,
     std::string& error)
 {
-    std::string json;
-    if (!readTextFile(file, json, error)) {
+    std::ifstream input(file, std::ios::binary);
+    if (!input) {
+        error = "Unable to open DarkNoise calibration file";
         return nullptr;
     }
-    if (!looksLikeJsonObject(json)) {
-        error = "DarkNoise calibration is not a JSON object";
+    const auto config = nlohmann::json::parse(input, nullptr, false, true);
+    const auto ratio = config.find("DarkNoiseRatio");
+    if (!config.is_object() || ratio == config.end() || !ratio->is_number()) {
+        error = "DarkNoise calibration requires a numeric DarkNoiseRatio";
         return nullptr;
     }
-
-    double ratio = 0.0;
-    double exposure = 0.0;
-    bool exposureIsReal = false;
-    bool ratioIsReal = false;
-    // JsonCpp's old loader assigned DarkNoiseRatio only when Texp_x was a
-    // JSON real. Missing/integer Texp_x therefore leaves the zero default.
-    if (findJsonNumber(json, "Texp_x", exposure, exposureIsReal) && exposureIsReal) {
-        findJsonNumber(json, "DarkNoiseRatio", ratio, ratioIsReal);
+    const double value = ratio->get<double>();
+    if (!std::isfinite(value) || std::abs(value) > (std::numeric_limits<float>::max)()) {
+        error = "DarkNoiseRatio is outside the finite float range";
+        return nullptr;
     }
-    (void)ratioIsReal;
-    return std::make_unique<DarkNoiseCalibration>(ratio);
+    return std::make_unique<DarkNoiseCalibration>(static_cast<float>(value));
 }
 
 std::unique_ptr<CalibrationItem> loadDefectPoints(

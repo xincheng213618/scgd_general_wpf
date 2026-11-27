@@ -14,12 +14,22 @@
         </Grid.ColumnDefinitions>
         <DockPanel>
             <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
-                <WrapPanel x:Name="NavigationPanel">
-                    <Button x:Name="PreviousButton" Content="{display:DisplayText Key='上一张'}" Click="Previous_Click" Padding="12,6" Margin="0,0,8,0"/>
-                    <Button x:Name="NextButton" Content="{display:DisplayText Key='下一张'}" Click="Next_Click" Padding="12,6"/>
-                    <Button x:Name="RunButton" Content="{display:DisplayText Key='开始验证'}" Click="Run_Click" Padding="12,6" Margin="0,8,8,0"/>
-                    <Button Content="{display:DisplayText Key='导出本次报告'}" Click="Export_Click" Padding="12,6" Margin="0,8,0,0"/>
-                </WrapPanel>
+                <StackPanel x:Name="NavigationPanel">
+                    <WrapPanel>
+                        <Button x:Name="PreviousButton" Content="{display:DisplayText Key='上一张'}" Click="Previous_Click" Padding="12,6" Margin="0,0,8,0"/>
+                        <Button x:Name="NextButton" Content="{display:DisplayText Key='下一张'}" Click="Next_Click" Padding="12,6"/>
+                    </WrapPanel>
+                    <WrapPanel x:Name="ErrorNavigationPanel" Margin="0,6,0,0">
+                        <Button x:Name="PreviousErrorButton" Content="{display:DisplayText Key='上一个报错'}" Click="PreviousError_Click" IsEnabled="False"
+                                ToolTip="{display:DisplayText Key='跳转到当前筛选中的报错记录。'}" Width="116" Padding="12,6" Margin="0,0,8,0"/>
+                        <Button x:Name="NextErrorButton" Content="{display:DisplayText Key='下一个报错'}" Click="NextError_Click" IsEnabled="False"
+                                ToolTip="{display:DisplayText Key='跳转到当前筛选中的报错记录。'}" Width="116" Padding="12,6"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,6,0,0">
+                        <Button x:Name="RunButton" Content="{display:DisplayText Key='开始验证'}" Click="Run_Click" Padding="12,6" Margin="0,0,8,0"/>
+                        <Button Content="{display:DisplayText Key='导出本次报告'}" Click="Export_Click" Padding="12,6"/>
+                    </WrapPanel>
+                </StackPanel>
                 <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,12,0,0" AutomationProperties.LiveSetting="Polite"/>
             </StackPanel>
             <ScrollViewer VerticalScrollBarVisibility="Auto">

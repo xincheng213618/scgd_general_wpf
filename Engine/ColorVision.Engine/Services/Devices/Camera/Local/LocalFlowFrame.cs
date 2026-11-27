@@ -4,6 +4,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ColorVision.ImageEditor.Tif;
+using Microsoft.Win32.SafeHandles;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
@@ -18,6 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     {
         public int Width { get; init; }
         public int Height { get; init; }
+        /// <summary>Bits per channel of the current RAW buffer. Acquisition records the camera's original bit depth.</summary>
         public int SourceBpp { get; init; }
         public int CieBpp { get; init; } = 32;
         public int Channels { get; init; }
@@ -25,6 +27,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public float[] Exposure { get; init; } = Array.Empty<float>();
         public string DeviceCode { get; init; } = string.Empty;
         public string SourceFilePath { get; init; } = string.Empty;
+        // The source file can retain 8-bit samples while the working RAW holds promoted 16-bit samples.
+        internal int SourceFileBpp { get; init; }
         public string CalibrationTemplate { get; init; } = string.Empty;
         public DateTime CaptureTime { get; init; } = DateTime.Now;
         public LocalFrameBufferKind PrimaryBufferKind { get; init; }
@@ -40,11 +44,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     /// </summary>
     public sealed class LocalFlowFrame : IDisposable
     {
-        private readonly SharedFrameStorage storage;
+        private SharedRawStorage storage;
+        private CieBuffer? cieBuffer;
         private readonly object flipSync = new();
         private int disposed;
 
-        private LocalFlowFrame(SharedFrameStorage storage, LocalFrameMetadata metadata)
+        private LocalFlowFrame(SharedRawStorage storage, LocalFrameMetadata metadata)
         {
             this.storage = storage;
             Metadata = metadata;
@@ -55,17 +60,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public LocalFrameMetadata Metadata { get; private set; }
         public int MasterId { get; set; } = -1;
         public string CvRawFilePath { get; set; } = string.Empty;
+        internal bool? SavedRawFlipApplied { get; set; }
         public string CvCieFilePath { get; set; } = string.Empty;
         internal ColorCalibrationSnapshot? ColorCalibration { get; set; }
         internal ImageCalibrationSummary? CalibrationProvenance { get; set; }
         public bool HasRaw => storage.RawLength > 0;
-        public bool HasCie => storage.CieLength > 0;
-        public bool IsRawFlipApplied => storage.IsBufferFlipApplied(LocalFrameBufferKind.CvRaw, Metadata.FlipMode);
-        public bool IsCieFlipApplied => storage.IsBufferFlipApplied(LocalFrameBufferKind.CvCie, Metadata.FlipMode);
-        public bool IsFlipApplied => storage.IsBufferFlipApplied(Metadata.PrimaryBufferKind, Metadata.FlipMode);
+        public bool HasCie => Volatile.Read(ref cieBuffer) != null;
+        public bool IsRawFlipApplied => Metadata.FlipMode == CVImageFlipMode.None || storage.IsFlipApplied;
+        public bool IsCieFlipApplied => Metadata.FlipMode == CVImageFlipMode.None || cieBuffer?.IsFlipApplied == true;
+        public bool IsFlipApplied => Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie ? IsCieFlipApplied : IsRawFlipApplied;
 
         internal void MarkPrimaryBufferFlipApplied()
-            => storage.MarkFlipApplied(Metadata.PrimaryBufferKind);
+        {
+            if (Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie) cieBuffer?.MarkFlipApplied();
+            else storage.MarkFlipApplied();
+        }
 
         public static LocalFlowFrame Allocate(LocalFrameMetadata metadata, int rawLength, int cieLength)
             => Allocate(metadata, rawLength, cieLength, null);
@@ -76,7 +85,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentOutOfRangeException.ThrowIfNegative(rawLength);
             ArgumentOutOfRangeException.ThrowIfNegative(cieLength);
             if (rawLength == 0 && cieLength == 0) throw new ArgumentException("At least one image buffer is required.");
-            return new LocalFlowFrame(new SharedFrameStorage(rawLength, cieLength, rawBufferPool), metadata);
+            return Allocate(metadata, new SharedRawStorage(rawLength, rawBufferPool), cieLength);
         }
 
         internal static LocalFlowFrame AdoptCameraRaw(LocalFrameMetadata metadata, int rawLength, int cieLength,
@@ -88,7 +97,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentNullException.ThrowIfNull(owner);
             if (pixels == IntPtr.Zero || owner.IsClosed || owner.IsInvalid)
                 throw new ArgumentException("A live camera RAW buffer and its owner are required.");
-            return new LocalFlowFrame(new SharedFrameStorage(rawLength, cieLength, null, pixels, owner), metadata);
+            return Allocate(metadata, new SharedRawStorage(rawLength, null, pixels, owner), cieLength);
+        }
+
+        private static LocalFlowFrame Allocate(LocalFrameMetadata metadata, SharedRawStorage raw, int cieLength)
+        {
+            try
+            {
+                return new LocalFlowFrame(raw, metadata) { cieBuffer = cieLength > 0 ? new CieBuffer(cieLength) : null };
+            }
+            catch
+            {
+                raw.ReleaseReference();
+                throw;
+            }
         }
 
         internal void PrepareForCalibration(string calibrationTemplate, int cieLength, bool hasBasicCalibration, float[]? exposure = null)
@@ -96,38 +118,146 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             lock (flipSync)
             {
                 ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
-                storage.ResizeCieBuffer(cieLength);
-                LocalFrameMetadata source = Metadata;
-                Metadata = new LocalFrameMetadata
+                ArgumentOutOfRangeException.ThrowIfNegative(cieLength);
+                LocalFrameMetadata metadata = CreateCalibrationMetadata(calibrationTemplate, cieLength, exposure);
+                if ((cieBuffer?.Length ?? 0) != cieLength)
+                    ReplaceCieBuffer(cieLength > 0 ? new CieBuffer(cieLength) : null);
+                CommitCalibration(metadata, hasBasicCalibration, default);
+            }
+        }
+
+        internal void ApplyCalibration(string calibrationTemplate, int cieLength, bool hasBasicCalibration,
+            float[]? exposure, Func<LocalFlowFrameLease, IntPtr, CalibrationUpdate> apply, bool promoteRaw8To16 = false)
+        {
+            lock (flipSync)
+            {
+                ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
+                bool promote = promoteRaw8To16 && Metadata.SourceBpp == 8;
+                LocalFrameMetadata metadata = CreateCalibrationMetadata(calibrationTemplate, cieLength, exposure,
+                    workingBpp: promote ? 16 : Metadata.SourceBpp);
+                bool writesRaw = hasBasicCalibration || (cieLength == 0 && !IsRawFlipApplied);
+                bool restoreSensorOrder = hasBasicCalibration && Metadata.FlipMode != CVImageFlipMode.None && storage.IsFlipApplied;
+                SharedRawStorage? writableRaw = null;
+                CieBuffer? output = null;
+                try
                 {
-                    Width = source.Width,
-                    Height = source.Height,
-                    SourceBpp = source.SourceBpp,
-                    CieBpp = source.CieBpp,
-                    Channels = source.Channels,
-                    Gain = source.Gain,
-                    Exposure = exposure ?? source.Exposure,
-                    DeviceCode = source.DeviceCode,
-                    SourceFilePath = source.SourceFilePath,
-                    CalibrationTemplate = calibrationTemplate,
-                    CaptureTime = source.CaptureTime,
-                    Acquisition = source.Acquisition,
-                    PrimaryBufferKind = cieLength > 0 ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
-                    FlipMode = source.FlipMode,
-                    IsMirrorReady = true
+                    if (promote)
+                        writableRaw = storage.PromoteRaw8To16(Metadata);
+                    else if (restoreSensorOrder || (writesRaw && HasRaw && storage.HasOtherOwners))
+                        writableRaw = storage.Copy();
+                    if (restoreSensorOrder)
+                        writableRaw!.RestoreSensorOrder(metadata);
+                    using LocalFlowFrameLease source = AcquireLease(writableRaw ?? storage, promote ? metadata : Metadata);
+                    output = cieLength > 0 ? new CieBuffer(cieLength) : null;
+                    CalibrationUpdate update = apply(source, output?.DangerousGetHandle() ?? IntPtr.Zero);
+                    if (writableRaw != null)
+                    {
+                        SharedRawStorage previous = storage;
+                        storage = writableRaw;
+                        writableRaw = null;
+                        previous.ReleaseReference();
+                    }
+                    if (update.RawFlipApplied) storage.MarkFlipApplied();
+                    output?.MarkFlipApplied();
+                    ReplaceCieBuffer(output);
+                    output = null;
+                    CommitCalibration(metadata, hasBasicCalibration || promote, update);
+                }
+                finally
+                {
+                    output?.Dispose();
+                    writableRaw?.ReleaseReference();
+                }
+            }
+        }
+
+        private void ReplaceCieBuffer(CieBuffer? replacement)
+            => Interlocked.Exchange(ref cieBuffer, replacement)?.Dispose();
+
+        internal LocalFlowFrame ForkForCalibration()
+        {
+            lock (flipSync)
+            {
+                ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
+                if (!HasRaw || storage.IsFlipFailed)
+                    throw new InvalidOperationException("当前帧没有可用的 RAW 内存。");
+                LocalFrameMetadata metadata = CreateCalibrationMetadata(Metadata.CalibrationTemplate, 0, null,
+                    Metadata.IsMirrorReady, string.IsNullOrWhiteSpace(CvRawFilePath) ? null : CvRawFilePath);
+                LocalFlowFrame output = new(storage, metadata)
+                {
+                    ColorCalibration = ColorCalibration,
+                    CalibrationProvenance = CalibrationProvenance,
+                    CvRawFilePath = CvRawFilePath,
+                    SavedRawFlipApplied = SavedRawFlipApplied,
+                    MasterId = MasterId,
                 };
-                CvCieFilePath = string.Empty;
-                ColorCalibration = null;
-                CalibrationProvenance = null;
-                if (hasBasicCalibration) CvRawFilePath = string.Empty;
+                storage.AddReference();
+                return output;
+            }
+        }
+
+        internal readonly record struct CalibrationUpdate(ColorCalibrationSnapshot? Snapshot,
+            ImageCalibrationSummary? Provenance, bool RawFlipApplied);
+
+        private LocalFrameMetadata CreateCalibrationMetadata(string template, int cieLength, float[]? exposure,
+            bool isMirrorReady = true, string? inputPath = null, int? workingBpp = null)
+        {
+            LocalFrameMetadata source = Metadata;
+            return new LocalFrameMetadata
+            {
+                Width = source.Width,
+                Height = source.Height,
+                SourceBpp = workingBpp ?? source.SourceBpp,
+                CieBpp = source.CieBpp,
+                Channels = source.Channels,
+                Gain = source.Gain,
+                Exposure = exposure ?? source.Exposure,
+                DeviceCode = source.DeviceCode,
+                SourceFilePath = inputPath ?? source.SourceFilePath,
+                SourceFileBpp = inputPath != null || source.SourceFileBpp == 0 ? source.SourceBpp : source.SourceFileBpp,
+                CalibrationTemplate = template,
+                CaptureTime = source.CaptureTime,
+                Acquisition = source.Acquisition,
+                PrimaryBufferKind = cieLength > 0 ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
+                FlipMode = source.FlipMode,
+                IsMirrorReady = isMirrorReady
+            };
+        }
+
+        private void CommitCalibration(LocalFrameMetadata metadata, bool rawChanged, CalibrationUpdate update)
+        {
+            Metadata = metadata;
+            CvCieFilePath = string.Empty;
+            ColorCalibration = update.Snapshot;
+            CalibrationProvenance = update.Provenance;
+            if (rawChanged || update.RawFlipApplied)
+            {
+                CvRawFilePath = string.Empty;
+                SavedRawFlipApplied = null;
             }
         }
 
         public LocalFlowFrameLease Acquire()
         {
-            ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
-            storage.AddReference();
-            return new LocalFlowFrameLease(storage, Metadata, FrameId, MasterId, ColorCalibration, CalibrationProvenance);
+            lock (flipSync)
+            {
+                ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
+                return AcquireLease(storage, Metadata);
+            }
+        }
+
+        private LocalFlowFrameLease AcquireLease(SharedRawStorage raw, LocalFrameMetadata metadata)
+        {
+            raw.AddReference();
+            try
+            {
+                return new LocalFlowFrameLease(raw, cieBuffer, metadata, FrameId, MasterId, ColorCalibration, CalibrationProvenance);
+            }
+            catch
+            {
+                raw.ReleaseReference();
+                throw;
+            }
         }
 
         internal void ApplyPendingFlip(Action<LocalFlowFrameLease, LocalFrameBufferKind, CVImageFlipMode> apply)
@@ -135,28 +265,41 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentNullException.ThrowIfNull(apply);
             lock (flipSync)
             {
+                ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
                 LocalFrameMetadata metadata = Metadata;
                 LocalFrameBufferKind target = metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie
                     ? LocalFrameBufferKind.CvCie
                     : LocalFrameBufferKind.CvRaw;
-                if (storage.IsBufferFlipApplied(target, metadata.FlipMode)) return;
+                if (IsFlipApplied) return;
                 if (!metadata.IsMirrorReady)
                 {
                     throw new InvalidOperationException("Image mirroring is deferred until spatial calibration has completed.");
                 }
-                if (storage.IsBufferFlipFailed(target))
+                if (target == LocalFrameBufferKind.CvCie ? cieBuffer?.IsFlipFailed == true : storage.IsFlipFailed)
                 {
                     throw new InvalidOperationException($"The previous {target} mirror operation failed; this frame can no longer be used safely.");
+                }
+                if (target == LocalFrameBufferKind.CvRaw && HasRaw && storage.HasOtherOwners)
+                {
+                    SharedRawStorage shared = storage;
+                    storage = shared.Copy();
+                    shared.ReleaseReference();
                 }
                 using LocalFlowFrameLease lease = Acquire();
                 try
                 {
                     apply(lease, target, metadata.FlipMode);
-                    storage.MarkFlipApplied(target);
+                    MarkPrimaryBufferFlipApplied();
+                    if (target == LocalFrameBufferKind.CvRaw)
+                    {
+                        CvRawFilePath = string.Empty;
+                        SavedRawFlipApplied = null;
+                    }
                 }
                 catch
                 {
-                    storage.MarkFlipFailed(target);
+                    if (target == LocalFrameBufferKind.CvCie) cieBuffer?.MarkFlipFailed();
+                    else storage.MarkFlipFailed();
                     throw;
                 }
             }
@@ -164,82 +307,98 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref disposed, 1) == 0)
+            lock (flipSync)
             {
+                if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+                ReplaceCieBuffer(null);
                 storage.ReleaseReference();
             }
         }
 
-        internal sealed class SharedFrameStorage
+        internal sealed class CieBuffer : SafeHandleZeroOrMinusOneIsInvalid
         {
-            private readonly object bufferSync = new();
+            private int flipState;
+
+            public CieBuffer(int length) : base(ownsHandle: true)
+            {
+                Length = length;
+                SetHandle(Marshal.AllocHGlobal(length));
+            }
+
+            public int Length { get; }
+            public bool IsFlipApplied => Volatile.Read(ref flipState) == 1;
+            public bool IsFlipFailed => Volatile.Read(ref flipState) < 0;
+            public void MarkFlipApplied() => Volatile.Write(ref flipState, 1);
+            public void MarkFlipFailed() => Volatile.Write(ref flipState, -1);
+
+            protected override bool ReleaseHandle()
+            {
+                Marshal.FreeHGlobal(handle);
+                return true;
+            }
+        }
+
+        internal sealed class SharedRawStorage
+        {
             private readonly LocalCameraRawBufferPool? rawBufferPool;
             private readonly SafeHandle? rawOwner;
             private int referenceCount = 1;
             private int rawFlipState;
-            private int cieFlipState;
-            private int cieLength;
             private IntPtr rawPointer;
-            private IntPtr ciePointer;
 
-            public SharedFrameStorage(int rawLength, int cieLength, LocalCameraRawBufferPool? rawBufferPool,
+            public SharedRawStorage(int rawLength, LocalCameraRawBufferPool? rawBufferPool,
                 IntPtr cameraPixels = default, SafeHandle? rawOwner = null)
             {
                 RawLength = rawLength;
-                this.cieLength = cieLength;
                 this.rawBufferPool = rawBufferPool;
                 this.rawOwner = rawOwner;
-                try
-                {
-                    if (rawOwner != null) rawPointer = cameraPixels;
-                    else if (rawLength > 0) rawPointer = rawBufferPool?.Rent(rawLength) ?? Marshal.AllocHGlobal(rawLength);
-                    if (cieLength > 0) ciePointer = Marshal.AllocHGlobal(cieLength);
-                }
-                catch
-                {
-                    FreeBuffers();
-                    throw;
-                }
+                if (rawOwner != null) rawPointer = cameraPixels;
+                else if (rawLength > 0) rawPointer = rawBufferPool?.Rent(rawLength) ?? Marshal.AllocHGlobal(rawLength);
             }
 
-            ~SharedFrameStorage()
+            ~SharedRawStorage()
             {
-                FreeBuffers();
+                FreeRaw();
             }
 
             public int RawLength { get; }
-            public int CieLength => Volatile.Read(ref cieLength);
             public IntPtr RawPointer => rawPointer;
-            public IntPtr CiePointer => ciePointer;
+            public bool HasOtherOwners => Volatile.Read(ref referenceCount) > 1;
+            public bool IsFlipApplied => Volatile.Read(ref rawFlipState) == 1;
+            public bool IsFlipFailed => Volatile.Read(ref rawFlipState) < 0;
+            public void MarkFlipApplied() => Volatile.Write(ref rawFlipState, 1);
+            public void MarkFlipFailed() => Volatile.Write(ref rawFlipState, -1);
 
-            public void ResizeCieBuffer(int requiredLength)
+            public unsafe SharedRawStorage Copy()
             {
-                ArgumentOutOfRangeException.ThrowIfNegative(requiredLength);
-                lock (bufferSync)
-                {
-                    // The frame can lose its last reference while a resize is waiting for this lock.
-                    ObjectDisposedException.ThrowIf(Volatile.Read(ref referenceCount) <= 0, nameof(LocalFlowFrame));
-                    if (requiredLength == cieLength) return;
-                    IntPtr replacement = requiredLength > 0 ? Marshal.AllocHGlobal(requiredLength) : IntPtr.Zero;
-                    IntPtr previous = ciePointer;
-                    ciePointer = replacement;
-                    Volatile.Write(ref cieLength, requiredLength);
-                    Volatile.Write(ref cieFlipState, 0);
-                    if (previous != IntPtr.Zero) Marshal.FreeHGlobal(previous);
-                }
+                // A published camera frame can be calibrated after its capture session closes.
+                SharedRawStorage result = new(RawLength, null);
+                Buffer.MemoryCopy((void*)RawPointer, (void*)result.RawPointer, RawLength, RawLength);
+                result.rawFlipState = Volatile.Read(ref rawFlipState);
+                return result;
             }
 
-            public bool IsBufferFlipApplied(LocalFrameBufferKind bufferKind, CVImageFlipMode flipMode)
-                => flipMode == CVImageFlipMode.None || Volatile.Read(ref GetFlipState(bufferKind)) == 1;
+            public unsafe SharedRawStorage PromoteRaw8To16(LocalFrameMetadata source)
+            {
+                if (source.SourceBpp != 8 || source.Width <= 0 || source.Height <= 0 || source.Channels is not (1 or 3))
+                    throw new InvalidOperationException("RAW 补零需要有效的 8 位单通道或三通道图像。");
+                int samples = checked(source.Width * source.Height * source.Channels);
+                if (RawPointer == IntPtr.Zero || RawLength < samples || IsFlipFailed)
+                    throw new InvalidOperationException("输入 RAW 缓冲区无效，无法进行 8 位补零。");
+                ReadOnlySpan<byte> input = new((void*)RawPointer, samples);
+                SharedRawStorage result = new(checked(samples * sizeof(ushort)), null);
+                Span<ushort> output = new((void*)result.RawPointer, samples);
+                for (int i = 0; i < samples; i++) output[i] = (ushort)(input[i] << 8);
+                result.rawFlipState = Volatile.Read(ref rawFlipState);
+                return result;
+            }
 
-            public bool IsBufferFlipFailed(LocalFrameBufferKind bufferKind)
-                => Volatile.Read(ref GetFlipState(bufferKind)) < 0;
-
-            public void MarkFlipApplied(LocalFrameBufferKind bufferKind)
-                => Volatile.Write(ref GetFlipState(bufferKind), 1);
-
-            public void MarkFlipFailed(LocalFrameBufferKind bufferKind)
-                => Volatile.Write(ref GetFlipState(bufferKind), -1);
+            public void RestoreSensorOrder(LocalFrameMetadata metadata)
+            {
+                LocalFrameMirrorService.FlipRaw(RawPointer, RawLength, metadata.Width, metadata.Height,
+                    metadata.SourceBpp, metadata.Channels, metadata.FlipMode);
+                Volatile.Write(ref rawFlipState, 0);
+            }
 
             public void AddReference()
             {
@@ -256,44 +415,38 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 int remaining = Interlocked.Decrement(ref referenceCount);
                 if (remaining == 0)
                 {
-                    FreeBuffers();
+                    FreeRaw();
                     GC.SuppressFinalize(this);
                 }
                 ObjectDisposedException.ThrowIf(remaining < 0, nameof(LocalFlowFrame));
             }
 
-            private void FreeBuffers()
+            private void FreeRaw()
             {
-                lock (bufferSync)
-                {
-                    IntPtr raw = Interlocked.Exchange(ref rawPointer, IntPtr.Zero);
-                    if (raw != IntPtr.Zero)
-                    {
-                        if (rawOwner != null) rawOwner.Dispose();
-                        else if (rawBufferPool != null) rawBufferPool.Return(raw, RawLength);
-                        else Marshal.FreeHGlobal(raw);
-                    }
-                    IntPtr cie = Interlocked.Exchange(ref ciePointer, IntPtr.Zero);
-                    if (cie != IntPtr.Zero) Marshal.FreeHGlobal(cie);
-                    Volatile.Write(ref cieLength, 0);
-                }
-            }
-
-            private ref int GetFlipState(LocalFrameBufferKind bufferKind)
-            {
-                if (bufferKind == LocalFrameBufferKind.CvCie) return ref cieFlipState;
-                return ref rawFlipState;
+                IntPtr raw = Interlocked.Exchange(ref rawPointer, IntPtr.Zero);
+                if (raw == IntPtr.Zero) return;
+                if (rawOwner != null) rawOwner.Dispose();
+                else if (rawBufferPool != null) rawBufferPool.Return(raw, RawLength);
+                else Marshal.FreeHGlobal(raw);
             }
         }
     }
 
     public sealed class LocalFlowFrameLease : IDisposable
     {
-        private LocalFlowFrame.SharedFrameStorage? storage;
+        private LocalFlowFrame.SharedRawStorage? storage;
+        private readonly LocalFlowFrame.CieBuffer? cieBuffer;
 
-        internal LocalFlowFrameLease(LocalFlowFrame.SharedFrameStorage storage, LocalFrameMetadata metadata, Guid frameId, int masterId, ColorCalibrationSnapshot? colorCalibration, ImageCalibrationSummary? calibrationProvenance)
+        internal LocalFlowFrameLease(LocalFlowFrame.SharedRawStorage storage, LocalFlowFrame.CieBuffer? cieBuffer,
+            LocalFrameMetadata metadata, Guid frameId, int masterId, ColorCalibrationSnapshot? colorCalibration, ImageCalibrationSummary? calibrationProvenance)
         {
             this.storage = storage;
+            this.cieBuffer = cieBuffer;
+            if (cieBuffer != null)
+            {
+                bool retained = false;
+                cieBuffer.DangerousAddRef(ref retained);
+            }
             Metadata = metadata;
             FrameId = frameId;
             MasterId = masterId;
@@ -308,29 +461,46 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         internal ImageCalibrationSummary? CalibrationProvenance { get; }
         public IntPtr RawPointer => GetStorage().RawPointer;
         public int RawLength => GetStorage().RawLength;
-        public IntPtr CiePointer => GetStorage().CiePointer;
-        public int CieLength => GetStorage().CieLength;
+        public IntPtr CiePointer
+        {
+            get
+            {
+                _ = GetStorage();
+                return cieBuffer?.DangerousGetHandle() ?? IntPtr.Zero;
+            }
+        }
+        public int CieLength
+        {
+            get
+            {
+                _ = GetStorage();
+                return cieBuffer?.Length ?? 0;
+            }
+        }
         public bool HasRaw => RawLength > 0;
         public bool HasCie => CieLength > 0;
-        public bool IsRawFlipApplied => GetStorage().IsBufferFlipApplied(LocalFrameBufferKind.CvRaw, Metadata.FlipMode);
-        public bool IsCieFlipApplied => GetStorage().IsBufferFlipApplied(LocalFrameBufferKind.CvCie, Metadata.FlipMode);
-        public bool IsFlipApplied => GetStorage().IsBufferFlipApplied(Metadata.PrimaryBufferKind, Metadata.FlipMode);
+        public bool IsRawFlipApplied => GetStorage().IsFlipApplied || Metadata.FlipMode == CVImageFlipMode.None;
+        public bool IsCieFlipApplied => Metadata.FlipMode == CVImageFlipMode.None || cieBuffer?.IsFlipApplied == true;
+        public bool IsFlipApplied => Metadata.PrimaryBufferKind == LocalFrameBufferKind.CvCie ? IsCieFlipApplied : IsRawFlipApplied;
 
         internal bool IsBufferFlipFailed(LocalFrameBufferKind bufferKind)
-            => GetStorage().IsBufferFlipFailed(bufferKind);
-
-        internal void MarkBufferFlipApplied(LocalFrameBufferKind bufferKind)
-            => GetStorage().MarkFlipApplied(bufferKind);
+            => bufferKind == LocalFrameBufferKind.CvCie
+                ? cieBuffer?.IsFlipFailed == true
+                : GetStorage().IsFlipFailed;
 
         public byte[] CopyRawToArray() => CopyToArray(RawPointer, RawLength);
         public byte[] CopyCieToArray() => CopyToArray(CiePointer, CieLength);
 
         public void Dispose()
         {
-            Interlocked.Exchange(ref storage, null)?.ReleaseReference();
+            if (Interlocked.Exchange(ref storage, null) is LocalFlowFrame.SharedRawStorage current)
+            {
+                cieBuffer?.DangerousRelease();
+                current.ReleaseReference();
+            }
         }
 
-        private LocalFlowFrame.SharedFrameStorage GetStorage()
+        private LocalFlowFrame.SharedRawStorage GetStorage()
         {
             return Volatile.Read(ref storage) ?? throw new ObjectDisposedException(nameof(LocalFlowFrameLease));
         }

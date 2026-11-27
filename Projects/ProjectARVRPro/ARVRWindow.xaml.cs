@@ -637,7 +637,7 @@ namespace ProjectARVRPro
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem() { Command = batchHistoryCommand, Header = LocalizedText.Get("流程结果查询") });
-            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程执行分析") });
+            contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = LocalizedText.Get("流程分析") });
             contextMenu.Items.Add(new MenuItem() { Command = viewTestResultCommand, Header = LocalizedText.Get("查看测试结果") });
             contextMenu.Items.Add(new MenuItem
             {
@@ -692,29 +692,32 @@ namespace ProjectARVRPro
 
         private async void ContextMenu_FlowExecutionAnalysis()
         {
-            MeasureBatchModel? batch = GetSelectedMeasureBatch();
-            if (batch == null)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), LocalizedText.Get("找不到批次号，请检查流程配置"), "ColorVision");
-                return;
-            }
+            if (listView1.SelectedItem is not ProjectARVRReuslt result) return;
 
-            bool written = await FlowDiagnosticsWriteQueue.WaitAsync(
-                _flowDiagnosticsWrites.WhenWritten(batch.Code ?? string.Empty), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
-            if (_isDisposed)
-                return;
-            if (!written)
+            try
             {
-                MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
-                return;
-            }
+                bool written = string.IsNullOrWhiteSpace(result.Code) || await FlowDiagnosticsWriteQueue.WaitAsync(
+                    _flowDiagnosticsWrites.WhenWritten(result.Code), FlowDiagnosticsWriteQueue.WriteWaitTimeout);
+                if (_isDisposed) return;
+                if (!written)
+                {
+                    MessageBox.Show(this, LocalizedText.Get("流程诊断仍在写入，请稍后打开。"), "ColorVision");
+                    return;
+                }
 
-            var window = new FlowExecutionAnalysisWindow(batch)
+                MeasureBatchModel batch = await Task.Run(() => ArvrFlowAnalysisHistory.ResolveLocalBatch(result));
+                if (_isDisposed) return;
+                new FlowExecutionAnalysisWindow(batch)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                }.Show();
+            }
+            catch (Exception ex)
             {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            };
-            window.Show();
+                log.Warn($"打开流程分析失败：BatchId={result.BatchId}", ex);
+                if (!_isDisposed) MessageBox.Show(this, ex.Message, LocalizedText.Get("流程分析"), MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private MeasureBatchModel? GetSelectedMeasureBatch() => ArvrBatchHistory.Resolve(listView1.SelectedItem as ProjectARVRReuslt);
@@ -1713,16 +1716,17 @@ namespace ProjectARVRPro
                         objectiveResultSaveStopwatch.Stop();
 
                         long linkSaveMilliseconds = 0;
-                        if (ViewResultManager.Config.IsSaveLink)
+                        if (exportConfig.IsSaveLink)
                         {
                             Stopwatch linkSaveStopwatch = Stopwatch.StartNew();
-                            string linkPath = ProjectImageExportService.BuildOutputDirectory(
-                                exportConfig.CsvSavePath, exportConfig.SaveByDate, DateTime.Now, result.SN);
-                            using var linkWrite = ResultStorageSpaceManager.Instance.BeginWrite(
-                                exportConfig.CsvSavePath, exportConfig.AutoCleanupEnabled, exportConfig.MinimumFreeSpaceGB, linkPath);
+                            bool wasExportPending = IsResultExportPending;
                             IsResultExportPending = true;
                             try
                             {
+                                string linkPath = ProjectImageExportService.BuildOutputDirectory(
+                                    exportConfig.CsvSavePath, exportConfig.SaveByDate, DateTime.Now, result.SN);
+                                using var linkWrite = ResultStorageSpaceManager.Instance.BeginWrite(
+                                    exportConfig.CsvSavePath, exportConfig.AutoCleanupEnabled, exportConfig.MinimumFreeSpaceGB, linkPath);
                                 await linkWrite.EnsureSpaceAsync();
 
                                 if (!Directory.Exists(linkPath))
@@ -1734,9 +1738,13 @@ namespace ProjectARVRPro
                                     ColorVision.Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, linkPath, result.FileName, "");
                                 }
                             }
+                            catch (Exception ex)
+                            {
+                                log.Error($"保存原图快捷方式失败，流程={result.Model}，SN={result.SN}，结果输出目录={exportConfig.CsvSavePath}", ex);
+                            }
                             finally
                             {
-                                IsResultExportPending = false;
+                                IsResultExportPending = wasExportPending;
                             }
                             linkSaveStopwatch.Stop();
                             linkSaveMilliseconds = Math.Max(0, linkSaveStopwatch.ElapsedMilliseconds);
@@ -1960,6 +1968,10 @@ namespace ProjectARVRPro
             };
             string serialNumber = SNtextBox.Text;
             DateTime exportTime = DateTime.Now;
+            int objectiveRecordId = ObjectiveTestResultRecordId;
+            bool usesLuxReport = customerOutput.Enabled && CustomTestResultExportService.IsLuxProfile(customerOutput.Profile);
+            IReadOnlyList<ProjectARVRReuslt>? exportFlowResults = null;
+
             string csvOutputDirectory = outputConfig.CsvSavePath;
             if (outputConfig.SaveByDate)
             {
@@ -1986,8 +1998,10 @@ namespace ProjectARVRPro
                     }
                     else
                     {
-                        IReadOnlyList<ProjectARVRReuslt> flowResults = ViewResultManager.GetObjectiveTestFlowResults(ObjectiveTestResultRecordId);
-                        IReadOnlyList<ObjectiveTestCsvRow> rows = ProjectARVRResultCsvExporter.CollectRows(flowResults);
+                        IReadOnlyList<ProjectARVRReuslt> flowResults = exportFlowResults = ViewResultManager.GetObjectiveTestFlowResults(objectiveRecordId);
+                        // An extension's CSV extractor can modify its input. Preserve the saved rows for the LUX report.
+                        IReadOnlyList<ObjectiveTestCsvRow> rows = ProjectARVRResultCsvExporter.CollectRows(
+                            usesLuxReport ? flowResults.Select(static result => result.CopyForCsvExport()) : flowResults);
                         if (rows.Count > 0)
                             ProjectARVRResultCsvExporter.ExportRows(rows, filePath);
                         else
@@ -2004,7 +2018,7 @@ namespace ProjectARVRPro
             {
                 try
                 {
-                    await ExportCustomerReportAsync(customerOutput, serialNumber, exportTime);
+                    await ExportCustomerReportAsync(customerOutput, serialNumber, exportTime, objectiveRecordId, flowResults: exportFlowResults);
                 }
                 catch (Exception ex)
                 {
@@ -2091,8 +2105,7 @@ namespace ProjectARVRPro
         {
             ViewResluts.Clear();
             ImageView.Clear();
-            outputText.Document.Blocks.Clear();
-            outputText.Background = Brushes.Transparent;
+            ClearResultOutputText();
         }
 
         private void Button_Click_EditResultConfig(object sender, RoutedEventArgs e)
@@ -2317,12 +2330,14 @@ namespace ProjectARVRPro
                 bool needsHistoryPayload = result.Id > 0 && result.ViewResultJson == null;
                 try
                 {
-                    if (needsHistoryPayload || result.FlowStatus != FlowStatus.Completed)
+                    if (result.FlowStatus != FlowStatus.Completed)
                     {
-                        outputText.Background = Brushes.Transparent;
-                        outputText.Document.Blocks.Clear();
-                        if (result.FlowStatus == FlowStatus.Completed)
-                            SNtextBox.Focus();
+                        RenderResultOutputText(result);
+                    }
+                    else if (needsHistoryPayload)
+                    {
+                        ClearResultOutputText();
+                        SNtextBox.Focus();
                     }
                     else
                     {
@@ -2460,6 +2475,10 @@ namespace ProjectARVRPro
                         requestCancellation.Dispose();
                     }
                 });
+            }
+            else
+            {
+                ClearResultOutputText();
             }
         }
 
@@ -2918,6 +2937,17 @@ namespace ProjectARVRPro
 
         private void RenderResultOutputText(ProjectARVRReuslt result)
         {
+            if (result.FlowStatus != FlowStatus.Completed)
+            {
+                ClearResultOutputText();
+                if (CreateFailedResultParagraph(result) is { } failure)
+                {
+                    outputText.Document.Blocks.Add(failure);
+                    outputText.ScrollToHome();
+                }
+                return;
+            }
+
             outputText.Background = result.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
@@ -2956,6 +2986,12 @@ namespace ProjectARVRPro
             AppendOutputLine(paragraph, "Pass/Fail Criteria:", foreground, outputFontSize);
             AppendOutputLine(paragraph, result.Result ? "Pass" : "Fail", foreground, outputFontSize);
             outputText.Document.Blocks.Add(paragraph);
+        }
+
+        private void ClearResultOutputText()
+        {
+            outputText.Document.Blocks.Clear();
+            outputText.Background = Brushes.Transparent;
         }
 
         private static void AppendOutputLine(Paragraph paragraph, string text, Brush foreground, double fontSize)

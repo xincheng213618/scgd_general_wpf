@@ -62,6 +62,47 @@ public sealed class ImageAlgorithmPixelFormatTests
         AssertDisplaySliceMatchesFullBitmap(bitmap, scope, path, parameters, bounds);
     }
 
+    [Theory]
+    [InlineData("Rgb48", ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Clamp)]
+    [InlineData("Pbgra32", ImageProfileInterpolation.Nearest, ImageProfileBoundaryMode.Skip)]
+    [InlineData("Bgr24", ImageProfileInterpolation.Bilinear, ImageProfileBoundaryMode.Reject)]
+    public void SparseProfileMatchesDenseSnapshotAcrossImageBoundaries(string formatName, ImageProfileInterpolation interpolation,
+        ImageProfileBoundaryMode boundary)
+    {
+        const int width = 2305, height = 1825;
+        PixelFormat format = formatName switch
+        {
+            "Rgb48" => PixelFormats.Rgb48,
+            "Pbgra32" => PixelFormats.Pbgra32,
+            "Bgr24" => PixelFormats.Bgr24,
+            _ => throw new ArgumentOutOfRangeException(nameof(formatName)),
+        };
+        int stride = width * format.BitsPerPixel / 8;
+        byte[] pixels = GC.AllocateUninitializedArray<byte>(stride * height);
+        new Random(318).NextBytes(pixels);
+        BitmapSource bitmap = BitmapSource.Create(width, height, 144, 120, format, null, pixels, stride);
+        ImageSelectionScope scope = new(Guid.NewGuid(), 1, width, height, bitmap.DpiX, bitmap.DpiY);
+        PolylineAlgorithmRoi path = new([new(0, 0), new(width - 1, height - 1), new(-1, height - 0.5)]);
+        ImageProfileParameters parameters = new() { Interpolation = interpolation, BoundaryMode = boundary, SampleSpacingPixels = 97.5 };
+        AlgorithmInvocation invocation = AlgorithmInvocation.Create(StandardAlgorithmIds.ImageProfile, parameters, path);
+        Assert.Null(ImageProfileAlgorithmProvider.GetDisplaySlice(path, parameters, scope));
+        var snapshot = Assert.IsType<ImageProfileAlgorithmProvider.DisplaySampleSnapshot>(
+            ImageProfileAlgorithmProvider.TryCaptureDisplaySamples(bitmap, path, parameters, scope, null));
+        Assert.InRange(snapshot.Data.Length, 1, 2048);
+
+        ImageProfileAlgorithmProvider provider = new();
+        Int32Rect full = new(0, 0, width, height);
+        using AlgorithmImageBuffer dense = ImageAlgorithmInputFactory.Copy(bitmap);
+        using AlgorithmResult expected = provider.ExecuteDisplaySlice(invocation, parameters, dense, full, scope, default);
+        using AlgorithmResult actual = provider.ExecuteDisplaySamples(invocation, parameters, snapshot, scope, default);
+        Assert.Equal(expected.Status, actual.Status);
+        Assert.Equal(expected.Failures, actual.Failures);
+        Assert.Equal(expected.Diagnostics.Messages, actual.Diagnostics.Messages);
+        Assert.Equal(expected.Artifacts.Select(Serialize), actual.Artifacts.Select(Serialize));
+
+        static string Serialize(AlgorithmArtifact artifact) => JsonSerializer.Serialize(artifact, artifact.GetType(), AlgorithmJson.Options);
+    }
+
     private static void AssertDisplaySliceMatchesFullBitmap(BitmapSource bitmap, ImageSelectionScope scope,
         PolylineAlgorithmRoi path, ImageProfileParameters parameters, Int32Rect bounds)
     {

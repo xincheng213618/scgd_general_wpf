@@ -75,6 +75,36 @@ namespace ColorVision.Database
 
         public LocalTemplateDocument Read(string kind, int id) => Find(kind, id) ?? throw new InvalidDataException($"找不到本地模板：{kind}/{id}");
 
+        public LocalTemplateDocument ReadByName(string kind, string name)
+        {
+            using var connection = Open();
+            return ReadByName(connection, null, kind, name);
+        }
+
+        private static LocalTemplateDocument ReadByName(SqliteConnection connection, SqliteTransaction? transaction, string kind, string name)
+        {
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "SELECT id,name,schema_version,payload,created_utc FROM local_templates WHERE kind=$kind AND name=$name LIMIT 2";
+            command.Parameters.AddWithValue("$kind", kind);
+            command.Parameters.AddWithValue("$name", name);
+            using var reader = command.ExecuteReader();
+            if (!reader.Read()) throw new InvalidOperationException($"找不到本地模板：{kind}/{name}");
+            var document = ReadDocument(reader);
+            if (reader.Read()) throw new InvalidOperationException($"本地模板名称不唯一：{kind}/{name}");
+            return document;
+        }
+
+        public void UpdateByName(string kind, string name, Func<LocalTemplateDocument, string> updatePayload)
+        {
+            using var connection = Open();
+            using var transaction = connection.BeginTransaction(deferred: false);
+            var document = ReadByName(connection, transaction, kind, name);
+            string payload = updatePayload(document);
+            Save(connection, transaction, kind, document.Id, document.Name, document.SchemaVersion, payload);
+            transaction.Commit();
+        }
+
         /// <summary>Returns null only when the document is missing; storage failures still throw.</summary>
         public LocalTemplateDocument? Find(string kind, int id)
         {
@@ -154,7 +184,14 @@ namespace ColorVision.Database
         public bool TryUpdate(string kind, LocalTemplateDocument expected, string name, int schemaVersion, string payload)
         {
             using var connection = Open();
+            return TryUpdate(connection, null, kind, expected, name, schemaVersion, payload);
+        }
+
+        private static bool TryUpdate(SqliteConnection connection, SqliteTransaction? transaction, string kind,
+            LocalTemplateDocument expected, string name, int schemaVersion, string payload)
+        {
             using var command = connection.CreateCommand();
+            command.Transaction = transaction;
             command.CommandText = """
                 UPDATE local_templates SET name=$name,schema_version=$version,payload=$payload
                 WHERE kind=$kind AND id=$id AND name=$previousName
@@ -169,6 +206,26 @@ namespace ColorVision.Database
             command.Parameters.AddWithValue("$previousVersion", expected.SchemaVersion);
             command.Parameters.AddWithValue("$previousPayload", expected.Payload);
             return command.ExecuteNonQuery() == 1;
+        }
+
+        /// <summary>Updates payloads together. A missing document or a rejected payload rolls back the batch.</summary>
+        public bool TryUpdateBatch(string kind, IReadOnlyList<int> ids, Func<LocalTemplateDocument, string?> updatePayload, Func<bool> isCurrent)
+        {
+            if (!isCurrent()) return false;
+            using var connection = Open();
+            using var transaction = connection.BeginTransaction(deferred: false);
+            foreach (int id in ids)
+            {
+                var document = Find(connection, kind, id, transaction);
+                if (document == null) return false;
+                string? payload = updatePayload(document);
+                if (payload == null) return false;
+                if (!string.Equals(payload, document.Payload, StringComparison.Ordinal)
+                    && !TryUpdate(connection, transaction, kind, document, document.Name, document.SchemaVersion, payload)) return false;
+            }
+            if (!isCurrent()) return false;
+            transaction.Commit();
+            return true;
         }
 
         public bool TryDelete(string kind, LocalTemplateDocument expected)

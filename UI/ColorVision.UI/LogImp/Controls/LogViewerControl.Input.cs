@@ -251,11 +251,31 @@ namespace ColorVision.UI.LogImp.Controls
             var start = Math.Clamp(Math.Min(startIndex, endIndex), 0, _visibleEntries.Count - 1);
             var end = Math.Clamp(Math.Max(startIndex, endIndex), 0, _visibleEntries.Count - 1);
 
-            EntriesListBox.SelectedItems.Clear();
-            for (var i = start; i <= end; i++)
+            var selected = EntriesListBox.SelectedItems;
+            int count = end - start + 1;
+            // Reuse an unchanged range that we selected ourselves. Keyboard selection can choose a different occurrence of a repeated entry.
+            bool reuseRange = _selectedRangeStart == start && selected.Count - count <= count;
+            for (int i = count; reuseRange && i < selected.Count; i++)
             {
-                EntriesListBox.SelectedItems.Add(_visibleEntries[i]);
+                // WPF can unselect the first occurrence of a repeated entry when removing from SelectedItems by index.
+                reuseRange = selected.IndexOf(selected[i]) == i;
             }
+
+            int retained = reuseRange ? Math.Min(selected.Count, count) : 0;
+            if (reuseRange)
+            {
+                while (selected.Count > count)
+                    selected.RemoveAt(selected.Count - 1);
+            }
+            else
+            {
+                selected.Clear();
+            }
+
+            for (int i = retained; i < count; i++)
+                selected.Add(_visibleEntries[start + i]);
+
+            _selectedRangeStart = start;
         }
 
         private void StopRangeSelection()

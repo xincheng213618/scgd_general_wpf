@@ -1,8 +1,10 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace ColorVision.Core;
@@ -215,46 +217,82 @@ public static class LightBeadsInspector
         return values.Count % 2 == 0 ? (values[values.Count / 2 - 1] + values[values.Count / 2]) / 2 : values[values.Count / 2];
     }
 
-    private static unsafe (double Brightness, int X, int Y) Sample(HImage image, double x, double y, int searchX, int searchY)
+    private static (double Brightness, int X, int Y) Sample(HImage image, double x, double y, int searchX, int searchY)
     {
         int cx = checked((int)Math.Round(x)), cy = checked((int)Math.Round(y));
         if (cx < 1 || cy < 1 || cx >= image.cols - 1 || cy >= image.rows - 1) return (double.NaN, cx, cy);
         int left = Math.Max(0, cx - searchX - 1), top = Math.Max(0, cy - searchY - 1);
         int width = Math.Min(image.cols - 1, cx + searchX + 1) - left + 1;
         int height = Math.Min(image.rows - 1, cy + searchY + 1) - top + 1;
-        int stride = checked(width + 1), size = checked(stride * (height + 1));
-        Span<double> sums = size <= 4096 ? stackalloc double[size] : new double[size];
-        sums.Clear();
-        for (int row = 0; row < height; row++)
+        return image.depth switch
         {
-            byte* pixels = (byte*)image.pData + (top + row) * image.stride;
-            double running = 0;
-            for (int column = 0; column < width; column++)
-            {
-                int offset = (left + column) * image.channels;
-                double Channel(int channel) => image.depth switch
-                {
-                    8 => pixels[offset + channel],
-                    16 => ((ushort*)pixels)[offset + channel] * (255.0 / 65535),
-                    32 => Math.Max(((float*)pixels)[offset + channel], 0),
-                    _ => throw new NotSupportedException("灯珠采样仅支持 8/16 位整数或 32 位浮点图像。")
-                };
-                running += image.channels == 1 ? Channel(0) : 0.114 * Channel(0) + 0.587 * Channel(1) + 0.299 * Channel(2);
-                if (!double.IsFinite(running)) return (double.NaN, cx, cy);
-                sums[(row + 1) * stride + column + 1] = sums[row * stride + column + 1] + running;
-            }
-        }
+            8 => SampleWindow<byte>(image, left, top, width, height, x, y, cx, cy),
+            16 => SampleWindow<ushort>(image, left, top, width, height, x, y, cx, cy),
+            32 => SampleWindow<float>(image, left, top, width, height, x, y, cx, cy),
+            _ => throw new NotSupportedException("灯珠采样仅支持 8/16 位整数或 32 位浮点图像。")
+        };
+    }
+
+    private static unsafe (double Brightness, int X, int Y) SampleWindow<T>(HImage image,
+        int left, int top, int width, int height, double x, double y, int cx, int cy) where T : unmanaged
+    {
+        int stride = checked(width + 1), size = checked(4 * stride);
+        double[]? rented = null;
+        Span<double> sums = size <= 1024 ? stackalloc double[size] : (rented = ArrayPool<double>.Shared.Rent(size));
+        sums[..stride].Clear();
         double peak = -1, bestDistance = double.PositiveInfinity;
-        int peakX = cx, peakY = cy;
-        for (int row = 1; row < height - 1; row++)
-            for (int column = 1; column < width - 1; column++)
+        int peakX = cx, peakY = cy, channels = image.channels;
+        try
+        {
+            // A 3x3 sum uses cumulative rows three apart. Recycle a row after its last use.
+            for (int row = 0; row < height; row++)
             {
-                double mean = (sums[(row + 2) * stride + column + 2] - sums[(row - 1) * stride + column + 2]
-                    - sums[(row + 2) * stride + column - 1] + sums[(row - 1) * stride + column - 1]) / 9;
-                double distance = (left + column - x) * (left + column - x) + (top + row - y) * (top + row - y);
-                if (mean > peak || mean == peak && distance < bestDistance)
-                { peak = mean; peakX = left + column; peakY = top + row; bestDistance = distance; }
+                T* pixels = (T*)((byte*)image.pData + (top + row) * image.stride) + left * channels;
+                ReadOnlySpan<double> previous = sums.Slice((row & 3) * stride, stride);
+                Span<double> current = sums.Slice(((row + 1) & 3) * stride, stride);
+                current[0] = 0;
+                double running = 0;
+                for (int column = 0; column < width; column++, pixels += channels)
+                {
+                    running += channels == 1 ? ReadSample(pixels[0])
+                        : 0.114 * ReadSample(pixels[0]) + 0.587 * ReadSample(pixels[1]) + 0.299 * ReadSample(pixels[2]);
+                    if (typeof(T) == typeof(float) && !double.IsFinite(running)) return (double.NaN, cx, cy);
+                    current[column + 1] = previous[column + 1] + running;
+                }
+                if (row < 2) continue;
+
+                ReadOnlySpan<double> upper = sums.Slice(((row - 2) & 3) * stride, stride);
+                int py = top + row - 1;
+                double dy = py - y;
+                for (int column = 1; column < width - 1; column++)
+                {
+                    double mean = (current[column + 2] - upper[column + 2] - current[column - 1] + upper[column - 1]) / 9;
+                    if (!(mean >= peak)) continue;
+                    int px = left + column;
+                    double dx = px - x;
+                    double distance = dx * dx + dy * dy;
+                    if (mean > peak || distance < bestDistance)
+                    {
+                        peak = mean;
+                        bestDistance = distance;
+                        peakX = px;
+                        peakY = py;
+                    }
+                }
             }
-        return (peak, peakX, peakY);
+            return (peak, peakX, peakY);
+        }
+        finally
+        {
+            if (rented != null) ArrayPool<double>.Shared.Return(rented);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static double ReadSample<T>(T sample) where T : unmanaged
+    {
+        if (typeof(T) == typeof(byte)) return Unsafe.As<T, byte>(ref sample);
+        if (typeof(T) == typeof(ushort)) return Unsafe.As<T, ushort>(ref sample) * (255.0 / 65535);
+        return Math.Max(Unsafe.As<T, float>(ref sample), 0);
     }
 }

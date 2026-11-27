@@ -117,11 +117,14 @@ public sealed class ImagingCorrectionV1Tests
         Assert.Equal(AlgorithmImageFormat.Gray16, Image(gray, "corrected-image").Format);
         Assert.Equal(new ushort[] { 24576, 49000 }, ReadUShorts(Image(gray, "corrected-image")));
 
-        using AlgorithmImageBuffer colorSource = new(1, 1, 4, AlgorithmImageFormat.Bgra32, [100, 110, 120, 77]);
-        using AlgorithmImageBuffer colorDark = new(1, 1, 4, AlgorithmImageFormat.Bgra32, [10, 10, 10, 255]);
+        const int width = 13;
+        byte[] sourceColors = RepeatColor([100, 110, 120, 77]);
+        using AlgorithmImageBuffer colorSource = new(width, 1, width * 4, AlgorithmImageFormat.Bgra32, sourceColors);
+        using AlgorithmImageBuffer colorDark = new(width, 1, width * 4, AlgorithmImageFormat.Bgra32, RepeatColor([125, 10, 10, 255]));
         using AlgorithmResult color = await RunAsync(colorSource, new ImagingCorrectionParameters { EnableDarkFrame = true }, [Input("dark-frame", colorDark)]);
-        Assert.Equal(new byte[] { 90, 100, 110, 77 }, Image(color, "corrected-image").Data.ToArray());
-        Assert.Equal(new byte[] { 100, 110, 120, 77 }, colorSource.Data.ToArray());
+        Assert.Equal(RepeatColor([0, 100, 110, 77]), Image(color, "corrected-image").Data.ToArray());
+        Assert.Equal(RepeatColor([100, 110, 120, 77]), colorSource.Data.ToArray());
+        Assert.Equal(width, Measurement(color, "imaging-correction.clipped_low_samples"));
 
         using AlgorithmImageBuffer floatingSource = FloatBuffer(1, 1, [0.1f]);
         using AlgorithmImageBuffer floatingDark = FloatBuffer(1, 1, [0.2f]);
@@ -131,6 +134,50 @@ public sealed class ImagingCorrectionV1Tests
             OutputRangePolicy = ImagingCorrectionOutputRangePolicy.PreserveFloatingPoint,
         }, [Input("dark-frame", floatingDark)]);
         Assert.Equal(-0.1f, ReadFloats(Image(preserved, "corrected-image"))[0], 5);
+
+        static byte[] RepeatColor(byte[] pixel) => Enumerable.Repeat(pixel, width).SelectMany(value => value).ToArray();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LargePaddedGray16CorrectionPreservesAllRowsAndDiagnosticCounts(bool includeSaturation)
+    {
+        const int width = 1051, height = 1001, sourceStride = width * 2 + 3, darkStride = width * 2 + 7;
+        byte[] sourceBytes = new byte[sourceStride * height], darkBytes = new byte[darkStride * height];
+        byte[] expectedPixels = new byte[width * height * 2], expectedMask = new byte[width * height];
+        int invalidPixels = 0, clippedSamples = 0;
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                int pattern = (x + y * 3) % 17;
+                bool invalid = includeSaturation && pattern == 0, clips = pattern == 1;
+                ushort raw = clips ? (ushort)1500 : (ushort)6000;
+                ushort darkValue = invalid ? ushort.MaxValue : (ushort)2500;
+                ushort expected = invalid ? (ushort)16384 : clips ? (ushort)0 : (ushort)3500;
+                int index = y * width + x;
+                BinaryPrimitives.WriteUInt16LittleEndian(sourceBytes.AsSpan(y * sourceStride + x * 2), raw);
+                BinaryPrimitives.WriteUInt16LittleEndian(darkBytes.AsSpan(y * darkStride + x * 2), darkValue);
+                BinaryPrimitives.WriteUInt16LittleEndian(expectedPixels.AsSpan(index * 2), expected);
+                expectedMask[index] = invalid ? (byte)0 : byte.MaxValue;
+                if (invalid) invalidPixels++;
+                if (clips) clippedSamples++;
+            }
+
+        using var source = new AlgorithmImageBuffer(width, height, sourceStride, AlgorithmImageFormat.Gray16, sourceBytes);
+        using var dark = new AlgorithmImageBuffer(width, height, darkStride, AlgorithmImageFormat.Gray16, darkBytes);
+        using AlgorithmResult result = await RunAsync(source, new ImagingCorrectionParameters
+        {
+            EnableDarkFrame = true,
+            InvalidReferencePolicy = InvalidReferencePixelPolicy.FillConstant,
+            InvalidReferenceFillNormalized = 0.25,
+        }, [Input("dark-frame", dark)]);
+
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        Assert.Equal(expectedPixels, Image(result, "corrected-image").Data.ToArray());
+        Assert.Equal(expectedMask, Image(result, "correction-validity-mask").Data.ToArray());
+        Assert.Equal(invalidPixels, Measurement(result, "imaging-correction.invalid_pixel_count"));
+        Assert.Equal(clippedSamples, Measurement(result, "imaging-correction.clipped_low_samples"));
     }
 
     [Fact]

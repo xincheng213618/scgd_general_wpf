@@ -868,7 +868,8 @@ void verifySharedMapContextLifecycle(
 
     const auto previousWriteTime = std::filesystem::last_write_time(file);
     rewriteFile();
-    std::filesystem::last_write_time(file, previousWriteTime + std::chrono::seconds(2));
+    // An installer can replace the map while preserving its public timestamp and length.
+    std::filesystem::last_write_time(file, previousWriteTime);
 
     // A metadata change creates a new cached generation. Existing contexts must
     // continue to own their old generation while a new context sees new data.
@@ -903,6 +904,77 @@ MCalibrationCacheReleaseResultV1 releaseCalibrationCache()
     requireResult(M_CalibrationCacheReleaseV1(&result), nullptr,
         "release calibration file cache");
     return result;
+}
+
+void verifyRuntimeCacheBudget(const std::filesystem::path& directory)
+{
+    releaseCalibrationCache();
+    struct RestoreBudget {
+        std::uint64_t bytes;
+        ~RestoreBudget() { M_CalibrationCacheSetBudgetV1(bytes); }
+    } original{ readCalibrationCacheStats().budgetBytes };
+    const auto setBudget = [](std::uint64_t bytes) {
+        requireResult(M_CalibrationCacheSetBudgetV1(bytes), nullptr, "set runtime cache budget");
+        if (readCalibrationCacheStats().budgetBytes != bytes) throw std::runtime_error("Stale runtime cache budget");
+    };
+    const auto load = [](const std::filesystem::path& file) {
+        auto context = createContext();
+        requireResult(M_CalibrationLoadFileW(context.get(), 0, file.c_str()), context.get(), "load budget test gain");
+        return context;
+    };
+    const auto itemBytes = [](const Context& context) {
+        std::uint64_t bytes = 0;
+        requireResult(M_CalibrationGetItemEstimatedBytesV1(context.get(), 0, &bytes), context.get(), "read item size");
+        return bytes;
+    };
+    setBudget(1ULL << 33);
+    const auto a = directory / "runtime_gain_a.json";
+    const auto b = directory / "runtime_gain_b.json";
+    const auto c = directory / "runtime_gain_c.json";
+    for (const auto& path : { a, b, c }) writeText(path, R"({"DarkNoiseRatio":2})");
+    auto active = load(a);
+    const auto bytes = itemBytes(active);
+    if (bytes == 0 || bytes != readCalibrationCacheStats().estimatedMemoryBytes)
+        throw std::runtime_error("Loaded item size differs from shared cache accounting");
+    std::uint64_t unused = 0;
+    if (M_CalibrationGetItemEstimatedBytesV1(active.get(), 1, &unused) != M_CALIBRATION_INVALID_ARGUMENT
+        || M_CalibrationGetItemEstimatedBytesV1(active.get(), 0, nullptr) != M_CALIBRATION_INVALID_ARGUMENT)
+        throw std::runtime_error("Invalid calibration item size request succeeded");
+
+    load(b);
+    load(c);
+    setBudget(2 * bytes);
+    auto trimmed = readCalibrationCacheStats();
+    if (trimmed.entryCount != 2 || trimmed.estimatedMemoryBytes != 2 * bytes)
+        throw std::runtime_error("Lowering the budget did not immediately release an idle item");
+    load(c);
+    if (readCalibrationCacheStats().hitCount != trimmed.hitCount + 1)
+        throw std::runtime_error("Lowering the budget evicted the most recently accessed idle item");
+
+    setBudget(1);
+    if (readCalibrationCacheStats().estimatedMemoryBytes != bytes)
+        throw std::runtime_error("Positive budget discarded a live context's shared asset");
+    const auto generation = readCalibrationCacheStats().generation;
+    setBudget(1);
+    if (readCalibrationCacheStats().generation != generation)
+        throw std::runtime_error("Reapplying the same budget invalidated an enumeration");
+    setBudget(0);
+    if (readCalibrationCacheStats().entryCount != 0 || readCalibrationCacheStats().estimatedMemoryBytes != 0)
+        throw std::runtime_error("Zero budget retained existing calibration assets");
+    requireUniformPixels(executeSyntheticSharedMap(active.get()), 20, "live context after disabling retention");
+
+    writeText(a, std::string(4096, ' ') + R"({"DarkNoiseRatio":3})");
+    auto unretained = load(a);
+    const auto replacementBytes = itemBytes(unretained);
+    if (replacementBytes <= bytes || readCalibrationCacheStats().entryCount != 0)
+        throw std::runtime_error("New file generation under zero budget was retained or misreported");
+    setBudget(1ULL << 20);
+    auto replacement = load(a);
+    if (readCalibrationCacheStats().estimatedMemoryBytes != replacementBytes
+        || itemBytes(replacement) != replacementBytes || itemBytes(active) != bytes)
+        throw std::runtime_error("A context reported the size of a different file generation");
+    requireUniformPixels(executeSyntheticSharedMap(replacement.get()), 30, "new generation after restoring retention");
+    releaseCalibrationCache();
 }
 
 void verifyReleaseLinearizesWithInFlightLoad(const std::filesystem::path& directory, bool verified)
@@ -1947,7 +2019,7 @@ void verifyRawOutputFlip(const std::filesystem::path& directory)
     writeText(distortion, R"({"alpha":0.0,"cameraMatrix":[10,0,8,0,10,6,0,0,1],"distCoeffs":[0.01,-0.003,0.0001,0.0002,0],"h":13,"w":17,"useFisheye":false})");
     writeText(colorDiff, R"({"CalibDis":1,"MeasDis":1,"CenterCol":8,"CenterRow":6,"ColRowCoeffs_GB":[-1,0.25],"ColRowCoeffs_GR":[0.5,-1],"ColorDiffCoeffs_GB":[0.2,0.01],"ColorDiffCoeffs_GR":[-0.3,0.02],"h":13,"w":17})");
     writeText(wideColorDiff, R"({"CalibDis":1,"MeasDis":1,"CenterCol":8,"CenterRow":6,"ColRowCoeffs_GB":[0,20],"ColRowCoeffs_GR":[-20,0],"ColorDiffCoeffs_GB":[0],"ColorDiffCoeffs_GR":[0],"h":13,"w":17})");
-    writeText(dark, R"({"DarkNoiseRatio":2})");
+    writeText(dark, R"({"Texp_x":1.0,"DarkNoiseRatio":1.5})");
     writeText(color, R"({"a":1,"b":0,"c":0,"d":0,"e":1,"f":0,"g":0,"h":0,"i":1})");
     std::vector<std::uint16_t> offsets(17 * 13 * 3);
     std::vector<float> factors(offsets.size());
@@ -2138,6 +2210,274 @@ void verifyLargeMatrixColorOutput(const std::filesystem::path& directory)
     }
 }
 
+void verifyFrameCalibrationModes(const std::filesystem::path& directory)
+{
+    const auto dark = directory / "frame-mode-dark.json";
+    const auto color = directory / "frame-mode-color.json";
+    writeText(dark, R"({"Texp_x":1.0,"DarkNoiseRatio":2.0})");
+    writeText(color, R"({"bpp":16,"a":1,"b":0,"c":0,"d":0,"e":1,"f":0,"g":0,"h":0,"i":1})");
+
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 0, dark.c_str()), context.get(), "new frame basic stage");
+    requireResult(M_CalibrationLoadFileW(context.get(), 8, color.c_str()), context.get(), "new frame color stage");
+    MCalibrationFrameRequestV2 request{};
+    request.structSize = sizeof(request);
+    request.width = 2;
+    request.height = 2;
+    request.rawLayout = M_CALIBRATION_BGR_INTERLEAVED;
+    std::fill_n(request.exposure, 3, 1.0F);
+
+    std::array<std::uint8_t, 12> raw8{};
+    raw8.fill(20);
+    const auto original8 = raw8;
+    std::array<float, 12> cie{};
+    MRawColorTransformV1 transform{};
+    request.bitsPerChannel = 8;
+    request.outputMode = M_CALIBRATION_FULL_CIE;
+    if (M_CalibrationExecuteFrameV2(context.get(), &request, raw8.data(), sizeof(raw8), cie.data(), sizeof(cie), &transform)
+        != M_CALIBRATION_EXECUTE_FAILED || raw8 != original8) {
+        throw std::runtime_error("Full CIE did not reject a RAW depth mismatch before correction");
+    }
+    request.outputMode = M_CALIBRATION_DEFERRED_COLOR;
+    if (M_CalibrationExecuteFrameV2(context.get(), &request, raw8.data(), sizeof(raw8), nullptr, 0, &transform)
+        != M_CALIBRATION_EXECUTE_FAILED || raw8 != original8) {
+        throw std::runtime_error("Deferred color did not reject a RAW depth mismatch before correction");
+    }
+
+    request.bitsPerChannel = 16;
+    std::array<std::uint16_t, 12> fullRaw{ 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70 };
+    auto deferredRaw = fullRaw;
+    request.outputMode = M_CALIBRATION_FULL_CIE;
+    if (M_CalibrationExecuteFrameV2(context.get(), &request,
+            reinterpret_cast<std::uint8_t*>(fullRaw.data()), sizeof(fullRaw), cie.data(), sizeof(cie) - sizeof(float), &transform)
+        != M_CALIBRATION_EXECUTE_FAILED || fullRaw != deferredRaw) {
+        throw std::runtime_error("Full CIE did not reject a short output before correction");
+    }
+    MRawColorTransformV1 aliased{};
+    if (M_CalibrationExecuteFrameV2(context.get(), &request, reinterpret_cast<std::uint8_t*>(&aliased),
+            sizeof(fullRaw), cie.data(), sizeof(cie), &aliased) != M_CALIBRATION_INVALID_ARGUMENT) {
+        throw std::runtime_error("Calibration accepted overlapping transform and pixel buffers");
+    }
+    requireResult(M_CalibrationExecuteFrameV2(context.get(), &request,
+        reinterpret_cast<std::uint8_t*>(fullRaw.data()), sizeof(fullRaw), cie.data(), sizeof(cie), &transform),
+        context.get(), "full CIE output");
+    request.outputMode = M_CALIBRATION_DEFERRED_COLOR;
+    requireResult(M_CalibrationExecuteFrameV2(context.get(), &request,
+        reinterpret_cast<std::uint8_t*>(deferredRaw.data()), sizeof(deferredRaw), nullptr, 0, &transform),
+        context.get(), "deferred color output");
+    std::array<float, 12> replay{};
+    if (M_TransformRawColorV1(2, 2, 16, deferredRaw.data(), sizeof(deferredRaw), &transform,
+            -1, replay.data(), replay.size()) != M_POI_OK
+        || deferredRaw != fullRaw || std::memcmp(replay.data(), cie.data(), sizeof(cie)) != 0) {
+        throw std::runtime_error("Deferred color did not reproduce full CIE output");
+    }
+}
+
+template<class Sample>
+void compareFrameLayouts(void* context, MCalibrationOutputMode mode, MCalibrationRawFlip flip)
+{
+    constexpr unsigned width = 7, height = 5, pixels = width * height;
+    std::array<Sample, 3 * pixels> packed{}, planar{};
+    for (unsigned pixel = 0; pixel < pixels; ++pixel) {
+        for (unsigned channel = 0; channel < 3; ++channel) {
+            const auto sample = static_cast<Sample>(pixel + 1 + channel * 80);
+            planar[channel * pixels + pixel] = sample;
+            packed[pixel * 3 + 2 - channel] = sample;
+        }
+    }
+    MCalibrationFrameRequestV2 request{};
+    request.structSize = sizeof(request);
+    request.width = width;
+    request.height = height;
+    request.bitsPerChannel = sizeof(Sample) * 8;
+    request.outputMode = mode;
+    request.rawFlip = flip;
+    std::fill_n(request.exposure, 3, 1.0F);
+    std::array<float, 3 * pixels> packedCie{}, planarCie{};
+    MRawColorTransformV1 transform{};
+    const bool writeCie = mode == M_CALIBRATION_FULL_CIE;
+    request.rawLayout = M_CALIBRATION_BGR_INTERLEAVED;
+    requireResult(M_CalibrationExecuteFrameV2(context, &request, reinterpret_cast<std::uint8_t*>(packed.data()),
+        sizeof(packed), writeCie ? packedCie.data() : nullptr, writeCie ? sizeof(packedCie) : 0, &transform),
+        context, "packed reference");
+    request.rawLayout = M_CALIBRATION_RGB_PLANAR;
+    requireResult(M_CalibrationExecuteFrameV2(context, &request, reinterpret_cast<std::uint8_t*>(planar.data()),
+        sizeof(planar), writeCie ? planarCie.data() : nullptr, writeCie ? sizeof(planarCie) : 0, &transform),
+        context, "planar frame");
+    if (mode == M_CALIBRATION_DEFERRED_COLOR && M_TransformRawColorV1(width, height, request.bitsPerChannel,
+            planar.data(), sizeof(planar), &transform, -1, planarCie.data(), planarCie.size()) != M_POI_OK) {
+        throw std::runtime_error("Failed to replay the planar transform");
+    }
+    if (mode != M_CALIBRATION_RAW_ONLY && transform.interleavedBgr != 0)
+        throw std::runtime_error("Result transform does not describe the caller's planar layout");
+    for (unsigned channel = 0; channel < 3; ++channel) {
+        for (unsigned pixel = 0; pixel < pixels; ++pixel) {
+            const auto index = channel * pixels + pixel;
+            const auto expected = packed[pixel * 3 + 2 - channel];
+            if (planar[index] != expected || (mode != M_CALIBRATION_RAW_ONLY && planarCie[index] != expected)
+                || (writeCie && planarCie[index] != packedCie[index])) {
+                throw std::runtime_error("Planar RAW or XYZ differs from the packed frame");
+            }
+        }
+    }
+}
+
+void verifyPlanarFrameStages(const std::filesystem::path& directory)
+{
+    const auto shift = directory / "planar-shift.json";
+    const auto dark = directory / "planar-dark.json";
+    const auto color = directory / "planar-color.json";
+    writeText(shift, R"({"fillOffset":false,"offset":[{"X":1,"Y":0},{"X":0,"Y":-1},{"X":-1,"Y":0}]})");
+    writeText(dark, R"({"Texp_x":1.0,"DarkNoiseRatio":2.0})");
+    writeText(color, R"({"a":1,"e":1,"i":1})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 12, shift.c_str()), context.get(), "planar ColorShift");
+    requireResult(M_CalibrationLoadFileW(context.get(), 0, dark.c_str()), context.get(), "planar DarkNoise");
+    compareFrameLayouts<std::uint16_t>(context.get(), M_CALIBRATION_RAW_ONLY, M_CALIBRATION_FLIP_BOTH);
+    requireResult(M_CalibrationLoadFileW(context.get(), 8, color.c_str()), context.get(), "planar FourColor");
+    compareFrameLayouts<std::uint16_t>(context.get(), M_CALIBRATION_FULL_CIE, M_CALIBRATION_FLIP_NONE);
+    compareFrameLayouts<std::uint8_t>(context.get(), M_CALIBRATION_DEFERRED_COLOR, M_CALIBRATION_FLIP_HORIZONTAL);
+}
+
+void verifyActualFrameColorRange(const std::filesystem::path& directory)
+{
+    const auto color = directory / "color-range.json";
+    const auto dark = directory / "color-range-dark.json";
+    writeText(color, R"({"a":1e38})");
+    writeText(dark, R"({"Texp_x":1.0,"DarkNoiseRatio":2.0})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 0, dark.c_str()), context.get(), "range dark stage");
+    requireResult(M_CalibrationLoadFileW(context.get(), 6, color.c_str()), context.get(), "range luminance stage");
+    MCalibrationFrameRequestV2 request{};
+    request.structSize = sizeof(request);
+    request.width = request.height = 1;
+    request.bitsPerChannel = 16;
+    request.rawLayout = M_CALIBRATION_MONO;
+    std::fill_n(request.exposure, 3, 1.0F);
+    for (auto mode : {M_CALIBRATION_FULL_CIE, M_CALIBRATION_DEFERRED_COLOR}) {
+        request.outputMode = mode;
+        for (auto source : std::array<std::uint16_t, 3>{0, 1, 2}) {
+            std::uint16_t raw = source;
+            float y = 0;
+            MRawColorTransformV1 transform{};
+            transform.reserved = 42;
+            const bool full = mode == M_CALIBRATION_FULL_CIE;
+            const int result = M_CalibrationExecuteFrameV2(context.get(), &request,
+                reinterpret_cast<std::uint8_t*>(&raw), sizeof(raw), full ? &y : nullptr, full ? sizeof(y) : 0, &transform);
+            if (source == 2) {
+                if (result != M_CALIBRATION_EXECUTE_FAILED || transform.reserved != 42
+                    || nativeError(context.get()).find("finite float range") == std::string::npos) {
+                    throw std::runtime_error("Non-finite color result accepted or published");
+                }
+            }
+            else {
+                requireResult(result, context.get(), "representable actual luminance");
+                if (!full && M_TransformRawColorV1(1, 1, 16, &raw, sizeof(raw), &transform, -1, &y, 1) != M_POI_OK)
+                    throw std::runtime_error("Failed to replay extreme but valid luminance");
+                if (y != static_cast<float>(1e38 * (source * 2)))
+                    throw std::runtime_error("Extreme luminance factor changed a representable pixel");
+            }
+        }
+    }
+}
+
+template<class Sample>
+void verifyDarkNoiseSamples(void* context, std::uint32_t gainNumerator)
+{
+    constexpr std::uint32_t width = 7, height = 3, bits = sizeof(Sample) * 8;
+    constexpr std::uint32_t limit = (std::numeric_limits<Sample>::max)();
+    constexpr std::array<std::uint32_t, 20> levels{
+        0, 1, 3, 17, 127, 169, 170, 171, 254, 255, 256, 257, 4096, 32767, 32768, 43689, 43690, 43691, 65534, 65535
+    };
+    for (auto layout : { M_CALIBRATION_MONO, M_CALIBRATION_BGR_INTERLEAVED, M_CALIBRATION_RGB_PLANAR }) {
+        const std::uint32_t channels = layout == M_CALIBRATION_MONO ? 1 : 3;
+        const auto samples = width * height * channels;
+        const auto bytes = samples * sizeof(Sample);
+        // One guard on either side also checks that calibration respects the declared buffer.
+        std::vector<Sample> source(samples + 2, 0xA5);
+        auto expected = source;
+        for (std::size_t i = 0; i < samples; ++i) {
+            const auto sample = (std::min)(levels[i % levels.size()], limit);
+            source[i + 1] = static_cast<Sample>(sample);
+            // Exact integer oracle for our half-integer gains, including truncation and saturation.
+            expected[i + 1] = static_cast<Sample>((std::min)(sample * gainNumerator / 2, limit));
+        }
+        for (bool cropped : {false, true}) {
+            MCalibrationFrameRequestV2 request{};
+            request.structSize = sizeof(request);
+            request.width = width;
+            request.height = height;
+            request.bitsPerChannel = bits;
+            request.rawLayout = layout;
+            request.outputMode = M_CALIBRATION_RAW_ONLY;
+            MCalibrationExecutionOptionsV1 options{};
+            options.structSize = sizeof(options);
+            options.interleavedBgr = layout == M_CALIBRATION_BGR_INTERLEAVED;
+            if (cropped) {
+                // Here width and height describe the already-captured sensor crop.
+                request.sensorRoi[0] = options.roiX = 13;
+                request.sensorRoi[1] = options.roiY = 9;
+                request.sensorRoi[2] = options.roiWidth = width;
+                request.sensorRoi[3] = options.roiHeight = height;
+            }
+            auto pixels = source;
+            requireResult(M_CalibrationExecuteFrameV2(context, &request,
+                reinterpret_cast<std::uint8_t*>(pixels.data() + 1), bytes, nullptr, 0, nullptr),
+                context, "in-place DarkNoise");
+            if (pixels != expected) throw std::runtime_error("DarkNoise did not correct every sample at the input depth");
+
+            auto readOnly = source;
+            std::vector<Sample> output(samples + 2, 0xA5);
+            requireResult(M_CalibrationExecuteToV1(context, width, height, bits, channels,
+                reinterpret_cast<const std::uint8_t*>(readOnly.data() + 1), bytes,
+                reinterpret_cast<std::uint8_t*>(output.data() + 1), bytes, nullptr, 0, &options),
+                context, "separate DarkNoise output");
+            if (readOnly != source || output != expected)
+                throw std::runtime_error("Separate DarkNoise output corrupted its source or produced incorrect samples");
+        }
+    }
+}
+
+void verifyDarkNoise(const std::filesystem::path& directory)
+{
+    const auto dark = directory / "dark.json";
+    writeText(dark, R"({"DarkNoiseRatio":1.5})");
+    Context context = createContext();
+    requireResult(M_CalibrationLoadFileW(context.get(), 0, dark.c_str()), context.get(), "load DarkNoise without exposure");
+    verifyDarkNoiseSamples<std::uint8_t>(context.get(), 3);
+    verifyDarkNoiseSamples<std::uint16_t>(context.get(), 3);
+
+    for (std::uint32_t gain : {0U, 1U}) {
+        const auto path = directory / ("dark-gain-" + std::to_string(gain) + ".json");
+        writeText(path, "{\"DarkNoiseRatio\":" + std::to_string(gain) + "}");
+        Context fastPath = createContext();
+        requireResult(M_CalibrationLoadFileW(fastPath.get(), 0, path.c_str()), fastPath.get(), "load zero or unit DarkNoise gain");
+        verifyDarkNoiseSamples<std::uint8_t>(fastPath.get(), 2 * gain);
+        verifyDarkNoiseSamples<std::uint16_t>(fastPath.get(), 2 * gain);
+    }
+
+    const auto integerExposure = directory / "dark-integer-exposure.json";
+    writeText(integerExposure, R"({"Texp_x":1,"DarkNoiseRatio":2})");
+    std::vector<std::uint8_t> pixels{10, 50, 100, 200};
+    runOne(0, integerExposure, 2, 2, 8, 1, pixels);
+    if (pixels != std::vector<std::uint8_t>{20, 100, 200, 255})
+        throw std::runtime_error("Integer exposure disabled the DarkNoise gain");
+
+    const auto negativeGain = directory / "dark-negative.json";
+    writeText(negativeGain, R"({"DarkNoiseRatio":-0.5})");
+    runOne(0, negativeGain, 2, 2, 8, 1, pixels);
+    if (pixels != std::vector<std::uint8_t>(4, 0))
+        throw std::runtime_error("Negative DarkNoise gain did not saturate to zero");
+
+    const auto invalid = directory / "dark-invalid.json";
+    for (const char* json : {R"({"Texp_x":1.0})", R"({"DarkNoiseRatio":"2"})", R"({"DarkNoiseRatio":1e100})"}) {
+        writeText(invalid, json);
+        if (M_CalibrationLoadFileW(context.get(), 0, invalid.c_str()) != M_CALIBRATION_LOAD_FAILED
+            || M_CalibrationGetItemCount(context.get()) != 1 || nativeError(context.get()).empty())
+            throw std::runtime_error("Invalid DarkNoise gain was accepted or changed the prepared context");
+    }
+}
+
 void runSyntheticCoverage()
 {
     TemporaryDirectory directory(
@@ -2148,6 +2488,7 @@ void runSyntheticCoverage()
     verifyReleaseLinearizesWithInFlightLoad(directory.path, false);
     verifyReleaseLinearizesWithInFlightLoad(directory.path, true);
     verifyProcessFileCacheAcrossGroups(directory.path);
+    verifyRuntimeCacheBudget(directory.path);
     verifyExactMapSourceVersions(directory.path);
     verifyAdjacentMapEquivalence(directory.path, false);
     verifyAdjacentMapEquivalence(directory.path, true);
@@ -2162,20 +2503,11 @@ void runSyntheticCoverage()
     verifyLargeColorDiffOutput(directory.path);
     verifyColorDiffMixedOffsets(directory.path);
     verifyLargeMatrixColorOutput(directory.path);
+    verifyFrameCalibrationModes(directory.path);
+    verifyPlanarFrameStages(directory.path);
+    verifyActualFrameColorRange(directory.path);
 
-    const auto dark = directory.path / "dark.json";
-    writeText(dark, R"({"bpp":16,"Texp_x":1.0,"DarkNoiseRatio":2.0})");
-    std::vector<std::uint16_t> darkPixels(16, 10);
-    std::vector<std::uint8_t> darkRaw(darkPixels.size() * sizeof(std::uint16_t));
-    std::memcpy(darkRaw.data(), darkPixels.data(), darkRaw.size());
-    const std::vector<std::uint8_t> darkSource = darkRaw;
-    runOne(0, dark, 4, 4, 16, 1, darkRaw);
-    verifyReadOnlySingle(0, dark, 4, 4, 16, 1, darkSource);
-    std::memcpy(darkPixels.data(), darkRaw.data(), darkRaw.size());
-    for (std::size_t index = 0; index < darkPixels.size(); ++index) {
-        const std::uint16_t expected = index < 4 ? 20 : 10;
-        if (darkPixels[index] != expected) throw std::runtime_error("DarkNoise compatibility behavior changed");
-    }
+    verifyDarkNoise(directory.path);
 
     const auto defects = directory.path / "defects.dat";
     {
@@ -2273,6 +2605,22 @@ void runSyntheticCoverage()
     }
 
     const auto luminance = directory.path / "luminance.json";
+    {
+        Context context = createContext();
+        std::uint32_t depth = 99;
+        requireResult(M_CalibrationGetInputDepthV1(context.get(), &depth), context.get(), "query neutral depth");
+        if (depth != 0 || M_CalibrationGetInputDepthV1(context.get(), nullptr) != M_CALIBRATION_INVALID_ARGUMENT)
+            throw std::runtime_error("Invalid neutral calibration depth contract");
+        requireResult(M_CalibrationLoadFileW(context.get(), 13, lineArity.c_str()), context.get(), "load linearity depth");
+        requireResult(M_CalibrationGetInputDepthV1(context.get(), &depth), context.get(), "query linearity depth");
+        if (depth != 16) throw std::runtime_error("Linearity must require 16-bit input");
+        const auto lowDepth = directory.path / "depth8.json";
+        writeText(lowDepth, R"({"a":1,"bpp":8})");
+        requireResult(M_CalibrationLoadFileW(context.get(), 6, lowDepth.c_str()), context.get(), "load conflicting depth");
+        depth = 99;
+        if (M_CalibrationGetInputDepthV1(context.get(), &depth) != M_CALIBRATION_INVALID_ARGUMENT || depth != 99)
+            throw std::runtime_error("A conflicting template published an input depth");
+    }
     const auto oneColor = directory.path / "one.json";
     const auto fourColor = directory.path / "four.json";
     const auto multiColor = directory.path / "multi.json";
@@ -3029,6 +3377,35 @@ bool RunPoiBatchBaselineComparison(const std::filesystem::path& baselineDll)
         const double baselineLoadMs = millisecondsSince(moduleLoadStart);
         const PoiBatchExports current{ M_CalculatePoiBatchV1, M_CalculatePoiBatchV2 };
 
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+        // Downward rounding puts this chromaticity on the repeated spectral endpoint.
+        // The degenerate intersections raise the masked invalid-operation flag.
+        const std::array<float, 3> spectralEndpoint{
+            -2.1653988824255066e-07F, 0.38976341485977173F, 0.6102368235588074F
+        };
+        const MPoiRequestV1 singlePoint{ 0, 0, 0, 1, 1 };
+        MPoiOptionsV2 endpointOptions{};
+        endpointOptions.structSize = sizeof(endpointOptions);
+        endpointOptions.flags = M_POI_OPTION_PRESERVE_NON_POSITIVE_VALUES;
+        const auto calculateEndpoint = [&](CalculatePoiBatchV2 calculate, MPoiResultV1& result) {
+            const unsigned original = _mm_getcsr();
+            _mm_setcsr(_MM_MASK_MASK | _MM_ROUND_DOWN);
+            const int status = calculate(1, 1, 32, 3, spectralEndpoint.data(), spectralEndpoint.size(),
+                &singlePoint, 1, &endpointOptions, &result);
+            const unsigned state = _mm_getcsr();
+            _mm_setcsr(original);
+            return std::pair{ status, state };
+        };
+        MPoiResultV1 expectedEndpoint{}, actualEndpoint{};
+        const auto expectedStatus = calculateEndpoint(baseline.v2, expectedEndpoint);
+        const auto actualStatus = calculateEndpoint(current.v2, actualEndpoint);
+        if (expectedStatus.first != M_POI_OK || (expectedStatus.second & _MM_EXCEPT_INVALID) == 0
+            || expectedStatus != actualStatus || expectedEndpoint.wave != -99.0F
+            || std::memcmp(&expectedEndpoint, &actualEndpoint, sizeof(actualEndpoint)) != 0) {
+            throw std::runtime_error("POI V2 repeated spectral endpoint differs from baseline");
+        }
+#endif
+
         auto compareV1 = [&](std::string_view label, const std::vector<float>& data, int channels,
                              const std::vector<MPoiRequestV1>& requests) {
             std::vector<MPoiResultV1> expected(requests.size());
@@ -3206,6 +3583,57 @@ bool RunPoiBatchBaselineComparison(const std::filesystem::path& baselineDll)
     }
 }
 
+static void verifyRawCircularPoiMatchesRuns()
+{
+    constexpr int width = 71;
+    constexpr int height = 45;
+    std::vector<std::uint16_t> raw(width * height * 3);
+    for (std::size_t i = 0; i < raw.size(); ++i) {
+        raw[i] = static_cast<std::uint16_t>((i * 2654435761U) ^ (i >> 3));
+    }
+    MRawColorTransformV1 transform{};
+    transform.structSize = sizeof(transform);
+    transform.channels = 3;
+    transform.interleavedBgr = 1;
+    for (std::size_t i = 0; i < 9; ++i) {
+        transform.coefficients[i] = (i + 3.0) / 13.0;
+    }
+    MPoiOptionsV2 options{};
+    options.structSize = sizeof(options);
+    const MPoiRequestV1 requests[] = {
+        {1, 23, 19, 1, 1}, {1, 35, 22, 2, 2}, {1, 35, 22, 10, 10}, {1, 35, 22, 21, 21},
+        {1, 2, 1, 19, 19}, {1, 0, height - 1, 72, 72}, {1, width - 1, 4, 149, 149}
+    };
+    const auto bytes = raw.size() * sizeof(raw[0]);
+    for (const auto& request : requests) {
+        std::vector<MRawPixelRunV1> runs;
+        const double radius = request.width / 2.0;
+        for (int y = 0; y < height; ++y) {
+            int first = width;
+            int end = 0;
+            for (int x = 0; x < width; ++x) {
+                const double dx = x - request.x;
+                const double dy = y - request.y;
+                if (dx * dx + dy * dy < radius * radius) {
+                    first = (std::min)(first, x);
+                    end = x + 1;
+                }
+            }
+            if (first < end) {
+                runs.push_back({y, first, end});
+            }
+        }
+        MPoiResultV1 expected{}, actual{};
+        if (M_CalculateRawRegionV1(width, height, 16, raw.data(), bytes, &transform, runs.data(),
+                static_cast<std::uint32_t>(runs.size()), &options, &expected) != M_POI_OK
+            || M_CalculateRawPoiBatchV1(width, height, 16, raw.data(), bytes, &transform,
+                &request, 1, &options, &actual) != M_POI_OK
+            || std::memcmp(&actual, &expected, sizeof(actual)) != 0) {
+            throw std::runtime_error("Circular RAW POI differs from the corresponding explicit pixel runs");
+        }
+    }
+}
+
 static void verifyLargeRawPoiBatch()
 {
     constexpr int width = 321;
@@ -3363,6 +3791,7 @@ bool RunCalibrationApiSmokeTests()
         runAngleShiftTilingCoverage();
         runPoiV2SyntheticCoverage();
         runRawColorApiCoverage();
+        verifyRawCircularPoiMatchesRuns();
         verifyLargeRawPoiBatch();
         std::array<wchar_t, 32768> baselinePath{};
         const DWORD baselinePathLength = GetEnvironmentVariableW(
@@ -3504,361 +3933,6 @@ bool RunCalibrationRealDataTests(const std::filesystem::path& testRoot)
     }
     catch (const std::exception& ex) {
         std::cerr << "Calibration real-data test failed: " << ex.what() << std::endl;
-        return false;
-    }
-}
-
-bool RunCalibrationLegacyColorComparison(
-    const std::filesystem::path& rawPath,
-    const std::filesystem::path& colorFile,
-    const std::filesystem::path& legacyDll)
-{
-    using CreateCalibrationManage = HANDLE(WINAPI*)();
-    using ReleaseCalibrationManage = BOOL(WINAPI*)(HANDLE);
-    using SetCalibParam = BOOL(WINAPI*)(HANDLE, int, bool, const char*);
-    using RunFourColor = BOOL(WINAPI*)(
-        HANDLE, unsigned int, unsigned int, int, unsigned int, BYTE*, BYTE*, float*);
-    using CalculatePoiBatch = int(WINAPI*)(
-        int, int, int, int, const float*, const MPoiRequestV1*, int, MPoiResultV1*);
-    using InitXyz = int(WINAPI*)(HANDLE);
-    using SetBufferXyz = int(WINAPI*)(HANDLE, unsigned int, unsigned int, unsigned int, unsigned int, const float*);
-    using ReleaseBuffer = int(WINAPI*)(HANDLE);
-    using UnInitXyz = int(WINAPI*)(HANDLE);
-    using SetPercentFilter = int(WINAPI*)(HANDLE, BOOL, float);
-    using SetFilter = int(WINAPI*)(HANDLE, BOOL, float);
-    using SetFilterXyz = int(WINAPI*)(HANDLE, BOOL, int, float);
-    using SetByMnp = int(WINAPI*)(HANDLE, BOOL, float, float, float);
-    using GetXyzCircle = int(WINAPI*)(
-        HANDLE, int, int, float*, float*, float*, float*, float*, float*, float*, double);
-    using GetXyzRect = int(WINAPI*)(
-        HANDLE, int, int, float*, float*, float*, float*, float*, float*, float*, int, int);
-    using GetCctCircle = int(WINAPI*)(
-        HANDLE, int, int, float*, float*, float*, float*, float*, float*, double);
-    using GetCctRect = int(WINAPI*)(
-        HANDLE, int, int, float*, float*, float*, float*, float*, float*, int, int);
-
-    HMODULE module = nullptr;
-    HANDLE legacyContext = nullptr;
-    try {
-        RawImage raw = readCvRaw(rawPath);
-        if (raw.channels != 3) throw std::runtime_error("Legacy FourColor comparison requires a three-channel RAW");
-
-        module = LoadLibraryExW(legacyDll.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
-        if (module == nullptr) {
-            throw std::runtime_error("Unable to load legacy cvCamera.dll: " + std::to_string(GetLastError()));
-        }
-        auto getExport = [module](const char* name) {
-            const auto address = GetProcAddress(module, name);
-            if (address == nullptr) throw std::runtime_error(std::string("Missing legacy export: ") + name);
-            return address;
-        };
-        const auto create = reinterpret_cast<CreateCalibrationManage>(getExport("CreatCalibrationManage"));
-        const auto release = reinterpret_cast<ReleaseCalibrationManage>(getExport("ReleaseCalibrationManage"));
-        const auto setParam = reinterpret_cast<SetCalibParam>(getExport("CM_SetCalibParam"));
-        const auto runFourColor = reinterpret_cast<RunFourColor>(getExport("CM_SCGD_SDP_ColorFour"));
-        const auto calculateLegacyPoi = reinterpret_cast<CalculatePoiBatch>(getExport("CM_CalculatePoiBatchV1"));
-        const auto initXyz = reinterpret_cast<InitXyz>(getExport("CM_InitXYZ"));
-        const auto setBufferXyz = reinterpret_cast<SetBufferXyz>(getExport("CM_SetBufferXYZ"));
-        const auto releaseBuffer = reinterpret_cast<ReleaseBuffer>(getExport("CM_ReleaseBuffer"));
-        const auto unInitXyz = reinterpret_cast<UnInitXyz>(getExport("CM_UnInitXYZ"));
-        const auto setPercentFilter = reinterpret_cast<SetPercentFilter>(getExport("CM_SetPercentFilter"));
-        const auto setFilter = reinterpret_cast<SetFilter>(getExport("CM_SetFilter"));
-        const auto setFilterNoArea = reinterpret_cast<SetFilter>(getExport("CM_SetFilterNoArea"));
-        const auto setFilterXyz = reinterpret_cast<SetFilterXyz>(getExport("CM_SetFilterXYZ"));
-        const auto setByMnp = reinterpret_cast<SetByMnp>(getExport("CM_SetBymnp"));
-        const auto getXyzCircle = reinterpret_cast<GetXyzCircle>(getExport("CM_GetXYZxyuvCircle"));
-        const auto getXyzRect = reinterpret_cast<GetXyzRect>(getExport("CM_GetXYZxyuvRect"));
-        const auto getCctCircle = reinterpret_cast<GetCctCircle>(getExport("CM_GetxyuvCCTWaveCircle"));
-        const auto getCctRect = reinterpret_cast<GetCctRect>(getExport("CM_GetxyuvCCTWaveRect"));
-
-        legacyContext = create();
-        if (legacyContext == nullptr) throw std::runtime_error("Legacy calibration context creation failed");
-        const std::string colorPath = colorFile.string();
-        if (!setParam(legacyContext, 8, true, colorPath.c_str())) {
-            throw std::runtime_error("Legacy FourColor calibration load failed");
-        }
-
-        const auto pixels = static_cast<std::size_t>(raw.width) * raw.height;
-        std::vector<float> cie(pixels * 3);
-        const std::string rawBefore = sha256(raw.data.data(), raw.data.size());
-        std::array<double, 4> legacyTimes{};
-        for (std::size_t iteration = 0; iteration < legacyTimes.size(); ++iteration) {
-            const auto start = std::chrono::steady_clock::now();
-            if (!runFourColor(
-                    legacyContext,
-                    raw.width,
-                    raw.height,
-                    static_cast<int>(raw.bitsPerChannel),
-                    raw.channels,
-                    raw.data.data(),
-                    reinterpret_cast<BYTE*>(cie.data()),
-                    raw.exposure.data())) {
-                throw std::runtime_error("Legacy FourColor execution failed");
-            }
-            const auto end = std::chrono::steady_clock::now();
-            legacyTimes[iteration] = std::chrono::duration<double, std::milli>(end - start).count();
-        }
-        const std::string legacyHash = sha256(cie.data(), cie.size() * sizeof(float));
-
-        Context context = createContext();
-        requireResult(M_CalibrationLoadFileW(context.get(), 8, colorFile.c_str()), context.get(), "load migrated FourColor");
-        auto options = optionsFor(raw);
-        std::array<double, 4> migratedTimes{};
-        for (std::size_t iteration = 0; iteration < migratedTimes.size(); ++iteration) {
-            const auto start = std::chrono::steady_clock::now();
-            requireResult(M_CalibrationExecute(
-                context.get(), raw.width, raw.height, raw.bitsPerChannel, raw.channels,
-                raw.data.data(), raw.data.size(), cie.data(), cie.size(), &options),
-                context.get(), "execute migrated FourColor");
-            const auto end = std::chrono::steady_clock::now();
-            migratedTimes[iteration] = std::chrono::duration<double, std::milli>(end - start).count();
-        }
-        const std::string migratedHash = sha256(cie.data(), cie.size() * sizeof(float));
-        const std::string rawAfter = sha256(raw.data.data(), raw.data.size());
-
-        std::array<MPoiRequestV1, 9> poiRequests{};
-        for (std::size_t index = 0; index < poiRequests.size(); ++index) {
-            const int column = static_cast<int>(index % 3) + 1;
-            const int row = static_cast<int>(index / 3) + 1;
-            MPoiRequestV1& request = poiRequests[index];
-            request.type = static_cast<int>(index % 3);
-            request.x = static_cast<int>((static_cast<std::uint64_t>(raw.width) * column) / 4);
-            request.y = static_cast<int>((static_cast<std::uint64_t>(raw.height) * row) / 4);
-            request.width = request.type == 0 ? 1 : (request.type == 1 ? 201 : 200);
-            request.height = request.type == 2 ? 160 : request.width;
-        }
-        std::array<MPoiResultV1, 9> legacyPoiResults{};
-        std::array<MPoiResultV1, 9> migratedPoiResults{};
-        if (calculateLegacyPoi(
-                static_cast<int>(raw.width), static_cast<int>(raw.height), 32,
-                static_cast<int>(raw.channels), cie.data(), poiRequests.data(),
-                static_cast<int>(poiRequests.size()), legacyPoiResults.data()) == 0) {
-            throw std::runtime_error("Legacy batch POI comparison failed");
-        }
-        if (M_CalculatePoiBatchV1(
-                static_cast<int>(raw.width), static_cast<int>(raw.height), 32,
-                static_cast<int>(raw.channels), cie.data(), cie.size(), poiRequests.data(),
-                static_cast<std::uint32_t>(poiRequests.size()), migratedPoiResults.data()) != M_POI_OK) {
-            throw std::runtime_error("Migrated batch POI comparison failed");
-        }
-        if (std::memcmp(legacyPoiResults.data(), migratedPoiResults.data(), sizeof(legacyPoiResults)) != 0) {
-            throw std::runtime_error("Migrated POI output differs byte-for-byte from legacy batch output");
-        }
-
-        auto runLegacyScalarPoi = [&](const MPoiOptionsV2& poiOptions,
-                                      std::array<MPoiResultV1, 9>& output,
-                                      std::uintptr_t handleValue) {
-            const HANDLE handle = reinterpret_cast<HANDLE>(handleValue);
-            bool initialized = false;
-            auto cleanup = [&]() noexcept {
-                if (!initialized) return true;
-                const int releaseResult = releaseBuffer(handle);
-                const int unInitResult = unInitXyz(handle);
-                initialized = false;
-                return releaseResult != 0 && unInitResult != 0;
-            };
-            try {
-                if (initXyz(handle) == 0) throw std::runtime_error("Legacy scalar POI initialization failed");
-                initialized = true;
-                if (setBufferXyz(handle, raw.width, raw.height, 32, raw.channels, cie.data()) == 0) {
-                    throw std::runtime_error("Legacy scalar POI buffer setup failed");
-                }
-                const BOOL usePercent = (poiOptions.flags & M_POI_OPTION_PERCENT_THRESHOLD) != 0;
-                if (setPercentFilter(handle, usePercent, poiOptions.maxPercent) == 0) {
-                    throw std::runtime_error("Legacy scalar POI percent setup failed");
-                }
-                int filterResult = 0;
-                switch (poiOptions.filterMode) {
-                case 0:
-                    filterResult = setFilter(handle, FALSE, poiOptions.threshold);
-                    break;
-                case 1:
-                    filterResult = setFilter(handle, TRUE, poiOptions.threshold);
-                    break;
-                case 2:
-                    filterResult = setFilterXyz(handle, TRUE, poiOptions.xyzChannel, poiOptions.threshold);
-                    break;
-                case 3:
-                    filterResult = setFilterNoArea(handle, TRUE, poiOptions.threshold);
-                    break;
-                default:
-                    throw std::runtime_error("Invalid scalar POI test filter mode");
-                }
-                if (filterResult == 0) throw std::runtime_error("Legacy scalar POI filter setup failed");
-                const BOOL applyMnp = (poiOptions.flags & M_POI_OPTION_APPLY_MNP) != 0;
-                if (setByMnp(handle, applyMnp, poiOptions.scaleX, poiOptions.scaleY, poiOptions.scaleZ) == 0) {
-                    throw std::runtime_error("Legacy scalar POI MNP setup failed");
-                }
-
-                for (std::size_t index = 0; index < poiRequests.size(); ++index) {
-                    const MPoiRequestV1& request = poiRequests[index];
-                    MPoiResultV1 result{};
-                    int xyzResult = 0;
-                    int cctResult = 0;
-                    if (request.type == 2) {
-                        xyzResult = getXyzRect(handle, request.x, request.y,
-                            &result.X, &result.Y, &result.Z, &result.x, &result.y, &result.u, &result.v,
-                            request.width, request.height);
-                        if (xyzResult != 0) {
-                            cctResult = getCctRect(handle, request.x, request.y,
-                                &result.x, &result.y, &result.u, &result.v, &result.cct, &result.wave,
-                                request.width, request.height);
-                        }
-                    }
-                    else {
-                        const double radius = request.type == 0 ? 1.0 : request.width / 2.0;
-                        xyzResult = getXyzCircle(handle, request.x, request.y,
-                            &result.X, &result.Y, &result.Z, &result.x, &result.y, &result.u, &result.v, radius);
-                        if (xyzResult != 0) {
-                            cctResult = getCctCircle(handle, request.x, request.y,
-                                &result.x, &result.y, &result.u, &result.v, &result.cct, &result.wave, radius);
-                        }
-                    }
-                    if (xyzResult == 0 || cctResult == 0) {
-                        throw std::runtime_error("Legacy scalar POI calculation failed");
-                    }
-                    output[index] = result;
-                }
-                if (!cleanup()) throw std::runtime_error("Legacy scalar POI cleanup failed");
-            }
-            catch (...) {
-                cleanup();
-                throw;
-            }
-        };
-
-        auto compareFilteredPoi = [&](const char* label, const MPoiOptionsV2& poiOptions, std::uintptr_t handleValue) {
-            std::array<MPoiResultV1, 9> legacyFiltered{};
-            std::array<MPoiResultV1, 9> migratedFiltered{};
-            const auto legacyFilteredStart = std::chrono::steady_clock::now();
-            runLegacyScalarPoi(poiOptions, legacyFiltered, handleValue);
-            const auto legacyFilteredEnd = std::chrono::steady_clock::now();
-            const auto migratedFilteredStart = std::chrono::steady_clock::now();
-            if (M_CalculatePoiBatchV2(
-                    static_cast<int>(raw.width), static_cast<int>(raw.height), 32,
-                    static_cast<int>(raw.channels), cie.data(), cie.size(), poiRequests.data(),
-                    static_cast<std::uint32_t>(poiRequests.size()), &poiOptions, migratedFiltered.data()) != M_POI_OK) {
-                throw std::runtime_error(std::string("Migrated filtered POI failed: ") + label);
-            }
-            const auto migratedFilteredEnd = std::chrono::steady_clock::now();
-            if (std::memcmp(legacyFiltered.data(), migratedFiltered.data(), sizeof(legacyFiltered)) != 0) {
-                throw std::runtime_error(std::string("Migrated filtered POI differs from legacy: ") + label);
-            }
-            std::cout << "poi_filter_compare," << label << ",byte_equal,1" << std::endl;
-            std::cout << "poi_filter_compare," << label << ",legacy_end_to_end_ms,"
-                      << std::chrono::duration<double, std::milli>(legacyFilteredEnd - legacyFilteredStart).count() << std::endl;
-            std::cout << "poi_filter_compare," << label << ",migrated_ms,"
-                      << std::chrono::duration<double, std::milli>(migratedFilteredEnd - migratedFilteredStart).count() << std::endl;
-        };
-
-        auto makePoiOptions = []() {
-            MPoiOptionsV2 value{};
-            value.structSize = sizeof(value);
-            value.maxPercent = 0.2F;
-            value.scaleX = 1.0F;
-            value.scaleY = 1.0F;
-            value.scaleZ = 1.0F;
-            return value;
-        };
-        const std::size_t centerIndex = static_cast<std::size_t>(raw.height / 2) * raw.width + raw.width / 2;
-        const float absoluteThreshold = (std::max)(0.0F, (std::min)({
-            cie[centerIndex], cie[pixels + centerIndex], cie[pixels * 2 + centerIndex] }) * 0.7F);
-
-        MPoiOptionsV2 valueAbsolute = makePoiOptions();
-        valueAbsolute.filterMode = 1;
-        valueAbsolute.threshold = absoluteThreshold;
-        compareFilteredPoi("value_absolute", valueAbsolute, 0x4356501001ULL);
-
-        MPoiOptionsV2 valuePercent = makePoiOptions();
-        valuePercent.flags = M_POI_OPTION_PERCENT_THRESHOLD;
-        valuePercent.filterMode = 1;
-        valuePercent.threshold = 0.65F;
-        compareFilteredPoi("value_percent", valuePercent, 0x4356501002ULL);
-
-        MPoiOptionsV2 noAreaAbsolute = makePoiOptions();
-        noAreaAbsolute.filterMode = 3;
-        noAreaAbsolute.threshold = absoluteThreshold;
-        compareFilteredPoi("no_area_absolute", noAreaAbsolute, 0x4356501003ULL);
-
-        MPoiOptionsV2 noAreaPercent = makePoiOptions();
-        noAreaPercent.flags = M_POI_OPTION_PERCENT_THRESHOLD;
-        noAreaPercent.filterMode = 3;
-        noAreaPercent.threshold = 0.65F;
-        compareFilteredPoi("no_area_percent", noAreaPercent, 0x4356501004ULL);
-
-        MPoiOptionsV2 mnp = makePoiOptions();
-        mnp.flags = M_POI_OPTION_APPLY_MNP;
-        mnp.scaleX = 0.91F;
-        mnp.scaleY = 1.07F;
-        mnp.scaleZ = 1.13F;
-        compareFilteredPoi("mnp", mnp, 0x4356501005ULL);
-
-        constexpr std::size_t poiIterations = 100;
-        const auto legacyPoiStart = std::chrono::steady_clock::now();
-        for (std::size_t iteration = 0; iteration < poiIterations; ++iteration) {
-            if (calculateLegacyPoi(
-                    static_cast<int>(raw.width), static_cast<int>(raw.height), 32,
-                    static_cast<int>(raw.channels), cie.data(), poiRequests.data(),
-                    static_cast<int>(poiRequests.size()), legacyPoiResults.data()) == 0) {
-                throw std::runtime_error("Legacy batch POI benchmark failed");
-            }
-        }
-        const auto legacyPoiEnd = std::chrono::steady_clock::now();
-        const auto migratedPoiStart = std::chrono::steady_clock::now();
-        for (std::size_t iteration = 0; iteration < poiIterations; ++iteration) {
-            if (M_CalculatePoiBatchV1(
-                    static_cast<int>(raw.width), static_cast<int>(raw.height), 32,
-                    static_cast<int>(raw.channels), cie.data(), cie.size(), poiRequests.data(),
-                    static_cast<std::uint32_t>(poiRequests.size()), migratedPoiResults.data()) != M_POI_OK) {
-                throw std::runtime_error("Migrated batch POI benchmark failed");
-            }
-        }
-        const auto migratedPoiEnd = std::chrono::steady_clock::now();
-
-        const HANDLE poiContext = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(0x4356504F49));
-        const auto legacyCopiedStart = std::chrono::steady_clock::now();
-        if (initXyz(poiContext) == 0
-            || setBufferXyz(poiContext, raw.width, raw.height, 32, raw.channels, cie.data()) == 0) {
-            throw std::runtime_error("Legacy copied POI setup failed");
-        }
-        const int copiedReleaseResult = releaseBuffer(poiContext);
-        const int copiedUnInitResult = unInitXyz(poiContext);
-        if (copiedReleaseResult == 0 || copiedUnInitResult == 0) {
-            throw std::runtime_error("Legacy copied POI cleanup failed");
-        }
-        const auto legacyCopiedEnd = std::chrono::steady_clock::now();
-
-        std::cout << "calibration_compare,raw," << rawPath.string() << std::endl;
-        std::cout << "calibration_compare,legacy_cie_sha256," << legacyHash << std::endl;
-        std::cout << "calibration_compare,migrated_cie_sha256," << migratedHash << std::endl;
-        for (std::size_t iteration = 0; iteration < legacyTimes.size(); ++iteration) {
-            std::cout << "calibration_compare,legacy_" << (iteration + 1) << "_ms," << legacyTimes[iteration] << std::endl;
-            std::cout << "calibration_compare,migrated_" << (iteration + 1) << "_ms," << migratedTimes[iteration] << std::endl;
-        }
-        std::cout << "poi_compare,result_bytes," << sizeof(legacyPoiResults) << std::endl;
-        std::cout << "poi_compare,byte_equal,1" << std::endl;
-        std::cout << "poi_compare,legacy_batch_average_ms,"
-                  << std::chrono::duration<double, std::milli>(legacyPoiEnd - legacyPoiStart).count() / poiIterations << std::endl;
-        std::cout << "poi_compare,migrated_batch_average_ms,"
-                  << std::chrono::duration<double, std::milli>(migratedPoiEnd - migratedPoiStart).count() / poiIterations << std::endl;
-        std::cout << "poi_compare,legacy_full_copy_setup_ms,"
-                  << std::chrono::duration<double, std::milli>(legacyCopiedEnd - legacyCopiedStart).count() << std::endl;
-
-        if (rawBefore != rawAfter) throw std::runtime_error("FourColor unexpectedly modified the RAW input");
-        if (legacyHash != migratedHash) throw std::runtime_error("Migrated FourColor output differs from legacy output");
-        if (!release(legacyContext)) throw std::runtime_error("Legacy calibration context release failed");
-        legacyContext = nullptr;
-        FreeLibrary(module);
-        return true;
-    }
-    catch (const std::exception& ex) {
-        if (legacyContext != nullptr && module != nullptr) {
-            const auto release = reinterpret_cast<ReleaseCalibrationManage>(
-                GetProcAddress(module, "ReleaseCalibrationManage"));
-            if (release != nullptr) release(legacyContext);
-        }
-        if (module != nullptr) FreeLibrary(module);
-        std::cerr << "Calibration legacy color comparison failed: " << ex.what() << std::endl;
         return false;
     }
 }

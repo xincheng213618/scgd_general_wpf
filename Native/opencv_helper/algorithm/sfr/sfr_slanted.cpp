@@ -762,9 +762,15 @@ SlantedEdgeModel fitLowPassEdgeModel(const cv::Mat1d& signal, SlantedEdgeFitWork
         const double* row = localized.ptr<double>(y);
         auto derivative = [&](int x) { return polarity * (row[x + 1] - row[x - 1]) * 0.5; };
         int peak = 5;
-        for (int x = 6; x < signal.cols - 5; ++x)
-            if (derivative(x) > derivative(peak)) peak = x;
-        const double left = derivative(peak - 1), center = derivative(peak), right = derivative(peak + 1);
+        double center = derivative(peak);
+        for (int x = 6; x < signal.cols - 5; ++x) {
+            const double candidate = derivative(x);
+            if (candidate > center) {
+                peak = x;
+                center = candidate;
+            }
+        }
+        const double left = derivative(peak - 1), right = derivative(peak + 1);
         const double curvature = left - 2.0 * center + right;
         if (center <= 0.0 || curvature >= -1e-12) return model;
         // Subpixel parabola around the derivative maximum, in input-pixel units.
@@ -961,7 +967,8 @@ std::vector<SfrChannelAnalysis> analyzeSlantedEdge(const cv::Mat& image, const S
         throw std::invalid_argument("Invalid SFR analysis parameters.");
 
     std::vector<cv::Mat> inputChannels;
-    cv::split(image, inputChannels);
+    if (image.channels() == 1) inputChannels.push_back(image);
+    else cv::split(image, inputChannels);
     std::vector<cv::Mat> decoded;
     std::vector<double> clipping;
     const int channelCount = image.channels() == 1 ? 1 : 3;
@@ -984,15 +991,15 @@ std::vector<SfrChannelAnalysis> analyzeSlantedEdge(const cv::Mat& image, const S
         clipping.push_back(clipped / static_cast<double>(signal.total()));
     }
     cv::Mat1d luminance = channelCount == 1 ? decoded[0] : 0.072 * decoded[0] + 0.715 * decoded[1] + 0.213 * decoded[2];
-    const bool rotated = orientEdgeVertical(luminance).rotated;
+    OrientedImage orientedLuminance = orientEdgeVertical(luminance);
     std::vector<SfrChannelAnalysis> output;
     const std::vector<std::string> names = channelCount == 1 ? std::vector<std::string>{"L"} : std::vector<std::string>{"L", "R", "G", "B"};
     for (const auto& name : names) {
         SfrChannelAnalysis result;
         result.channel = name;
-        result.rotated = rotated;
+        result.rotated = orientedLuminance.rotated;
         const int index = name == "R" ? 2 : name == "G" ? 1 : 0;
-        cv::Mat1d signal = applyOrientation(name == "L" ? luminance : decoded[index], rotated);
+        cv::Mat1d signal = name == "L" ? std::move(orientedLuminance.image) : applyOrientation(decoded[index], result.rotated);
         result.clippedFraction = name == "L" ? *std::max_element(clipping.begin(), clipping.end()) : clipping[index];
         auto reject = [&](const char* reason) { result.reason = reason; output.push_back(std::move(result)); };
         if (signal.cols < 40 || signal.rows < 32) { reject("roi_too_small"); continue; }

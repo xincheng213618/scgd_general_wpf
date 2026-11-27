@@ -18,11 +18,12 @@ internal interface ILocalSpectrumNdOperation : IDisposable
 // an unbound wheel is owned here and closed with the spectrum session.
 internal sealed class LocalSpectrumNd(Func<NDConfig, ILocalSpectrumNdOperation>? acquire = null, LocalCfwPortSession? directSession = null)
 {
+    internal const string WheelNotConfigured = "请先绑定 ND 滤光轮，或配置直连 ND。";
     private readonly LocalCfwPortSession direct = directSession ?? new();
 
     internal ILocalSpectrumNdOperation Acquire(NDConfig config, LocalSpectrumOpticalScope? scope = null)
     {
-        if (!config.IsNDPort) throw new InvalidOperationException("请先在光谱仪配置中启用 ND。");
+        if (!config.HasConfiguredWheel) throw new InvalidOperationException(WheelNotConfigured);
         if (acquire != null) return acquire(config);
         scope?.RequireNdCurrent();
         if (config.IsBingNDDevice)
@@ -41,9 +42,14 @@ internal sealed class LocalSpectrumNd(Func<NDConfig, ILocalSpectrumNdOperation>?
     }
 
     internal static LocalCfwPortConnection GetDirectConnection(NDConfig config)
+        => LocalCfwPortConnection.From(new ConfigCfwPort { SzComName = config.SzComName, BaudRate = config.BaudRate, Ports = GetDirectPortCount(config) });
+
+    internal static int GetDirectPortCount(NDConfig config)
     {
-        int highestPort = Math.Max(config.DarkNDPort, config.NDRate.Count - 1);
-        return LocalCfwPortConnection.From(new ConfigCfwPort { SzComName = config.SzComName, BaudRate = config.BaudRate, Ports = highestPort >= 6 ? 12 : 6 });
+        if (config.LocalNDPortCount is int configured) return configured;
+        int highestLegacyPort = Math.Max(config.DarkNDPort, config.NDRate.Count - 1);
+        int highestLocalPort = config.LocalNDRates?.Keys.DefaultIfEmpty(-1).Max() ?? -1;
+        return Math.Max(highestLegacyPort, highestLocalPort) >= 6 ? 12 : 6;
     }
 
     internal void Disconnect() => direct.ExecuteAsync("Close", LocalCfwPortConnection.From(new ConfigCfwPort())).GetAwaiter().GetResult();
@@ -87,7 +93,7 @@ internal sealed class LocalSpectrumNd(Func<NDConfig, ILocalSpectrumNdOperation>?
 
     internal sealed record Calibration(int Port, string WavelengthFile, string MagnitudeFile, string? GroupName);
 
-    internal static Calibration ResolveCalibration(ConfigSpectrum config, int port, LocalSpectrumOpticalScope? scope = null)
+    internal static Calibration? ResolveCalibration(ConfigSpectrum config, int port, LocalSpectrumOpticalScope? scope = null, bool allowUnassociated = false)
     {
         if (port < 0) throw new InvalidOperationException("ND 返回了无效孔位。");
         var exact = config.CalibrationGroups.Where(group => group.NDHoleIndex == port).ToArray();
@@ -101,9 +107,13 @@ internal sealed class LocalSpectrumNd(Func<NDConfig, ILocalSpectrumNdOperation>?
                 ?? new FilterWheelConfig().HoleMapping.FirstOrDefault(hole => hole.HoleIndex == port)?.HoleName;
             group = config.CalibrationGroups.FirstOrDefault(item => string.Equals(item.GroupName, holeName, StringComparison.OrdinalIgnoreCase));
         }
+        if (group == null && string.IsNullOrWhiteSpace(legacy))
+        {
+            if (allowUnassociated) return null;
+            throw new InvalidOperationException($"ND 孔位 {port} 没有对应的标定分组或幅值文件。");
+        }
         string wave = LocalSpectrumSession.ResolvePath(group?.WavelengthFile ?? config.WavelengthFile);
-        string magnitude = LocalSpectrumSession.ResolvePath(group?.MaguideFile ?? (string.IsNullOrWhiteSpace(legacy)
-            ? throw new InvalidOperationException($"ND 孔位 {port} 没有对应的标定分组或幅值文件。") : legacy));
+        string magnitude = LocalSpectrumSession.ResolvePath(group?.MaguideFile ?? legacy!);
         string? error = DeviceSpectrum.ValidateMeasurementCalibrationFiles(wave, magnitude);
         if (error != null) throw new InvalidOperationException(error);
         return new(port, wave, magnitude, group?.GroupName);

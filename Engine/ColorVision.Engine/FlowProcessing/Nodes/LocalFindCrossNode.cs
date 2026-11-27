@@ -101,7 +101,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         void Publish(LocalFindCrossPublishRequest request);
     }
 
-    internal sealed class LocalFindCrossNodeServices : ILocalFindCrossNodeServices
+    internal sealed class LocalFindCrossNodeServices(PoiTemplateStorage? templateStorage = null) : ILocalFindCrossNodeServices
     {
         private static readonly System.Text.Json.JsonSerializerOptions ProductionParameterSerializerOptions = new()
         {
@@ -111,12 +111,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         public static LocalFindCrossNodeServices Instance { get; } = new();
 
-        private LocalFindCrossNodeServices()
-        {
-        }
-
         public Int32Rect LoadSearchRegionTemplate(string templateName, MySqlConnectedEndpoint? endpoint) =>
-            LocalPoiSearchRegionResolver.Load(templateName, RequireEndpoint(endpoint));
+            LocalPoiSearchRegionResolver.Load(templateName, endpoint, templateStorage);
 
         public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
 

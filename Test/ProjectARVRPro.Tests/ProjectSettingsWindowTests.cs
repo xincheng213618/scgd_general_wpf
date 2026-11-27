@@ -148,6 +148,38 @@ public sealed class ProjectSettingsWindowTests
     }
 
     [Fact]
+    public void ClearingTheCodeDateFormatKeepsThePreviouslySavedFormat()
+    {
+        RunUi(true, () =>
+        {
+            var results = new ViewResultManagerConfig { CodeDateFormat = "yyyyMMdd" };
+            int saves = 0;
+            var window = CreateWindow(new(new(), results, true), ProjectSettingsPage.Results, 840, () => saves++);
+            try
+            {
+                window.Show();
+                Pump();
+                var format = FindEditor<TextBox>(window, nameof(ViewResultManagerConfig.CodeDateFormat));
+                format.Text = string.Empty;
+                format.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Pump();
+
+                Assert.Contains("不能为空", Assert.Single(Validation.GetErrors(format)).ErrorContent?.ToString());
+                Assert.Equal("yyyyMMdd", results.CodeDateFormat);
+                Assert.Equal(0, saves);
+
+                format.Text = "yyyyMMddHHmmss";
+                format.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Pump();
+                Assert.False(Validation.GetHasError(format));
+                Assert.Equal("yyyyMMddHHmmss", results.CodeDateFormat);
+                Assert.Equal(1, saves);
+            }
+            finally { window.Close(); }
+        });
+    }
+
+    [Fact]
     public void TextAutoSaveWaitsForCompletionAndTitleBarCloseFlushesTheLastEdit()
     {
         RunUi(true, () =>

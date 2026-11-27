@@ -33,13 +33,22 @@ internal static class FlowRunNavigationReader
             """, [new SugarParameter("@limit", batchLimit)], cancellationToken);
     }
 
-    internal static List<FlowRunNavigationSummary> ReadBySerials(SqlSugarClient db, string[] serials, CancellationToken cancellationToken)
+    internal static List<FlowRunNavigationSummary> ReadBySerials(
+        SqlSugarClient db, string[] serials, int[]? batchIds, CancellationToken cancellationToken)
     {
-        if (serials.Length == 0)
+        if (serials.Length == 0 || batchIds is { Length: 0 })
             return [];
         SugarParameter[] parameters = serials.Select((serial, index) => new SugarParameter($"@serial{index}", serial)).ToArray();
         string names = string.Join(",", parameters.Select(parameter => parameter.ParameterName));
-        return Read(db, $"serial_number IN ({names})", parameters, cancellationToken);
+        string filter = $"serial_number IN ({names})";
+        if (batchIds != null)
+        {
+            SugarParameter[] batches = batchIds.Select((id, index) => new SugarParameter($"@batch{index}", id)).ToArray();
+            string batchNames = string.Join(",", batches.Select(parameter => parameter.ParameterName));
+            filter += $" AND batch_id IN ({batchNames})";
+            parameters = [.. parameters, .. batches];
+        }
+        return Read(db, filter, parameters, cancellationToken);
     }
 
     private static List<FlowRunNavigationSummary> Read(SqlSugarClient db, string filter,

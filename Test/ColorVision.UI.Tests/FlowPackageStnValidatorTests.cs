@@ -1,4 +1,5 @@
 using ColorVision.Engine.Templates.Flow;
+using ST.Library.UI.NodeEditor;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -7,6 +8,36 @@ namespace ColorVision.UI.Tests;
 
 public class FlowPackageStnValidatorTests
 {
+    [Fact]
+    public void CanvasWriterKeepsV1Utf8LengthsPropertyOrderAndConnectionBits()
+    {
+        byte[] node = STNodeSavedState.Write("模", "T", new Dictionary<string, byte[]>
+        {
+            ["点"] = [0xfe, 0x13],
+            ["Empty"] = [],
+        });
+        byte[] expectedNode =
+        [
+            3, .. "模"u8, 1, (byte)'T',
+            3, 0, 0, 0, .. "点"u8, 2, 0, 0, 0, 0xfe, 0x13,
+            5, 0, 0, 0, .. "Empty"u8, 0, 0, 0, 0,
+        ];
+        Assert.Equal(expectedNode, node);
+
+        const long packedConnection = unchecked((long)0xfedcba9800000001UL);
+        using var canvas = new MemoryStream();
+        STNodeCanvasWriter.WriteRaw(canvas, [node], [packedConnection], 0, 0, 1);
+        Assert.False(canvas.CanWrite);
+
+        using var body = new MemoryStream();
+        WriteCanvasHeader(body, nodeCount: 1);
+        body.Write(BitConverter.GetBytes(expectedNode.Length));
+        body.Write(expectedNode);
+        body.Write(BitConverter.GetBytes(1));
+        body.Write(BitConverter.GetBytes(packedConnection));
+        Assert.Equal(body.ToArray(), FlowPackageStnValidator.ValidateAndDecompress(canvas.ToArray()));
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -147,6 +178,15 @@ public class FlowPackageStnValidatorTests
         Assert.Throws<InvalidDataException>(
             () => FlowPackageStnValidator.ValidateAndDecompress(
                 CompressStndV1(body)));
+    }
+
+    [Fact]
+    public void ValidateAndDecompressPreservesHighlyCompressedDataAtTheCallerLimit()
+    {
+        byte[] body = CreateCanvasBody(CreateNodeData(512 * 1024));
+        byte[] stnData = CompressStndV1(body);
+        Assert.Equal(body, FlowPackageStnValidator.ValidateAndDecompress(stnData, body.Length));
+        Assert.Throws<InvalidDataException>(() => FlowPackageStnValidator.ValidateAndDecompress(stnData, body.Length - 1));
     }
 
     private static byte[] CreateCanvasBody(params byte[][] nodeData)

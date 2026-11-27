@@ -400,6 +400,40 @@ public sealed class ExportCieTests
         Assert.Equal(0d, Cv2.Norm(original, owner, NormTypes.INF));
     }
 
+    [Theory]
+    [InlineData(8)]
+    [InlineData(16)]
+    public void LargeRgbSnapshotExportPreservesBindingAcrossBlocks(int bitsPerChannel)
+    {
+        const int width = 2049, height = 701;
+        int stride = width * 3 * (bitsPerChannel / 8);
+        byte[] rgb = new byte[stride * height];
+        new Random(44).NextBytes(rgb);
+        string expectedHash = Convert.ToHexString(SHA256.HashData(rgb));
+        string path = Path.Combine(Path.GetTempPath(), $"colorvision-rgb-export-{Guid.NewGuid():N}.tiff");
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                var layout = bitsPerChannel == 8 ? PixelFormats.Rgb24 : PixelFormats.Rgb48;
+                BitmapSource source = BitmapSource.Create(width, height, 96, 96, layout, null, rgb, stride);
+                ColorVisionTiffParameters parameters = new()
+                {
+                    Rows = height, Cols = width, Bpp = bitsPerChannel, PixelChannels = 3,
+                    PixelLayout = layout.ToString(), PixelRole = "calibration-input", PixelSha256 = expectedHash,
+                };
+
+                Assert.Equal(path, CalibratedImageExport.Save(source, parameters, path));
+                BitmapFrame frame = ReadFrame(path);
+                Assert.True(ColorVisionTiffParameters.TryRead(frame.Metadata as BitmapMetadata, out var exported));
+                Assert.Equal("calibration-input", exported!.PixelRole);
+                Assert.Equal(expectedHash, exported.PixelSha256);
+                Assert.Equal(expectedHash, ColorVisionPixelBinding.ComputeSha256(frame));
+            });
+        }
+        finally { File.Delete(path); }
+    }
+
     [Fact]
     public void LargeAutomaticRgb48PngPreservesOriginalPixelsAndBoundMetadata()
     {

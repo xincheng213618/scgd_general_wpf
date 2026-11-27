@@ -289,6 +289,27 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void CanvasLoad_DoesNotShiftOrdinalsForRepeatedEmptyOptions() => StaTest.Run(() =>
+        {
+            var source = new EmptyOptionFixtureNode();
+            var target = new EmptyOptionFixtureNode();
+            source.Create();
+            target.Create();
+
+            // The shared Empty option occupies index 0 once across all inputs and outputs.
+            using var canvas = new MemoryStream();
+            STNodeCanvasWriter.WriteRaw(canvas, [source.GetSaveData(), target.GetSaveData()], [(2L << 32) | 3], 0, 0, 1);
+
+            using var container = new CVNodeContainer();
+            Assert.True(container.LoadAssembly(typeof(EmptyOptionFixtureNode).Assembly));
+            container.LoadCanvas(canvas.ToArray());
+
+            var connection = Assert.Single(STNodeCanvasWriter.GetConnections(container.Nodes.Cast<STNode>()));
+            Assert.Same(container.Nodes[0].GetAllOutputOptions()[1], connection.Output);
+            Assert.Same(container.Nodes[1].GetAllInputOptions()[1], connection.Input);
+        });
+
+        [Fact]
         public void CanvasLoad_LateCorruptionDoesNotReplaceExistingContainerGraph()
         {
             var original = new STNodeHub();
@@ -402,6 +423,19 @@ namespace ColorVision.UI.Tests
                 if (disposing)
                     inner.Dispose();
                 base.Dispose(disposing);
+            }
+        }
+
+        public sealed class EmptyOptionFixtureNode : STNode
+        {
+            protected override void OnCreate()
+            {
+                InputOptions.Add(STNodeOption.Empty);
+                InputOptions.Add("Input", typeof(string), false);
+                InputOptions.Add(STNodeOption.Empty);
+                OutputOptions.Add(STNodeOption.Empty);
+                OutputOptions.Add("Output", typeof(string), false);
+                OutputOptions.Add(STNodeOption.Empty);
             }
         }
 

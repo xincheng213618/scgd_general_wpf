@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.ImageEditor.Algorithms
 {
@@ -33,6 +34,9 @@ namespace ColorVision.ImageEditor.Algorithms
     /// <summary>Linear-memory SSIM and bounded-sample translation diagnostics; it never transforms either input.</summary>
     internal static class ImageComparisonQualityAnalyzer
     {
+        private const int MinimumParallelSsimPixels = 1024 * 1024;
+        private const int MaximumParallelSsimWidth = 16 * 1024;
+
         public static ImageComparisonQualityResult Analyze(
             AlgorithmImageBuffer reference,
             AlgorithmImageBuffer candidate,
@@ -49,22 +53,51 @@ namespace ColorVision.ImageEditor.Algorithms
             if (parameters.EnableSsim)
             {
                 var bounds = region.GetSamplingBounds(reference);
-                SsimSums[]? columns = null;
+                // A covered rectangle of integer pixels has a finite pair at every sample position.
+                bool allSamplesValid = !reference.Format.IsFloatingPoint() && region.Geometry.Kind == AlgorithmGeometryKind.Rectangle
+                    && region.Contains(bounds.MinimumX, bounds.MinimumY)
+                    && region.Contains(bounds.MaximumXExclusive - 1, bounds.MaximumYExclusive - 1);
+                int width = bounds.MaximumXExclusive - bounds.MinimumX;
+                int height = bounds.MaximumYExclusive - bounds.MinimumY;
+                int workers = Math.Min(channels.Length, Environment.ProcessorCount);
+                var results = new SsimAccumulator[channels.Length];
+                if (workers > 1 && width <= MaximumParallelSsimWidth && (long)width * height >= MinimumParallelSsimPixels)
+                {
+                    progress?.Report(new AlgorithmProgress(0.80, "comparison.ssim"));
+                    Parallel.For(0, channels.Length, new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = workers,
+                        CancellationToken = cancellationToken,
+                        TaskScheduler = TaskScheduler.Default,
+                    }, index => results[index] = MeasureChannel(channels[index], new SsimSums[width]));
+                }
+                else
+                {
+                    var columns = new SsimSums[width];
+                    for (int index = 0; index < channels.Length; index++)
+                    {
+                        progress?.Report(new AlgorithmProgress(0.80 + 0.10 * index / channels.Length,
+                            "comparison.ssim", ChannelName(reference.Format, channels[index])));
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (index != 0) Array.Clear(columns);
+                        results[index] = MeasureChannel(channels[index], columns);
+                    }
+                }
+
+                // Reduce in channel order so parallel execution preserves the aggregate's rounding.
                 for (int index = 0; index < channels.Length; index++)
                 {
                     int channel = channels[index];
-                    progress?.Report(new AlgorithmProgress(0.80 + 0.10 * index / Math.Max(1, channels.Length), "comparison.ssim", ChannelName(reference.Format, channel)));
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (columns == null)
-                        columns = new SsimSums[bounds.MaximumXExclusive - bounds.MinimumX];
-                    else
-                        Array.Clear(columns);
-                    SsimAccumulator result = ComputeSsim(reference, candidate, region, channel, parameters, bounds, columns, cancellationToken);
+                    SsimAccumulator result = results[index];
                     channelResults.Add(new ImageComparisonChannelSsim(channel, ChannelName(reference.Format, channel), result.Mean, result.ValidCount, result.InvalidCount));
                     if (result.ValidCount > 0) aggregate.Add(result.Mean * result.ValidCount);
                     validWindows += result.ValidCount;
                     invalidWindows += result.InvalidCount;
                 }
+
+                SsimAccumulator MeasureChannel(int channel, SsimSums[] columns) => allSamplesValid
+                    ? ComputeSsim<FullIntegerBounds>(reference, candidate, region, channel, parameters, bounds, columns, cancellationToken)
+                    : ComputeSsim<FilteredSamples>(reference, candidate, region, channel, parameters, bounds, columns, cancellationToken);
             }
 
             progress?.Report(new AlgorithmProgress(0.91, "comparison.alignment-precheck"));
@@ -79,7 +112,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 alignment);
         }
 
-        private static SsimAccumulator ComputeSsim(
+        private static SsimAccumulator ComputeSsim<TSamples>(
             AlgorithmImageBuffer reference,
             AlgorithmImageBuffer candidate,
             AlgorithmPixelRoi region,
@@ -88,6 +121,7 @@ namespace ColorVision.ImageEditor.Algorithms
             (int MinimumX, int MinimumY, int MaximumXExclusive, int MaximumYExclusive) bounds,
             SsimSums[] columns,
             CancellationToken cancellationToken)
+            where TSamples : struct, ISsimSamples
         {
             cancellationToken.ThrowIfCancellationRequested();
             var (minimumX, minimumY, _, maximumYExclusive) = bounds;
@@ -95,7 +129,7 @@ namespace ColorVision.ImageEditor.Algorithms
             // Samples outside the ROI never enter a window. Skip their zero-valued
             // rows/columns while preserving the original order of nonzero additions.
             for (int row = minimumY; row <= Math.Min(minimumY + radius, maximumYExclusive - 1); row++)
-                AddRow(reference, candidate, region, channel, row, 1, minimumX, columns);
+                AddRow<TSamples>(reference, candidate, region, channel, row, 1, minimumX, columns);
 
             double peak = reference.Format.IsFloatingPoint() ? parameters.FloatPeakValue
                 : reference.Format.BitsPerChannel() == 8 ? byte.MaxValue : ushort.MaxValue;
@@ -111,8 +145,8 @@ namespace ColorVision.ImageEditor.Algorithms
                 {
                     int remove = y - radius - 1;
                     int add = y + radius;
-                    if (remove >= minimumY) AddRow(reference, candidate, region, channel, remove, -1, minimumX, columns);
-                    if (add < maximumYExclusive) AddRow(reference, candidate, region, channel, add, 1, minimumX, columns);
+                    if (remove >= minimumY) AddRow<TSamples>(reference, candidate, region, channel, remove, -1, minimumX, columns);
+                    if (add < maximumYExclusive) AddRow<TSamples>(reference, candidate, region, channel, add, 1, minimumX, columns);
                 }
 
                 SsimSums window = default;
@@ -128,12 +162,15 @@ namespace ColorVision.ImageEditor.Algorithms
                         if (remove >= 0) window.AddColumn(in columns[remove], -1);
                         if (add < columns.Length) window.AddColumn(in columns[add], 1);
                     }
-                    if (!region.Contains(minimumX + column, y)) continue;
-                    int required = Math.Max(1, (int)Math.Ceiling(window.PossibleCount * parameters.SsimMinimumValidFraction));
-                    if (window.Count < required)
+                    if (TSamples.RequiresChecks)
                     {
-                        invalid++;
-                        continue;
+                        if (!region.Contains(minimumX + column, y)) continue;
+                        int required = Math.Max(1, (int)Math.Ceiling(window.PossibleCount * parameters.SsimMinimumValidFraction));
+                        if (window.Count < required)
+                        {
+                            invalid++;
+                            continue;
+                        }
                     }
 
                     double meanX = window.X / window.Count;
@@ -156,7 +193,7 @@ namespace ColorVision.ImageEditor.Algorithms
             return new SsimAccumulator(valid == 0 ? double.NaN : total.Value / valid, valid, invalid);
         }
 
-        private static void AddRow(
+        private static void AddRow<TSamples>(
             AlgorithmImageBuffer reference,
             AlgorithmImageBuffer candidate,
             AlgorithmPixelRoi region,
@@ -165,6 +202,7 @@ namespace ColorVision.ImageEditor.Algorithms
             int direction,
             int minimumX,
             SsimSums[] columns)
+            where TSamples : struct, ISsimSamples
         {
             int bytesPerChannel = reference.Format.BitsPerChannel() / 8;
             int bytesPerPixel = reference.Format.Channels() * bytesPerChannel;
@@ -174,12 +212,12 @@ namespace ColorVision.ImageEditor.Algorithms
             for (int column = 0, offset = 0; column < columns.Length; column++, offset += bytesPerPixel)
             {
                 int x = minimumX + column;
-                if (!region.Contains(x, row)) continue;
+                if (TSamples.RequiresChecks && !region.Contains(x, row)) continue;
                 ref SsimSums sums = ref columns[column];
                 sums.PossibleCount += direction;
                 double left = ReadSample(referenceRow, offset, bytesPerChannel);
                 double right = ReadSample(candidateRow, offset, bytesPerChannel);
-                if (!double.IsFinite(left) || !double.IsFinite(right)) continue;
+                if (TSamples.RequiresChecks && (!double.IsFinite(left) || !double.IsFinite(right))) continue;
                 sums.X += direction * left;
                 sums.Y += direction * right;
                 sums.X2 += direction * left * left;
@@ -187,6 +225,21 @@ namespace ColorVision.ImageEditor.Algorithms
                 sums.XY += direction * left * right;
                 sums.Count += direction;
             }
+        }
+
+        private interface ISsimSamples
+        {
+            static abstract bool RequiresChecks { get; }
+        }
+
+        private readonly struct FullIntegerBounds : ISsimSamples
+        {
+            public static bool RequiresChecks => false;
+        }
+
+        private readonly struct FilteredSamples : ISsimSamples
+        {
+            public static bool RequiresChecks => true;
         }
 
         private struct SsimSums

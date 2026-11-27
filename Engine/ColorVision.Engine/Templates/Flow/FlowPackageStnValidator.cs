@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
@@ -23,6 +24,8 @@ internal static class FlowPackageStnValidator
         128L * 1024 * 1024;
     private const int CanvasHeaderLength = 16;
     private const int ConnectionDataLength = sizeof(long);
+    private const int InflateChunkBytes = 64 * 1024;
+    private const int SmallInflateAllocation = 256 * 1024;
     private static readonly byte[] StndHeader = [83, 84, 78, 68, 1];
     private static readonly uint[] Crc32Table = CreateCrc32Table();
 
@@ -42,6 +45,9 @@ internal static class FlowPackageStnValidator
             throw new ArgumentOutOfRangeException(nameof(maximumDecompressedLength));
         cancellationToken.ThrowIfCancellationRequested();
         ValidateEnvelope(stnData);
+        uint reportedLength = BinaryPrimitives.ReadUInt32LittleEndian(stnData.AsSpan(stnData.Length - sizeof(uint)));
+        if (reportedLength > maximumDecompressedLength)
+            throw DecompressedLengthExceeded(maximumDecompressedLength);
 
         byte[] decompressed;
         try
@@ -55,25 +61,12 @@ internal static class FlowPackageStnValidator
                 input,
                 CompressionMode.Decompress,
                 leaveOpen: true);
-            using var output = new MemoryStream();
-            byte[] buffer = new byte[81_920];
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                int read = gzip.Read(buffer, 0, buffer.Length);
-                cancellationToken.ThrowIfCancellationRequested();
-                if (read <= 0)
-                    break;
-                if (read > maximumDecompressedLength - output.Length)
-                {
-                    throw new InvalidDataException(
-                        maximumDecompressedLength == MaximumDecompressedLength
-                            ? "flow.stn 解压后超过 160 MiB 限制。"
-                            : $"flow.stn 解压后超过 {maximumDecompressedLength} 字节限制。");
-                }
-                output.Write(buffer, 0, read);
-            }
-            decompressed = output.ToArray();
+            // The trailer is untrusted. Only reserve its full size when the allocation is
+            // small or proportional to the bytes already in memory.
+            long allocationLimit = Math.Max(SmallInflateAllocation, 8L * stnData.Length);
+            decompressed = reportedLength <= allocationLimit
+                ? InflateExact(gzip, (int)reportedLength, cancellationToken)
+                : InflateBounded(gzip, maximumDecompressedLength, cancellationToken);
         }
         catch (InvalidDataException)
         {
@@ -95,6 +88,55 @@ internal static class FlowPackageStnValidator
         cancellationToken.ThrowIfCancellationRequested();
         return decompressed;
     }
+
+    private static byte[] InflateExact(GZipStream gzip, int length, CancellationToken cancellationToken)
+    {
+        byte[] output = GC.AllocateUninitializedArray<byte>(length);
+        int written = 0;
+        while (written < output.Length)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int read = gzip.Read(output.AsSpan(written, Math.Min(InflateChunkBytes, output.Length - written)));
+            cancellationToken.ThrowIfCancellationRequested();
+            if (read == 0) throw InvalidTrailer();
+            written += read;
+        }
+
+        // Drive gzip through its footer and reject extra decompressed data.
+        cancellationToken.ThrowIfCancellationRequested();
+        int extra = gzip.ReadByte();
+        cancellationToken.ThrowIfCancellationRequested();
+        if (extra >= 0) throw InvalidTrailer();
+        return output;
+    }
+
+    private static byte[] InflateBounded(GZipStream gzip, int limit, CancellationToken cancellationToken)
+    {
+        using var output = new MemoryStream();
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(InflateChunkBytes);
+        try
+        {
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                int read = gzip.Read(buffer, 0, InflateChunkBytes);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (read == 0) return output.ToArray();
+                if (read > limit - output.Length)
+                    throw DecompressedLengthExceeded(limit);
+                output.Write(buffer, 0, read);
+            }
+        }
+        finally { ArrayPool<byte>.Shared.Return(buffer); }
+    }
+
+    private static InvalidDataException InvalidTrailer()
+        => new("flow.stn 的 gzip 校验信息无效或包含尾随数据。");
+
+    private static InvalidDataException DecompressedLengthExceeded(int limit)
+        => new(limit == MaximumDecompressedLength
+            ? "flow.stn 解压后超过 160 MiB 限制。"
+            : $"flow.stn 解压后超过 {limit} 字节限制。");
 
     private static void ValidateEnvelope(byte[] stnData)
     {
@@ -125,10 +167,7 @@ internal static class FlowPackageStnValidator
             stnData.Length - 4);
         if (expectedLength != unchecked((uint)decompressed.Length)
             || expectedCrc != ComputeCrc32(decompressed))
-        {
-            throw new InvalidDataException(
-                "flow.stn 的 gzip 校验信息无效或包含尾随数据。");
-        }
+            throw InvalidTrailer();
     }
 
     private static void ValidateCanvasBody(byte[] data)

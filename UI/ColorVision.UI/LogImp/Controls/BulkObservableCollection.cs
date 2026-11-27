@@ -119,6 +119,38 @@ namespace ColorVision.UI.LogImp.Controls
             RaiseReset();
         }
 
+        public void UpdateEnds(IReadOnlyList<T> incoming, int removeCount, bool prepend)
+        {
+            if (removeCount <= PerItemNotificationLimit - incoming.Count)
+            {
+                if (prepend)
+                {
+                    RemoveLast(removeCount);
+                    InsertRangeAtStart(incoming);
+                }
+                else
+                {
+                    RemoveFirst(removeCount);
+                    AddRange(incoming);
+                }
+                return;
+            }
+
+            int removeIndex = prepend ? Items.Count - removeCount : 0;
+            if (Items is List<T> list)
+            {
+                list.RemoveRange(removeIndex, removeCount);
+                list.InsertRange(prepend ? 0 : list.Count, incoming);
+            }
+            else
+            {
+                for (int i = 0; i < removeCount; i++) Items.RemoveAt(removeIndex);
+                int insertIndex = prepend ? 0 : Items.Count;
+                foreach (T item in incoming) Items.Insert(insertIndex++, item);
+            }
+            RaiseReset();
+        }
+
         private void RaiseReset()
         {
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));

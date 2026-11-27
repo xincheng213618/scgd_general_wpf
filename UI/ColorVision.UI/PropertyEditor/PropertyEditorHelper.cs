@@ -35,6 +35,7 @@ namespace ColorVision.UI
         private static readonly ConcurrentDictionary<(ResourceManager ResourceManager, string CultureName, string Key), string> ResourceStringCache = new();
         public static ConcurrentDictionary<Type, IPropertyEditor> CustomEditorCache => EditorRegistry.Instances;
         private static readonly AsyncLocal<IPropertyEditorMetadataProvider?> MetadataProviderContext = new();
+        internal static bool HasActiveMetadataProvider => MetadataProviderContext.Value != null;
 
         static PropertyEditorHelper()
         {

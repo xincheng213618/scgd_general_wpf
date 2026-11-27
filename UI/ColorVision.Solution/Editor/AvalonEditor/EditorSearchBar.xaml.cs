@@ -175,13 +175,28 @@ public partial class EditorSearchBar : UserControl, IDisposable, IBackgroundRend
         int first = view.VisualLines[0].FirstDocumentLine.Offset;
         int last = view.VisualLines[^1].LastDocumentLine.EndOffset;
         Brush brush = TryFindResource("EditorSearchMatchBrush") as Brush ?? Brushes.Gold;
-        foreach (var match in _matches)
+        for (int i = FindFirstVisibleMatch(first); i < _matches.Count; i++)
         {
+            Match match = _matches[i];
             if (match.Index > last) break;
-            if (match.Index + match.Length < first || match.Length == 0) continue;
+            if (match.Length == 0) continue;
             foreach (Rect rect in BackgroundGeometryBuilder.GetRectsForSegment(view, new ICSharpCode.AvalonEdit.Document.TextSegment { StartOffset = match.Index, Length = match.Length }))
                 drawingContext.DrawRoundedRectangle(brush, null, rect, 2, 2);
         }
+    }
+
+    private int FindFirstVisibleMatch(int offset)
+    {
+        int lower = 0, upper = _matches.Count;
+        // Regex matches are ordered and non-overlapping, so their ends are ordered too.
+        while (lower < upper)
+        {
+            int middle = lower + (upper - lower) / 2;
+            Match match = _matches[middle];
+            if (match.Index + match.Length < offset) lower = middle + 1;
+            else upper = middle;
+        }
+        return lower;
     }
 
     private void Search_PreviewKeyDown(object sender, KeyEventArgs e)

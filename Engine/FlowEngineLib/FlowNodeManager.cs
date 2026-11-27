@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -72,6 +73,37 @@ public class FlowNodeManager
 		}
 	}
 
+	internal void RemoveDevices(DeviceNode[] devices)
+	{
+		if (devices.Length == 0)
+			return;
+		if (devices.Length == 1)
+		{
+			RemoveDevice(devices[0]);
+			return;
+		}
+
+		// Match the registered devices even when discovery updated their service or device codes.
+		var removedDevices = new HashSet<DeviceNode>(devices);
+		Predicate<DeviceNode> shouldRemove = removedDevices.Contains;
+		lock (deviceLock)
+		{
+			RemoveDevices(NodeDevices, shouldRemove);
+			RemoveDevices(AnonymousNodeDevices, shouldRemove);
+		}
+	}
+
+	private static void RemoveDevices(Dictionary<string, List<DeviceNode>> registry, Predicate<DeviceNode> shouldRemove)
+	{
+		foreach (string key in registry.Keys.ToArray())
+		{
+			List<DeviceNode> registered = registry[key];
+			registered.RemoveAll(shouldRemove);
+			if (registered.Count == 0)
+				registry.Remove(key);
+		}
+	}
+
 	private static bool RemoveDevice(Dictionary<string, List<DeviceNode>> devices, DeviceNode device)
 	{
 		bool removed = false;
@@ -130,16 +162,18 @@ public class FlowNodeManager
 		Dictionary<string, Dictionary<string, MQTTDeviceInfo>> dictionary = new Dictionary<string, Dictionary<string, MQTTDeviceInfo>>();
 		foreach (MQTTServiceInfo service in services)
 		{
-			if (!dictionary.ContainsKey(service.ServiceType))
+			if (!dictionary.TryGetValue(service.ServiceType, out Dictionary<string, MQTTDeviceInfo> serviceDevices))
 			{
-				dictionary.Add(service.ServiceType, new Dictionary<string, MQTTDeviceInfo>());
+				serviceDevices = new Dictionary<string, MQTTDeviceInfo>();
+				dictionary.Add(service.ServiceType, serviceDevices);
 			}
-			foreach (KeyValuePair<string, MQTTDeviceInfo> device in service.Devices)
+			string serviceKey = ServiceInfo.GetKey(service.ServiceType, service.ServiceCode);
+			foreach (MQTTDeviceInfo device in service.Devices.Values)
 			{
-				string key = new DeviceNode(string.Empty, device.Value.DeviceCode, new ServiceInfo(service.ServiceType, service.ServiceCode)).GetKey();
-				if (!string.IsNullOrEmpty(key) && !dictionary[service.ServiceType].ContainsKey(key))
+				string key = DeviceNode.GetKey(serviceKey, device.DeviceCode);
+				if (!string.IsNullOrEmpty(key))
 				{
-					dictionary[service.ServiceType].Add(key, device.Value);
+					serviceDevices.TryAdd(key, device);
 				}
 			}
 		}

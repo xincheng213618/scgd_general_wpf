@@ -279,10 +279,7 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
                         cancellationToken)
                     .ConfigureAwait(false);
                 loaded = true;
-                if (services.Length == 0
-                    && host.Nodes
-                        .OfType<CVBaseServerNode>()
-                        .Any(node => node.RequiresRemoteService))
+                if (services.Length == 0 && host.FindRemoteServiceNode(request.StartNodeName) is { } remote)
                 {
                     stopwatch.Stop();
                     return CreateFailure(
@@ -290,8 +287,8 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
                         FlowHeadlessExecutionTermination
                             .StartRejected,
                         StatusTypeEnum.Failed,
-                        "The flow contains service nodes but no "
-                        + "MQTT service snapshot was supplied.",
+                        "The selected start reaches a remote service node but no "
+                        + "MQTT service snapshot was supplied. " + FlowControl.DescribeRemoteDependency(request.StartNodeName, remote),
                         stopwatch.ElapsedMilliseconds);
                 }
                 if (observer != null)

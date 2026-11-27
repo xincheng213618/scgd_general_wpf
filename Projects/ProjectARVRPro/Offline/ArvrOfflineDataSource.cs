@@ -1,15 +1,16 @@
 using ColorVision.Database;
-using ColorVision.Engine.FlowProcessing.Diagnostics;
 using Microsoft.Data.Sqlite;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.ExceptionServices;
 
 namespace ProjectARVRPro.Offline;
 
 /// <summary>One imported set of diagnostic files; never changes live database paths or configuration.</summary>
 public sealed class ArvrOfflineDataSource
 {
+    private const long ParallelArchiveEntryMinimumBytes = 32 * 1024 * 1024;
     private static readonly string[] DatabaseNames = ["ProjectARVRPro.db", "FlowNodeRecords.db", "SocketMessages.db", "MsgRecords.db"];
     public string SourcePath { get; }
     public string DirectoryPath { get; }
@@ -50,24 +51,30 @@ public sealed class ArvrOfflineDataSource
             var candidates = archive.Entries.Where(entry => entry.Name.Equals(DatabaseNames[0], StringComparison.OrdinalIgnoreCase)).ToList();
             if (candidates.Count != 1) throw new InvalidDataException("反馈包需包含一份 ProjectARVRPro.db。请确认现场项目已更新并勾选 ARVRPro 测试记录。");
             string prefix = candidates[0].FullName[..^candidates[0].Name.Length];
-            OfflineFileMaintenanceProvider.CreateImportDirectory(directory);
+            var files = new List<(string Name, ZipArchiveEntry? Database, ZipArchiveEntry? Status)>();
             foreach (string name in DatabaseNames)
             {
                 var matching = archive.Entries.Where(entry => entry.FullName.Equals(prefix + name, StringComparison.OrdinalIgnoreCase)).ToList();
                 if (matching.Count > 1) throw new InvalidDataException($"反馈包中存在重复的 {name}。");
-                if (matching.Count == 1) matching[0].ExtractToFile(Path.Combine(directory, name));
-                ZipArchiveEntry? status = archive.GetEntry(prefix + name + ".export.json");
-                status?.ExtractToFile(Path.Combine(directory, name + ".export.json"));
+                files.Add((name, matching.SingleOrDefault(), archive.GetEntry(prefix + name + ".export.json")));
             }
+            OfflineFileMaintenanceProvider.CreateImportDirectory(directory);
+            ExtractArchiveFiles(sourcePath, directory, files);
         }
         else
         {
             bool isDirectory = System.IO.Directory.Exists(sourcePath);
             string sourceDirectory = isDirectory ? sourcePath : Path.GetDirectoryName(sourcePath)!;
+            bool copyPublishedGeneration = false;
             if (isDirectory)
+            {
                 sourceDirectory = FeedbackAggregateDirectory.Resolve(sourceDirectory, out aggregateLabel);
-            if (isDirectory && !File.Exists(Path.Combine(sourceDirectory, DatabaseNames[0])) && System.IO.Directory.Exists(Path.Combine(sourceDirectory, "Database")))
-                sourceDirectory = Path.Combine(sourceDirectory, "Database");
+                string nested = Path.Combine(sourceDirectory, "Database");
+                if (!File.Exists(Path.Combine(sourceDirectory, DatabaseNames[0])) && System.IO.Directory.Exists(nested))
+                    sourceDirectory = nested;
+                else if (aggregateLabel != null)
+                    copyPublishedGeneration = DatabaseNames.All(name => !HasSqliteSidecar(Path.Combine(sourceDirectory, name)));
+            }
             string projectSource = isDirectory ? Path.Combine(sourceDirectory, DatabaseNames[0]) : sourcePath;
             if (!File.Exists(projectSource)) throw new FileNotFoundException("所选资料中没有 ProjectARVRPro.db。", projectSource);
             OfflineFileMaintenanceProvider.CreateImportDirectory(directory);
@@ -75,29 +82,86 @@ public sealed class ArvrOfflineDataSource
             {
                 string original = name == DatabaseNames[0] ? projectSource : Path.Combine(sourceDirectory, name);
                 if (!File.Exists(original)) continue;
-                // SQLite's backup captures committed WAL content; copying a live .db file alone can lose records.
-                using var source = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = original, Mode = SqliteOpenMode.ReadOnly, Pooling = false }.ToString());
-                using var destination = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = Path.Combine(directory, name), Pooling = false }.ToString());
-                source.Open(); destination.Open(); source.BackupDatabase(destination);
+                string target = Path.Combine(directory, name);
+                if (copyPublishedGeneration)
+                {
+                    File.Copy(original, target);
+                    // Keep the app-owned copy removable even when the published file is marked read-only.
+                    FileAttributes attributes = File.GetAttributes(target);
+                    if ((attributes & FileAttributes.ReadOnly) != 0)
+                        File.SetAttributes(target, attributes & ~FileAttributes.ReadOnly);
+                }
+                else
+                {
+                    BackupDatabase(original, target);
+                }
                 if (File.Exists(original + ".export.json")) File.Copy(original + ".export.json", Path.Combine(directory, name + ".export.json"));
             }
         }
         return new ArvrOfflineDataSource(sourcePath, directory, aggregateLabel);
     }
 
-    public string ResolveFlowSerialNumber(ProjectARVRReuslt result)
+    private static void ExtractArchiveFiles(string sourcePath, string directory,
+        IReadOnlyList<(string Name, ZipArchiveEntry? Database, ZipArchiveEntry? Status)> files)
     {
-        if (string.IsNullOrWhiteSpace(result.SN) || result.BatchId <= 0)
-            throw new InvalidDataException("此条 PG 记录缺少 SN 或批次号，无法关联节点。");
-        var source = new ReadOnlySqliteDatabase(FlowDatabasePath ?? throw new InvalidOperationException("本份资料没有 FlowNodeRecords.db。"));
-        using var db = source.OpenClient();
-        string[] serials = source.Query<FlowNodeRecord>(db).Where(row => row.BatchId == result.BatchId).Select(row => row.SerialNumber).ToList()
-            .Where(serial => serial == result.SN || serial?.StartsWith(result.SN + "_", StringComparison.Ordinal) == true)
-            .Distinct(StringComparer.Ordinal).ToArray();
-        return serials.Length == 1 ? serials[0] : throw new InvalidDataException(serials.Length == 0
-            ? "配套节点库中没有匹配此批次和 SN 的记录。请检查反馈时间范围。"
-            : "此批次和 SN 对应多个运行标识，无法确定唯一关联。请核对资料来源。");
+        var large = files.Where(file => file.Database?.CompressedLength >= ParallelArchiveEntryMinimumBytes)
+            .OrderByDescending(file => file.Database!.CompressedLength).ToArray();
+        if (large.Length < 2)
+        {
+            foreach (var file in files)
+                Extract(file.Name, file.Database, file.Status);
+            return;
+        }
+
+        // Keep the first archive open with read sharing and let the two workers seek independently.
+        var largest = large[0];
+        using var secondStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 1024);
+        using var secondArchive = new ZipArchive(secondStream, ZipArchiveMode.Read);
+        ZipArchiveEntry secondEntry = secondArchive.GetEntry(largest.Database!.FullName)
+            ?? throw new InvalidDataException($"反馈包缺少 {largest.Name}。");
+        ZipArchiveEntry? secondStatus = largest.Status == null ? null : secondArchive.GetEntry(largest.Status.FullName);
+        try
+        {
+            Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2 },
+                () =>
+                {
+                    foreach (var file in files)
+                        if (!ReferenceEquals(file.Database, largest.Database))
+                            Extract(file.Name, file.Database, file.Status);
+                },
+                () => Extract(largest.Name, secondEntry, secondStatus));
+        }
+        catch (AggregateException error)
+        {
+            ExceptionDispatchInfo.Capture(error.InnerExceptions[0]).Throw();
+        }
+
+        void Extract(string name, ZipArchiveEntry? database, ZipArchiveEntry? status)
+        {
+            database?.ExtractToFile(Path.Combine(directory, name));
+            status?.ExtractToFile(Path.Combine(directory, name + ".export.json"));
+        }
     }
+
+    private static bool HasSqliteSidecar(string path) =>
+        File.Exists(path + "-wal") || File.Exists(path + "-shm") || File.Exists(path + "-journal");
+
+    private static void BackupDatabase(string original, string target)
+    {
+        // SQLite backup includes committed WAL content from ordinary files and directories.
+        using var source = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = original, Mode = SqliteOpenMode.ReadOnly, Pooling = false }.ToString());
+        using var destination = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = target, Pooling = false }.ToString());
+        source.Open();
+        destination.Open();
+        // The destination is a new, rebuildable cache copy. Keep SQLite journaling enabled.
+        using var command = destination.CreateCommand();
+        command.CommandText = "PRAGMA synchronous=OFF";
+        command.ExecuteNonQuery();
+        source.BackupDatabase(destination);
+    }
+
+    public string ResolveFlowSerialNumber(ProjectARVRReuslt result) => ArvrFlowAnalysisHistory.ResolveSerialNumber(
+        FlowDatabasePath ?? throw new FileNotFoundException("本份资料没有 FlowNodeRecords.db。"), result);
 
     private string? FindDatabase(string name)
     {

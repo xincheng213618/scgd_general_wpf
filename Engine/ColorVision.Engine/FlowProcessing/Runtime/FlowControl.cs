@@ -231,6 +231,9 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
+        internal static string DescribeRemoteDependency(string startNodeName, CVBaseServerNode remote) =>
+            $"{startNodeName} → {remote.Title} (Service={remote.NodeType}/{remote.NodeName}, DeviceCode={remote.DeviceCode})";
+
         private bool TryStart(string startNodeName, string sn, Action<FlowRuntimeResources>? initializeRuntimeResources)
         {
             sn = ColorVision.Common.Utilities.Tool.SanitizeFileName(sn);
@@ -242,7 +245,7 @@ namespace ColorVision.Engine.FlowProcessing
                     return false;
 
                 // Service lookup can fail before the engine has a run to stop.
-                List<MQTTServiceInfo> serviceTokens = serviceTokensProvider();
+                List<MQTTServiceInfo>? serviceTokens = flowEngine.FindRemoteServiceNode(startNodeName) != null ? serviceTokensProvider() : null;
                 IsFlowRun = true;
                 SerialNumber = sn;
                 activeStartNodeName = startNodeName;

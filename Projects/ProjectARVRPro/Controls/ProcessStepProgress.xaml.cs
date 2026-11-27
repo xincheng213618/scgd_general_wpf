@@ -39,9 +39,9 @@ public partial class ProcessStepProgress : UserControl
         if (index >= 0 && index < Steps.Count) Steps[index].UpdateElapsed(elapsedMilliseconds, expectedMilliseconds);
     }
 
-    public void Finish(int index, bool succeeded)
+    public void Finish(int index, bool succeeded, string? failureDetail = null)
     {
-        if (index >= 0 && index < Steps.Count) Steps[index].Finish(succeeded);
+        if (index >= 0 && index < Steps.Count) Steps[index].Finish(succeeded, failureDetail);
     }
 
     private void Step_MouseDoubleClick(object sender, MouseButtonEventArgs e)

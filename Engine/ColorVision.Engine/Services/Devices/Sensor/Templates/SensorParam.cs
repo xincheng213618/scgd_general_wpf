@@ -101,7 +101,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             SensorParam? AddParamMode()
             {
-                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var Db = WorkstationConfiguration.RequireEndpoint().CreateDbClient();
 
                 var (modMaster, definitions) = InsertTemplate(Db, TemplateDicId, templateName, CreateTemp ?? ImportTemp);
                 foreach (var definition in definitions) SymbolCache.Instance.Cache.TryAdd(definition.Id, definition);
@@ -182,7 +182,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public override void Save()
         {
             if (SaveIndex.Count == 0) return;
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            using var Db = WorkstationConfiguration.RequireEndpoint().CreateDbClient();
 
             foreach (var index in SaveIndex)
             {

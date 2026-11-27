@@ -113,7 +113,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
 
             EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
-            EditDisplayConfigCommand = new RelayCommand(_ => EditDisplayConfig());
             UserCalibrationCommand = new RelayCommand(_ => LumFourColorCalibrationWorkflowWindow.ShowWindow(camera: this));
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
             ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
@@ -143,21 +142,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cameraLocalWindow.Owner = owner;
             }
             cameraLocalWindow.Show();
-        }
-
-        [CommandDisplay("EditDisplayConfig", Order = -1, CategoryOrder = 0)]
-        [Category("DeviceConnection")]
-        [Description("CommandDisplayConfigHint")]
-        public RelayCommand EditDisplayConfigCommand { get; }
-
-        private void EditDisplayConfig()
-        {
-            new PropertyEditorWindow(DisplayConfig)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.ShowDialog();
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
         public RelayCommand OpenCameraLogCommand { get; set; }
@@ -299,9 +283,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             phyCameraManager.ShowDialog();
         }
 
-        [CommandDisplay("RefreshDeviceList", CategoryOrder = 0)]
-        [Category("DeviceConnection")]
-        [Description("CommandRefreshDevicesHint")]
+        [Browsable(false)]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
         public void RefreshDeviceId()
         {
@@ -423,22 +405,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 .FirstOrDefault(resource => resource.Name == param.CalibrationMode);
             groupResource?.SetCalibrationResource();
 
-            bool hasSelectedCalibration = CalibrationSlotDefinitions.AllSlots.Any(slot => slot.ParamGetter(param).IsSelected);
-            if (groupResource == null || !hasSelectedCalibration)
+            var selectedSlots = CalibrationSlotDefinitions.SelectedSlots(param).ToArray();
+            if (groupResource == null || selectedSlots.Length == 0)
             {
                 errorMessage = string.Format(Properties.Resources.CalibrationFileNotConfiguredWithTemplate, param.Name);
                 return false;
             }
 
             List<DeviceCameraCalibrationFile> resolvedFiles = new();
-            foreach (var slot in CalibrationSlotDefinitions.AllSlots)
+            foreach (var slot in selectedSlots)
             {
-                CalibrationBase selectedCalibration = slot.ParamGetter(param);
-                if (!selectedCalibration.IsSelected)
-                {
-                    continue;
-                }
-
                 CalibrationResource? resource = GetCalibrationTemplateResource(param, slot);
                 if (resource == null || !TryResolveCalibrationFilePath(resource, out string fullPath, out string relativePath, checkFiles))
                 {

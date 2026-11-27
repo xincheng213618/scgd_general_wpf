@@ -17,6 +17,12 @@ namespace ProjectARVRPro.Exports.Lux;
 
 internal static class LuxCsvProjector
 {
+    internal static bool RequiresFlowPayload(ProjectARVRReuslt result) =>
+        LuxMtfCsvProjection.IsSnapshotSource(result) || IsChessboardSnapshotSource(result);
+
+    private static bool IsChessboardSnapshotSource(ProjectARVRReuslt result) => result.FlowStatus == FlowStatus.Completed
+        && result.ProcessTypeFullName is "ProjectARVRPro.Process.Chessboard.ChessboardProcess" or "ProjectARVRPro.Process.Chessboard.ChessboardDynamicProcess";
+
     internal static IReadOnlyList<ObjectiveTestCsvRow> CollectRows(ObjectiveTestResult result, LuxCsvFormat format, IReadOnlyList<ProjectARVRReuslt>? flowResults = null,
         LuxMtfPointFormat mtfPointFormat = LuxMtfPointFormat.Mtf058, UniformityDisplayFormat luminanceUniformityFormat = UniformityDisplayFormat.Percentage)
     {
@@ -91,8 +97,7 @@ internal static class LuxCsvProjector
         if (results == null) return snapshots;
         foreach (var result in results.OrderBy(result => result.Id))
         {
-            if (result.FlowStatus != FlowStatus.Completed || string.IsNullOrWhiteSpace(result.ViewResultJson)
-                || result.ProcessTypeFullName is not ("ProjectARVRPro.Process.Chessboard.ChessboardProcess" or "ProjectARVRPro.Process.Chessboard.ChessboardDynamicProcess"))
+            if (!IsChessboardSnapshotSource(result) || string.IsNullOrWhiteSpace(result.ViewResultJson))
                 continue;
             try
             {

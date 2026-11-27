@@ -12,13 +12,17 @@ related: ["engine.index","engine.native-integration","ui.core"]
 
 `Engine/cvColorVision/` 是原生能力绑定层，通过 `DllImport` 暴露 `cvCamera.dll` 等底层接口给 C#。它不是纯托管视觉算法库，也不负责 WPF 界面、模板或工作流编排。
 
-本地相机取图由 `CM_GetFrame` 提供 RAW，校正由 `LocalFrameCalibrationService` 调用本地 `opencv_helper.dll`；POI 的 XYZ、xy/uv、CCT 和主波长测量由 `PoiMeasurementService` 通过 `OpenCVCalibration.M_CalculatePoiBatchV2` 或 RAW 测量入口计算，缓冲寿命由当前帧或 `PoiMeasurementBuffer` 管理。旧插件若引用早期 `cvColorVision.dll` 的句柄式 XYZ 采样 API，需要迁移到本地测量接口并重新编译；当前托管程序集不保证这些旧 API 的二进制兼容。
+本地相机取图由 `CM_GetFrame` 提供 RAW，校正由 `LocalFrameCalibrationService` 调用本地 `opencv_helper.dll`；POI 的 XYZ、xy/uv、CCT 和主波长测量由 `PoiMeasurementService` 通过 `OpenCVCalibration.M_CalculatePoiBatchV2` 或 RAW 测量入口计算，缓冲寿命由当前帧或 `PoiMeasurementBuffer` 管理。旧句柄式 XYZ 和 `CM_CalculatePoiBatchV1` 已从相机 DLL 退役，旧插件须迁移到本地测量接口并重新编译。
 
-FOV、SFR、畸变、鬼影与清晰度测量使用本地算法。依赖 `FovImgCentre`／`FovImgCentreEX`、`SFRCalculation`、`GhostGlareDectect` 或 `cvCalArticulation` 的旧调用方须迁移后重编译，并核对 DLL 版本和导出序号。Simple 源码用于同步上游，不参与 DLL 构建。
+FOV、SFR、畸变、鬼影与清晰度测量使用本地算法。依赖 `FovImgCentre`／`FovImgCentreEX`、`SFRCalculation`、`GhostGlareDectect` 或 `cvCalArticulation` 的旧调用方须迁移后重编译，并核对 DLL 版本和导出序号。旧 Simple 接口已退出 DLL 交付。原生维护分支已移除其实现、声明和构建开关。
+
+旧图像裁剪、全局与按 ID 拟合及五点定位共 7 个 P/Invoke 已移除，配套的原生构建同步退役对应导出。使用这些公开方法的旧插件需要迁移并重新编译。相机自动对焦沿用原生 `DataAnalyzer` 拟合。
 
 ## 绑定与交付前提
 
 当前工程目标是 `net10.0-windows7.0`。`cvColorVision.csproj` 从 `DLL/scgd_internal_dll/` 复制和打包供应商 DLL，不在本工程编译这些 native 实现。全部 21 个 DLL 的工程链接、构建/发布输出和 NuGet 包路径统一为 `runtimes/win-x64/native/`，包含 `cvCamera.dll`、CommLibrary、OpenCV 及相机和光谱仪 SDK 的间接依赖。供应商原始输入继续保存在 `DLL/scgd_internal_dll/`。主程序与 PluginKit 的共享文件清单使用相同相对路径，安装工程也须从该目录取文件并安装到对应目录。具体功能还受设备驱动与部署配置约束。校正文件创建由主程序执行，本地校正统一使用 `opencv_helper.dll`；`cvCamera.dll` 继续负责相机等设备接口。
+
+随包 `cvCamera.dll` 的旧独立校正、ND 校正文件、校正文件生成、旧键盘亮度、句柄式 XYZ/POI 及相机灯珠检测导出已退役。原来调用 `CM_InitCalibration`、`CM_LoadItemV1`、`CM_RoutineCalibrationV1` 或 `CM_TransformV1` 的客户端需要迁移到 `opencv_helper.dll` 的本地校正接口。相机取图接口继续提供 RAW，`CM_GetFrame` 最后一个参数保留原布局，占位时传空指针。相机的 ND 与滤轮控制、光谱仪标定、校正服务的 MQTT 请求各自沿用原有接口。
 
 `CameraNativeLibrary` 依次查找托管程序集和宿主旁的 `runtimes/win-x64/native/`，兼容 RID 发布时的平铺输出。`SetDllDirectoryW` 将实际目录设为进程 DLL 搜索目录，供 SCGDCamLayer 等 SDK 后续按名称加载依赖。宿主在设备运行时须保留该搜索目录，系统和用户 `PATH` 独立。
 
@@ -68,11 +72,11 @@ MVS 开始采集前自动配置触发参数，无需用户先在海康客户端�
 
 当前相机绑定使用 `CM_Open(IntPtr)`、`CM_SetExpTime(IntPtr, float)`、`CM_GetFrame(...)` 等声明。签名和使用方式见 `Camera/cvCameraCSLib.*.cs` 及实际设备调用方。
 
-`cvCameraCSLib` 的原生操作返回值统一保留 `int`，包括曝光/增益、配置更新、回调、取源图、滤轮、自动对焦、图像处理及校正操作；原先只有 `0/1` 的操作也预留整数错误码，不再按非零 `bool` 判断成功。当前这些操作成功值为 `CV_ERR_SUCCESS=1`，失败保留原始 `0`、平台错误码或 SDK 错误码。`CM_GetErrorMessage` 和 `GetAllCameraIDV1` 的字符串便捷入口同样返回原始整数结果；取源图便捷入口先检查尺寸查询的失败码，失败时不分配图像缓冲。由旧 `bool` 或 `void` 声明编译的调用方需要重新编译，原生导出名称与 32 位返回 ABI 保持不变。
+`cvCameraCSLib` 的原生操作返回值统一保留 `int`，包括曝光/增益、配置更新、回调、取源图、滤轮、自动对焦及图像处理操作；原先只有 `0/1` 的操作也预留整数错误码，不再按非零 `bool` 判断成功。当前这些操作成功值为 `CV_ERR_SUCCESS=1`，失败保留原始 `0`、平台错误码或 SDK 错误码。`CM_GetErrorMessage` 和 `GetAllCameraIDV1` 的字符串便捷入口同样返回原始整数结果；取源图便捷入口先检查尺寸查询的失败码，失败时不分配图像缓冲。由旧 `bool` 或 `void` 声明编译的调用方需要重新编译，原生导出名称与 32 位返回 ABI 保持不变。
 
-当前相机托管层已清理无调用且交付 DLL 不提供的 38 个旧导入及其便捷包装，并移除未使用的 `AoiParam.cs`、`C_AoiParam`、`PartiCle` 和旧角点/布点类型；这不改变服务端 AOI 流程。保留的 `CM_Reset` 必须传入原生的 `delayTimeMs`，`LedCheckYaQi` 返回 `int`。C++ `bool` 参数显式使用一字节封送，Windows `BOOL` 状态返回仍使用四字节封送。
+当前相机托管层已清理无调用且交付 DLL 不提供的 38 个旧导入及其便捷包装，并移除未使用的 `AoiParam.cs`、`C_AoiParam`、`PartiCle` 和旧角点/布点类型；这不改变服务端 AOI 流程。`CM_Reset` 必须传入原生的 `delayTimeMs`。C++ `bool` 参数显式使用一字节封送，Windows `BOOL` 状态返回仍使用四字节封送。
 
-跨 DLL 的 `CVImage`（对应原生 `HImage`）、`CRECT`/`IRECT`、`AutoFocusCfg`、`ChromaInfo` 使用按声明顺序的字段及 `Pack=8`；Release/x64 大小分别为 24、16、48、44 字节，对焦配置最后一个 `double` 位于偏移 40。修改字段类型、顺序或对齐时须同步原生定义。连续帧和对焦回调的返回值为 32 位 `int`，调用约定为 `StdCall`。配置、SN 和设备模式字符串便捷入口检查原生返回码后才返回字符串；原生文本复制在容量不足时返回平台错误，避免 CRT 的无效参数处理及错误成功。
+跨 DLL 的 `CVImage`（对应原生 `HImage`）、`CRECT`/`IRECT`、`AutoFocusCfg` 使用按声明顺序的字段及 `Pack=8`；Release/x64 大小分别为 24、16、48 字节，对焦配置最后一个 `double` 位于偏移 40。修改字段类型、顺序或对齐时须同步原生定义。连续帧和对焦回调的返回值为 32 位 `int`，调用约定为 `StdCall`。配置、SN 和设备模式字符串便捷入口检查原生返回码后才返回字符串；原生文本复制在容量不足时返回平台错误，避免 CRT 的无效参数处理及错误成功。
 
 纯状态查询 `CM_IsOpen`、`CM_GetDeviceOnline`、`CM_IsFeatureAvailable`、`CM_IsBurstmodeAvailable` 仍返回 `bool`；无效句柄返回 `false`，不能被负数平台错误码误判为可用。`CM_GetSrcFrameInfo` 成功返回 `1`，尺寸、位深和通道数经引用参数输出；`CM_GetFrameMemLength` 则返回缓冲字节数，调用方应按各入口的真实语义检查结果。
 
@@ -129,24 +133,12 @@ MVS 视频回调丢弃坏帧、归还 SDK 缓冲并继续取帧，超时仍无�
 | 源表链路 | 打开、设置源模式、读电压电流、步进/扫描、关闭有明确调用顺序 |
 | 错误码 | 原生返回码能进入日志或上层异常，不被吞掉 |
 
-## cvCamera.dll 许可证构建约定
+## cvCamera.dll 原生构建约定
 
-以下是外部源码仓库的交付约定，不是本仓库可单独证明的运行状态；未提供该外部源码与真实设备测试时，不应断言当前 DLL 的许可证分支已完成验证。
+外部 `scgd_internal_dll` 的维护分支已移除停用的相机与光谱仪本地许可校验、专用导出及静态库。该变更随新 DLL 交付生效。以 Release/x64 隔离构建并核对导出后，按交付要求更新随包 DLL。
 
-本仓库 `DLL/scgd_internal_dll/cvCamera.dll` 默认保存公司内部使用版本：相机和光谱仪打开链路均不执行许可证验证。外部 `scgd_internal_dll` 源码仓库仅用于本地修改和构建，不在本仓库的交付流程中提交；确认产物后，只把 DLL 复制到本仓库并在这里提交。
-
-生成内部版本时，检查以下开关：
-
-| 设备链路 | 源码位置 | 内部版本 | 需要许可证的交付版本 |
-| --- | --- | --- | --- |
-| 相机 | `cvCameraItem/cvCameraItem/cvCamera.cpp` 中的 `CM_ValiLic` | 许可证分支使用 `if (false)` | 使用 `if (true)` |
-| vLight 光谱仪 | `cvCamera/cvCamera/SpectroHelper.cpp` 中的 `_ACTIVE_LICENSE_` | 定义为 `0` | 定义为 `1` |
-| 高立通光谱仪 | `cvCamera/cvCamera/SpectroGaolitong.cpp` 中的许可证分支 | 使用 `if (false)` | 使用 `if (true)` |
-
-`pCamMan->SetDeviceMode(mode)` 保存的是许可证中的 `device_mode`，供 `CM_GetDeviceMode` 返回，不是设置相机硬件工作模式。内部版本不执行许可证分支时不要单独补调用；此时设备模式保持为空，上层应继续使用配置的相机型号作为回退。
-
-按 `Release|x64` 构建后，确认相机、vLight 光谱仪和高立通光谱仪的打开路径没有活动的 `LicenseValidate` 调用，再把产物复制到 `DLL/scgd_internal_dll/cvCamera.dll`。静态许可证/HASP 代码或导出仍可能保留在 DLL 中；内部版本的验收标准是上述运行路径不触发许可证验证。
+海康相机的 `CM_GetDeviceMode` 返回 MVS SDK 提供的型号文本。
 
 ## 验证入口与缺口
 
-验证缺口：未登记能替代真实供应商 DLL 与硬件的完整自动化测试；外部源码和许可证构建说明不能由本仓库静态检查直接证明，交付需核对产物和设备路径。
+验证缺口：未登记能替代真实供应商 DLL 与硬件的完整自动化测试；交付需核对实际 DLL 和设备路径。

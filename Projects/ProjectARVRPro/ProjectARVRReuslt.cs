@@ -126,5 +126,8 @@ namespace ProjectARVRPro
         public string? ViewResultJson { get; set; }
 
         internal TextReader? CsvJsonReader { get; set; }
+
+        // Copies only the detached result rows just read from SQLite for a completed test.
+        internal ProjectARVRReuslt CopyForCsvExport() => (ProjectARVRReuslt)MemberwiseClone();
     }
 }

@@ -64,7 +64,7 @@ related: ["ui.discovery","ui.image-editor-context","ui.property-grid","engine.re
 - 静态图片在后台探测和解码，期间保留已发布的像素。换图和清空取消旧请求，拒绝迟到结果。`ImageOpenCompletion` 报告文件缺失和解码失败。失败或取消后可直接重开同一路径。格式读取和可选色度能力在发布前交接，详见[上下文契约](./image-editor-context.md)。
 - `ImageSourceLoaded` 表示当前像素源已载入或更新；`ExternalRenderCompleted` 只在外部渲染者显式通知时发出。该事件也可携带 `Succeeded=false` 或空 `Source`，发生事件不等于渲染成功。需要导出结果叠图时，核对成功标志、当前任务 `Context` 与 `ImageRevision`，再在视图 Dispatcher 捕获；不能仅凭像素加载或事件名称判断标注已完整。快照 API 自身不会等待或校验外部渲染状态，事件字段见 `ImageViewLifecycleEventArgs.cs`。
 
-CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中配置，由 Engine 的 `CvcieDisplayConfig` 持久化，`CvcieDisplaySettingProvider` 注册到设置窗口，加载 Engine 后无需先打开 CVCIE 即可设置；开启“启用真彩显示”后新打开的 CVCIE 默认采用 XYZ 真彩 sRGB，关闭后默认原图；亮度可选择自动适配或固定参考白。图层下拉框允许临时切换当前图片，不改全局开关。XYZ 转换与原图/Y 灰度回退也由 Engine 提供，异常只记日志，详见 [CV 文件的显示与校正边界](../engine-components/ColorVision.FileIO.md)。
+“图像设置 → 文件打开 → CVCIE”中的“启用真彩显示”适用于带完整 XYZ 的 CVCIE 和带可重放校正参数的三通道 CVRAW。开启后优先显示 XYZ 真彩 sRGB，关闭后优先显示原图。亮度可选自动适配或固定参考白。当前图片可在图层下拉框临时切换显示。Engine 的 `CvcieDisplayConfig` 持久化全局设置，`CvcieDisplaySettingProvider` 注册设置入口。 [CV 文件的显示与校正边界](../engine-components/ColorVision.FileIO.md)
 
 `SetLayerController` 替换或清空控制器时会 Dispose 实现 `IDisposable` 的旧控制器，同一实例重设选择不释放。Engine 的 CVCIE 控制器借此取消后台切换并释放显示缓存；选择返回不表示新图层已显示，消费方仍以 `ImageSourceLoaded` 为完成信号。
 
@@ -82,7 +82,7 @@ CVCIE 的全局默认显示在“图像设置 → 文件打开 → CVCIE”中�
 
 ## 绘图、选择与撤销
 
-参考线模式可选同心圆、简单十字、双十字和斜十字。旧相机显示配置中保存的 `CrossMask` 或 `GridLines` 会加载为简单十字，继续使用该相机的其他设置。
+参考线支持同心圆、简单十字、双十字和斜十字。用当前窗口的参考线按钮控制显示。在“图像设置 → 参考线”编辑并确认，模式、颜色、线宽、中心、角度和映射会随 ImageView 档案保存。
 
 缩放和平移定位图像区域；绘图工具向同一 `DrawCanvas` 添加矩形、圆、线、多边形、曲线或文本等对象。对象选不中时先确认当前绘图/选择状态和对象是否支持选择，再查命中测试与[属性编辑器](./property-grid.md)，不要先修改设备或算法配置。
 

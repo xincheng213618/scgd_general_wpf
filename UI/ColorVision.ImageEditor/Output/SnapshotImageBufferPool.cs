@@ -69,7 +69,7 @@ namespace ColorVision.ImageEditor.Output
             return bitmap;
         }
 
-        internal BitmapSource? TryCreateOpaqueRgb48Bitmap(int width, int height, double dpiX, double dpiY)
+        internal BitmapSource? TryCreateOpaqueRgb48Bitmap(int width, int height, double dpiX, double dpiY, bool freezeForEncoding)
         {
             HImage buffer = Image;
             if (format != PixelFormats.Rgb48 || !Ssse3.IsSupported || Environment.ProcessorCount < 2
@@ -87,15 +87,11 @@ namespace ColorVision.ImageEditor.Output
                 {
                     nint target = bitmap.BackBuffer;
                     int targetStride = bitmap.BackBufferStride;
-                    int middleRow = height / 2;
-                    // The export worker keeps the lease until both bands finish writing the locked WPF back buffer.
-                    Parallel.Invoke(new ParallelOptions { MaxDegreeOfParallelism = 2, TaskScheduler = TaskScheduler.Default },
-                        () => ImageRenderProxy.CopyRgb48Rows(buffer.pData, buffer.stride, target, targetStride, width, 0, middleRow),
-                        () => ImageRenderProxy.CopyRgb48Rows(buffer.pData, buffer.stride, target, targetStride, width, middleRow, height));
+                    ImageRenderProxy.CopyRgb48InTwoBands(buffer.pData, buffer.stride, target, targetStride, width, height);
                     bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
                 }
                 finally { bitmap.Unlock(); }
-                if (scratch == null)
+                if (scratch == null || freezeForEncoding)
                     bitmap.Freeze();
                 return bitmap;
             }

@@ -40,31 +40,18 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             SerialNumber = serialNumber ?? string.Empty;
             Batch = batch;
             Run = run;
-            Records = records
-                .OrderBy(item => item.StartTime)
-                .ThenBy(item => item.Id)
-                .ToList();
-            Messages = messages
-                .OrderBy(item => item.SendTime)
-                .ThenBy(item => item.Id)
-                .ToList();
-            _messagesByExecution = new FlowExecutionAnalysisPresentation.NodeMessageLookup(Messages);
-            Events = events
-                .OrderBy(item => item.OccurredTimeUtc)
-                .ThenBy(item => item.SequenceNo)
-                .ToList();
+            Records = SnapshotInTimeOrder(records, static item => item.StartTime, static item => item.Id);
+            Messages = SnapshotInTimeOrder(messages, static item => item.SendTime, static item => item.Id);
+            _messagesByExecution = new FlowExecutionAnalysisPresentation.NodeMessageLookup(Records, Messages, messagesOrdered: true);
+            Events = SnapshotInTimeOrder(events, static item => item.OccurredTimeUtc, static item => item.SequenceNo);
             CapturedAt = capturedAt;
-            DurationItems = FlowExecutionAnalysisPresentation.BuildDurationItems(
+            (DurationItems, Summary) = FlowExecutionAnalysisPresentation.BuildOverviewFromOrderedRecords(
                 Records,
                 capturedAt,
                 slowNodeThresholdMs,
                 _messagesByExecution);
-            Summary = FlowExecutionAnalysisPresentation.BuildSummary(
-                Records,
-                DurationItems,
-                capturedAt);
             PhaseSummary =
-                FlowExecutionAnalysisPresentation.BuildPhaseSummary(Events);
+                FlowExecutionAnalysisPresentation.BuildPhaseSummaryFromOrderedEvents(Events);
         }
 
         public int BatchId { get; }
@@ -116,7 +103,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public IReadOnlyList<FlowNodeMessage> GetMessages(FlowNodeRecord record)
         {
-            return _messagesByExecution.GetMessages(record, Records);
+            return _messagesByExecution.GetMessages(record);
         }
 
         public FlowNodeRecord? GetAdjacentRecord(FlowNodeRecord record, int offset)
@@ -135,6 +122,21 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             int targetIndex = (currentIndex + offset + Records.Count) % Records.Count;
             return Records[targetIndex];
+        }
+
+        private static List<T> SnapshotInTimeOrder<T>(IReadOnlyList<T> source, Func<T, DateTime> time, Func<T, long> tie)
+        {
+            var snapshot = source.ToList();
+            // Keep database rows in their existing order when their times and tie breaks already match.
+            for (int index = 1; index < snapshot.Count; index++)
+            {
+                T previous = snapshot[index - 1];
+                T current = snapshot[index];
+                int order = time(previous).CompareTo(time(current));
+                if (order > 0 || (order == 0 && tie(previous) > tie(current)))
+                    return snapshot.OrderBy(time).ThenBy(tie).ToList();
+            }
+            return snapshot;
         }
 
         private static bool IsSameRecord(FlowNodeRecord left, FlowNodeRecord right)

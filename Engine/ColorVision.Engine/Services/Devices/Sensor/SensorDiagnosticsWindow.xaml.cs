@@ -65,7 +65,7 @@ public partial class SensorDiagnosticsWindow : Window
         var snapshot = session.Diagnostics.GetSnapshot(revision, out revision);
         if (snapshot != null)
         {
-            UpdateEntries(ShowFragments.IsChecked == true ? snapshot : LocalSensorDiagnostics.SummarizeResponses(snapshot));
+            UpdateEntries(ShowFragments.IsChecked == true ? snapshot : LocalSensorDiagnostics.SummarizeResponses(snapshot, entries));
             CountText.Text = EngineLocalization.Format($"发送 {entries.Count(entry => entry.Kind == LocalSensorDiagnosticKind.Sent)} · 接收 {entries.Count(entry => entry.Kind == LocalSensorDiagnosticKind.Received)} · 日志 {entries.Count(entry => entry.Kind is LocalSensorDiagnosticKind.Log or LocalSensorDiagnosticKind.Error)}");
             if (AutoScroll.IsChecked == true && view.Cast<object>().LastOrDefault() is { } latest) MessageGrid.ScrollIntoView(latest);
         }

@@ -2,6 +2,7 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
+using FlowEngineLib.Logical;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using ColorVision.Engine.FlowProcessing.Nodes;
@@ -45,7 +46,7 @@ public sealed class OfflineCameraFlowTests
     }
 
     [Fact]
-    public void DisconnectedMqttStartDispatchesLocalFlowButStillRejectsServiceGraph()
+    public void DisconnectedMqttStartRechecksRemoteDependenciesAfterRewiring()
     {
         StaTest.Run(() =>
         {
@@ -70,12 +71,43 @@ public sealed class OfflineCameraFlowTests
             var remote = new RemoteNode();
             remote.Create();
             editor.Nodes.Add(remote);
+            Assert.True(control.CanStartNode("offline"));
+            var branch = new ConditionBranchNode();
+            branch.Create();
+            editor.Nodes.Add(branch);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(branch.GetAllInputOptions().Single()));
+            STNodeOption errorBranch = branch.GetAllOutputOptions().Single(port => port.Text == "OUT_ERROR");
+            STNodeOption remoteInput = remote.GetAllInputOptions()[0];
+            Assert.Equal(ConnectionStatus.Connected, errorBranch.ConnectOption(remoteInput));
             Assert.False(control.CanStartNode("offline"));
+            Assert.False(control.EnsureStartNodeReadyAsync("offline", TimeSpan.FromSeconds(1)).GetAwaiter().GetResult());
             Assert.False(control.TryStartNode("offline", "remote-test"));
-            editor.Nodes.Remove(remote);
+            Assert.Equal(ConnectionStatus.DisConnected, errorBranch.DisConnectOption(remoteInput));
             Assert.True(control.CanStartNode("offline"));
         });
     }
+
+    [Fact]
+    public void TwoStartsSharingARelayUseOnlyTheirOwnPortPairs() => StaTest.Run(() =>
+    {
+        using var editor = new STNodeEditor();
+        using var control = new FlowEngineControl(editor, false, new FlowNodeManager());
+        var local = new DisconnectedMqttStart { NodeName = "local" };
+        var other = new DisconnectedMqttStart { NodeName = "other" };
+        var hub = new STNodeHubMulti();
+        var end = new CVEndNode();
+        var remote = new RemoteNode();
+        foreach (var node in new STNode[] { local, other, hub, end, remote }) { node.Create(); editor.Nodes.Add(node); }
+        Assert.Equal(ConnectionStatus.Connected, local.m_op_start.ConnectOption(hub.GetAllInputOptions()[0]));
+        Assert.Equal(ConnectionStatus.Connected, hub.GetAllOutputOptions()[0].ConnectOption(end.m_in_start));
+        Assert.Equal(ConnectionStatus.Connected, other.m_op_start.ConnectOption(hub.GetAllInputOptions()[1]));
+        Assert.Equal(ConnectionStatus.Connected, hub.GetAllOutputOptions()[1].ConnectOption(remote.GetAllInputOptions()[0]));
+
+        Assert.Null(control.FindRemoteServiceNode(local.NodeName));
+        Assert.Same(remote, control.FindRemoteServiceNode(other.NodeName));
+        Assert.True(control.TryStartNode(local.NodeName, "local-through-hub"));
+        Assert.False(control.TryStartNode(other.NodeName, "remote-through-hub"));
+    });
 
     [Fact]
     public void OfflineCameraResultKeepsFrameAndMetadataWithoutDatabaseIdentity()

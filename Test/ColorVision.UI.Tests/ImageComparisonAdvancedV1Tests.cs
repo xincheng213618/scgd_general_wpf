@@ -68,6 +68,44 @@ public sealed class ImageComparisonAdvancedV1Tests
     }
 
     [Fact]
+    public async Task LargeColorComparisonPreservesPerChannelSsimAndWindowCounts()
+    {
+        const int side = 1024;
+        using AlgorithmImageBuffer reference = ConstantColor(0x46321E0A);
+        using AlgorithmImageBuffer candidate = ConstantColor(0x644B0F0A);
+        ImageComparisonParameters parameters = new() { EnableAlignmentPrecheck = false };
+        AlgorithmInvocation invocation = new()
+        {
+            AlgorithmId = StandardAlgorithmIds.ImageComparison,
+            ParameterSchemaVersion = parameters.SchemaVersion,
+            Parameters = AlgorithmJson.ToElement(parameters),
+            Metadata = ImageComparisonOutputPlan.CreateMetadata(ImageComparisonArtifactOutputs.None),
+        };
+        using AlgorithmResult result = await RunAsync(reference, candidate, invocation: invocation);
+        Assert.Equal(AlgorithmResultStatus.Succeeded, result.Status);
+        var rows = result.GetArtifact<AlgorithmTableArtifact>("image-comparison-channels")!.Rows;
+        Assert.Equal(new[] { "B", "G", "R", "A" }, rows.Select(row => row["Channel"].GetString()));
+        double c1 = Math.Pow(parameters.SsimK1 * 255, 2);
+        double[] expected = [Expected(10, 10), Expected(30, 15), Expected(50, 75), Expected(70, 100)];
+        for (int channel = 0; channel < expected.Length; channel++)
+        {
+            Assert.Equal(expected[channel], rows[channel]["SSIM"].GetDouble(), 12);
+            Assert.Equal(side * side, rows[channel]["ValidSsimWindows"].GetInt64());
+            Assert.Equal(0, rows[channel]["InvalidSsimWindows"].GetInt64());
+        }
+        Assert.Equal(expected.Average(), Measurement(result, "comparison.ssim"), 12);
+
+        double Expected(int first, int second) => (2 * first * second + c1) / (first * first + second * second + c1);
+        static AlgorithmImageBuffer ConstantColor(uint value)
+        {
+            var pixels = new uint[side * side];
+            Array.Fill(pixels, value);
+            return new AlgorithmImageBuffer(side, side, side * 4, AlgorithmImageFormat.Bgra32,
+                MemoryMarshal.AsBytes(pixels.AsSpan()).ToArray());
+        }
+    }
+
+    [Fact]
     public async Task SsimIsScaleConsistentForEightSixteenAndFloatInputs()
     {
         using AlgorithmImageBuffer byteReference = Gray8([0, 32, 64, 96, 128, 160, 192, 224, 255], 3, 3);
@@ -157,6 +195,7 @@ public sealed class ImageComparisonAdvancedV1Tests
     public static TheoryData<AlgorithmRoi, double> RoiCases => new()
     {
         { new RectangleAlgorithmRoi(1, 1, 2, 2), 4 },
+        { new RectangleAlgorithmRoi(1.25, 1.25, 2, 2), 4 },
         { new CircleAlgorithmRoi(new AlgorithmPoint(2, 2), 1), 5 },
         { new PolygonAlgorithmRoi([new(0, 0), new(2, 0), new(0, 2)]), 6 },
         { new RectangleAlgorithmRoi(0.1, 0.1, 0.2, 0.2) { CoordinateSpace = AlgorithmCoordinateSpace.Physical }, 4 },

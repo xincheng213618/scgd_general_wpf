@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using ProjectARVRPro.Offline;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace ProjectARVRPro.Tests;
@@ -9,19 +10,44 @@ public sealed class FeedbackAggregateDataSourceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "ColorVision.AggregateTests", Guid.NewGuid().ToString("N"));
 
-    [Fact]
-    public void OpensPublishedGenerationAndExistingReaderKeepsItsOwnSnapshotAfterUpdate()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OpensPublishedGenerationAndExistingReaderKeepsItsOwnSnapshotAfterUpdate(bool hasWal)
     {
         CreateGeneration("first", "2026-09-12", 1);
         Publish("first");
-        ArvrOfflineDataSource first = ArvrOfflineDataSource.Open(_root, Path.Combine(_root, "cache"));
+        string original = Path.Combine(_root, "versions", "first", "Database", "ProjectARVRPro.db");
+        using var writer = hasWal ? new SqliteConnection($"Data Source={original};Pooling=False") : null;
+        if (writer != null)
+        {
+            writer.Open();
+            using var update = writer.CreateCommand();
+            update.CommandText = """
+                PRAGMA journal_mode=WAL;
+                PRAGMA wal_autocheckpoint=0;
+                UPDATE ObjectiveTestResultRecord SET SN='committed WAL';
+                """;
+            update.ExecuteNonQuery();
+            Assert.True(File.Exists(original + "-wal"));
+        }
+        string cache = Path.Combine(_root, "cache");
+        byte[] originalHash = Hash(original);
+        byte[]? walHash = hasWal ? Hash(original + "-wal") : null;
+        ArvrOfflineDataSource first = ArvrOfflineDataSource.Open(_root, cache);
         Assert.Contains("MACHINE", first.Label);
         Assert.Equal(new DateTime(2026, 9, 12), first.LatestDate);
+        Assert.StartsWith(cache + Path.DirectorySeparatorChar, first.ProjectDatabasePath, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(originalHash, Hash(original));
+        if (hasWal)
+            Assert.Equal(walHash, Hash(original + "-wal"));
+        else
+            Assert.Equal(originalHash, Hash(first.ProjectDatabasePath));
         CreateGeneration("second", "2026-09-30", 2);
         Publish("second");
-        ArvrOfflineDataSource second = ArvrOfflineDataSource.Open(_root, Path.Combine(_root, "cache"));
+        ArvrOfflineDataSource second = ArvrOfflineDataSource.Open(_root, cache);
         Assert.Equal(new DateTime(2026, 9, 30), second.LatestDate);
-        Assert.Equal("SN1", first.Statistics.GetRecord(1)!.SN);
+        Assert.Equal(hasWal ? "committed WAL" : "SN1", first.Statistics.GetRecord(1)!.SN);
         Assert.Null(first.Statistics.GetRecord(2));
         Assert.Equal("SN2", second.Statistics.GetRecord(2)!.SN);
         Assert.NotEqual(first.DirectoryPath, second.DirectoryPath);
@@ -49,6 +75,12 @@ public sealed class FeedbackAggregateDataSourceTests : IDisposable
             kind = "ColorVisionFeedbackAggregate", formatVersion = 1, machine = "MACHINE",
             databaseDirectory = $"versions/{name}/Database", sources = new[] { new { feedbackId = name } },
         }));
+    }
+
+    private static byte[] Hash(string path)
+    {
+        using var file = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        return SHA256.HashData(file);
     }
 
     private void CreateGeneration(string name, string date, int id)

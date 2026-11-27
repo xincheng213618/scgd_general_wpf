@@ -57,16 +57,13 @@ public class DeviceNode
 		}
 	}
 
-	public virtual string GetKey()
+	public virtual string GetKey() => GetKey(Service?.GetKey(), DeviceCode);
+
+	internal static string GetKey(string serviceKey, string deviceCode)
 	{
-		string text = string.Empty;
-		if (Service != null)
+		if (!string.IsNullOrEmpty(serviceKey) && !string.IsNullOrEmpty(deviceCode))
 		{
-			text = Service.GetKey();
-		}
-		if (!string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(DeviceCode))
-		{
-			return $"{text}.{DeviceCode}";
+			return $"{serviceKey}.{deviceCode}";
 		}
 		return string.Empty;
 	}

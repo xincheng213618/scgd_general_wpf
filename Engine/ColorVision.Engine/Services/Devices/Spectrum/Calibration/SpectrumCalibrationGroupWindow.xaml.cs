@@ -1,120 +1,234 @@
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Local;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
 {
     public partial class SpectrumCalibrationGroupWindow : Window
     {
-        private readonly DeviceSpectrum _device;
-        private readonly DeviceConfigurationTarget _configurationTarget;
-        private readonly string _initialBindDeviceCode;
-        private bool _isRefreshing;
+        private readonly ConfigSpectrum _config;
+        private readonly ConfigSpectrum? _draftTarget;
+        private readonly (DeviceSpectrum Device, DeviceConfigurationTarget Target)? _live;
+        private readonly bool _opensLocally;
+        private readonly bool _hasLegacyDirectWheel;
+        private readonly Dictionary<int, RateInput> _rateInputs = new();
+        private bool _isRefreshing = true;
 
         public SpectrumCalibrationGroupWindow(DeviceSpectrum device)
+            : this(new SpectrumConfigurationDraft(device.Config).Config, device.IsLocalSpectrumBackend, null)
         {
-            _device = device;
-            _configurationTarget = device.CaptureConfigurationTarget();
-            _initialBindDeviceCode = _device.Config.NDConfig.NDBindDeviceCode ?? string.Empty;
+            _live = (device, device.CaptureConfigurationTarget());
+        }
+
+        internal SpectrumCalibrationGroupWindow(ConfigSpectrum draft, bool opensLocally)
+            : this(new SpectrumConfigurationDraft(draft).Config, opensLocally, draft)
+        {
+        }
+
+        private SpectrumCalibrationGroupWindow(ConfigSpectrum config, bool opensLocally, ConfigSpectrum? draftTarget)
+        {
+            _config = config;
+            _draftTarget = draftTarget;
+            _opensLocally = opensLocally;
+            var nd = config.NDConfig;
+            _hasLegacyDirectWheel = opensLocally && !nd.IsBingNDDevice && nd.HasConfiguredWheel;
+
             InitializeComponent();
             ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(this);
-            DataContext = _device;
-            RefreshCfwServiceOptions();
-            RefreshNDHoleOptions();
-            RefreshGroups();
+            DataContext = config;
+            LocalNdEnabled.Visibility = opensLocally ? Visibility.Visible : Visibility.Collapsed;
+            if (draftTarget != null) SaveHintText.Text = EngineLocalization.Get("SpectrumCalibrationGroups_DraftSaveHint");
+            else if (opensLocally) SaveHintText.Text = EngineLocalization.Get("SpectrumCalibrationGroups_NdLocalSaveHint");
+
+            string currentCode = nd.IsBingNDDevice ? nd.NDBindDeviceCode ?? string.Empty : string.Empty;
+            var wheels = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>().OrderBy(wheel => wheel.Name)
+                .Select(wheel => new CfwServiceOption(wheel.Code, string.IsNullOrWhiteSpace(wheel.Name) ? wheel.Code : $"{wheel.Name} ({wheel.Code})", wheel)).ToList();
+            wheels.Insert(0, new CfwServiceOption(string.Empty, Properties.Resources.SpectrumCalibrationGroups_NotSelected));
+            if (currentCode.Length > 0 && wheels.All(option => option.Code != currentCode))
+                wheels.Add(new CfwServiceOption(currentCode, string.Format(Properties.Resources.SpectrumCalibrationGroups_NotLoadedFormat, currentCode)));
+            ComboBoxCfwService.ItemsSource = wheels;
+            ComboBoxCfwService.SelectedValue = currentCode;
+
+            config.EnsureCalibrationGroups();
+            ComboBoxGroups.ItemsSource = config.CalibrationGroups;
+            ComboBoxGroups.SelectedItem = config.ActiveCalibrationGroup;
+            ShowSelectedGroup();
+            RefreshNdHoleOptions();
+            nd.PropertyChanged += NdConfig_PropertyChanged;
+            Closed += (_, _) => nd.PropertyChanged -= NdConfig_PropertyChanged;
         }
 
         private SpectrumCalibrationGroup? SelectedGroup => ComboBoxGroups.SelectedItem as SpectrumCalibrationGroup;
 
-        private void RefreshGroups()
+        private void RefreshNdHoleOptions()
         {
             _isRefreshing = true;
-            _device.Config.EnsureCalibrationGroups();
-            ComboBoxGroups.ItemsSource = null;
-            ComboBoxGroups.ItemsSource = _device.Config.CalibrationGroups;
-            ComboBoxGroups.SelectedItem = _device.Config.ActiveCalibrationGroup;
-            DetailGrid.DataContext = ComboBoxGroups.SelectedItem;
-            _isRefreshing = false;
-        }
+            var selected = ComboBoxCfwService.SelectedItem as CfwServiceOption;
+            bool hasBinding = !string.IsNullOrEmpty(selected?.Code);
+            bool legacyDirect = !hasBinding && _hasLegacyDirectWheel;
+            var options = new List<NdHoleOption> { new(-1, Properties.Resources.SpectrumCalibrationGroups_NoAssociation) };
+            if (selected?.Wheel is { } wheel)
+            {
+                options.AddRange(DeviceSpectrum.ResolveNdHoleMappings(wheel).OrderBy(hole => hole.HoleIndex)
+                    .Select(hole => new NdHoleOption(hole.HoleIndex, $"{hole.HoleIndex}: {hole.HoleName}")));
+            }
+            else if (legacyDirect)
+            {
+                options.AddRange(DeviceSpectrum.ResolveNdHoleMappings(null, LocalSpectrumNd.GetDirectPortCount(_config.NDConfig))
+                    .Select(hole => new NdHoleOption(hole.HoleIndex, $"{hole.HoleIndex}: {hole.HoleName}")));
+            }
 
-        private void RefreshCfwServiceOptions()
-        {
-            _isRefreshing = true;
-            string currentCode = _device.Config.NDConfig.NDBindDeviceCode ?? string.Empty;
-            var options = ServiceManager.GetInstance().DeviceServices
-                .OfType<DeviceCfwPort>()
-                .OrderBy(a => a.Name)
-                .Select(a => new CfwServiceOption(a.Code, string.IsNullOrWhiteSpace(a.Name) ? a.Code : $"{a.Name} ({a.Code})"))
-                .ToList();
-
-            options.Insert(0, new CfwServiceOption(string.Empty, Properties.Resources.SpectrumCalibrationGroups_NotSelected));
-            if (!string.IsNullOrWhiteSpace(currentCode) && options.All(a => a.Code != currentCode))
-                options.Add(new CfwServiceOption(currentCode, string.Format(Properties.Resources.SpectrumCalibrationGroups_NotLoadedFormat, currentCode)));
-
-            ComboBoxCfwService.ItemsSource = options;
-            ComboBoxCfwService.SelectedValue = currentCode;
-            _isRefreshing = false;
-        }
-
-        private void RefreshNDHoleOptions()
-        {
-            var options = new List<NDHoleOption> { new NDHoleOption(-1, Properties.Resources.SpectrumCalibrationGroups_NoAssociation) };
-            options.AddRange(_device.GetNDHoleMappings().OrderBy(a => a.HoleIndex).Select(a => new NDHoleOption(a.HoleIndex, $"{a.HoleIndex}: {a.HoleName}")));
+            int savedHole = SelectedGroup?.NDHoleIndex ?? -1;
             ComboBoxNDHole.ItemsSource = options;
-        }
-
-        private void ComboBoxGroups_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isRefreshing)
-                return;
-
-            DetailGrid.DataContext = SelectedGroup;
+            ComboBoxNDHole.SetCurrentValue(ComboBox.SelectedValueProperty, savedHole);
+            LocalNdEnabled.IsEnabled = hasBinding || legacyDirect;
+            _isRefreshing = false;
+            ShowAttenuation();
         }
 
         private void ComboBoxCfwService_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_isRefreshing)
-                return;
+            if (_isRefreshing) return;
 
+            var nd = _config.NDConfig;
             string code = ComboBoxCfwService.SelectedValue as string ?? string.Empty;
-            if (string.Equals(_device.Config.NDConfig.NDBindDeviceCode, code, StringComparison.Ordinal))
-                return;
+            nd.IsBingNDDevice = code.Length > 0;
+            nd.NDBindDeviceCode = code;
+            if (_opensLocally && code.Length == 0 && !_hasLegacyDirectWheel) nd.IsNDPort = false;
+            RefreshNdHoleOptions();
+        }
 
-            _device.Config.NDConfig.IsBingNDDevice = true;
-            _device.Config.NDConfig.NDBindDeviceCode = code;
-            RefreshNDHoleOptions();
+        private void ComboBoxGroups_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isRefreshing) ShowSelectedGroup();
+        }
+
+        private void ShowSelectedGroup()
+        {
+            DetailGrid.DataContext = SelectedGroup;
+            NdHoleFields.DataContext = SelectedGroup;
+            BtnRenameGroup.IsEnabled = SelectedGroup != null;
+            BtnRemoveGroup.IsEnabled = SelectedGroup != null && _config.CalibrationGroups.Count > 1;
+            ShowAttenuation();
+        }
+
+        private void ComboBoxNDHole_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isRefreshing) ShowAttenuation();
+        }
+
+        private void NdConfig_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(NDConfig.IsNDPort)) ShowAttenuation();
+        }
+
+        private void ShowAttenuation()
+        {
+            var nd = _config.NDConfig;
+            RateInput? input = null;
+            if (_opensLocally && nd.IsNDPort && ComboBoxNDHole.SelectedItem is NdHoleOption { HoleIndex: >= 0 } hole)
+            {
+                if (!_rateInputs.TryGetValue(hole.HoleIndex, out input))
+                {
+                    int? rate = nd.LocalNDRates != null
+                        ? nd.LocalNDRates.TryGetValue(hole.HoleIndex, out int explicitRate) ? explicitRate : null
+                        : hole.HoleIndex < nd.NDRate.Count ? nd.NDRate[hole.HoleIndex] : null;
+                    _rateInputs.Add(hole.HoleIndex, input = new RateInput(rate));
+                }
+            }
+
+            NdAttenuationField.DataContext = input;
+            NdAttenuationField.Visibility = input != null ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void BtnAddGroup_Click(object sender, RoutedEventArgs e)
         {
+            string? name = PromptGroupName(Properties.Resources.SpectrumCalibrationGroups_AddGroup, CreateGroupName());
+            if (name == null) return;
             var group = new SpectrumCalibrationGroup
             {
-                GroupName = CreateGroupName(),
-                WavelengthFile = _device.Config.WavelengthFile,
-                MaguideFile = _device.Config.MaguideFile,
+                GroupName = name,
+                WavelengthFile = _config.WavelengthFile,
+                MaguideFile = _config.MaguideFile,
             };
-
-            _device.Config.CalibrationGroups.Add(group);
+            _config.CalibrationGroups.Add(group);
             ComboBoxGroups.SelectedItem = group;
+        }
+
+        private void BtnRenameGroup_Click(object sender, RoutedEventArgs e)
+        {
+            if (SelectedGroup is not { } group) return;
+            string? name = PromptGroupName(EngineLocalization.Get("SpectrumCalibrationGroups_RenameGroup"), group.GroupName, group);
+            if (name != null) group.GroupName = name;
+        }
+
+        private string? PromptGroupName(string title, string initialName, SpectrumCalibrationGroup? renamedGroup = null)
+        {
+            var dialog = new Window
+            {
+                Owner = this, Title = title, Width = 420, SizeToContent = SizeToContent.Height,
+                ResizeMode = ResizeMode.NoResize, ShowInTaskbar = false, WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            dialog.SetResourceReference(BackgroundProperty, "GlobalBackground");
+            ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(dialog);
+
+            var panel = new StackPanel { Margin = new Thickness(20) };
+            var input = new TextBox { Name = "NameInput", Text = initialName, Margin = new Thickness(0, 6, 0, 0), Style = (Style)FindResource("Input") };
+            ColorVision.Themes.InputKeyboardNavigation.SetEnterMovesFocus(input, false);
+            var label = new TextBlock { Text = Properties.Resources.SpectrumCalibrationGroups_GroupName };
+            label.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            AutomationProperties.SetLabeledBy(input, label);
+            panel.Children.Add(label);
+            panel.Children.Add(input);
+            var error = new TextBlock { Name = "NameError", Text = EngineLocalization.Get("SpectrumCalibrationGroups_InvalidNames"),
+                Visibility = Visibility.Collapsed, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
+            error.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            panel.Children.Add(error);
+
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
+            var confirm = new Button { Content = EngineLocalization.Get("确定"), IsDefault = true, MinWidth = 80, Margin = new Thickness(0, 0, 8, 0) };
+            var cancel = new Button { Content = EngineLocalization.Get("取消"), IsCancel = true, MinWidth = 80 };
+            confirm.Style = (Style)FindResource("CV.Button.Primary");
+            cancel.Style = (Style)FindResource("CV.Button.Secondary");
+            actions.Children.Add(confirm);
+            actions.Children.Add(cancel);
+            panel.Children.Add(actions);
+            dialog.Content = panel;
+            dialog.Loaded += (_, _) => { input.Focus(); input.SelectAll(); };
+            input.TextChanged += (_, _) => error.Visibility = Visibility.Collapsed;
+            confirm.Click += (_, _) =>
+            {
+                string name = input.Text.Trim();
+                if (name.Length == 0 || _config.CalibrationGroups.Any(group => !ReferenceEquals(group, renamedGroup)
+                    && string.Equals(group.GroupName?.Trim(), name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    error.Visibility = Visibility.Visible;
+                    input.Focus();
+                    return;
+                }
+                dialog.DialogResult = true;
+            };
+            return dialog.ShowDialog() == true ? input.Text.Trim() : null;
         }
 
         private void BtnRemoveGroup_Click(object sender, RoutedEventArgs e)
         {
-            if (_device.Config.CalibrationGroups.Count <= 1)
+            if (_config.CalibrationGroups.Count <= 1)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SpectrumCalibrationGroups_KeepAtLeastOneGroup, "ColorVision");
+                MessageBox.Show(this, Properties.Resources.SpectrumCalibrationGroups_KeepAtLeastOneGroup, "ColorVision");
                 return;
             }
 
-            if (SelectedGroup == null)
-                return;
-
-            _device.Config.CalibrationGroups.Remove(SelectedGroup);
-            ComboBoxGroups.SelectedItem = _device.Config.CalibrationGroups.FirstOrDefault();
+            if (SelectedGroup == null) return;
+            _config.CalibrationGroups.Remove(SelectedGroup);
+            ComboBoxGroups.SelectedItem = _config.CalibrationGroups.FirstOrDefault();
         }
 
         private void BtnSelectWavelength_Click(object sender, RoutedEventArgs e)
@@ -129,15 +243,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            bool ndServiceChanged = !string.Equals(_initialBindDeviceCode, _device.Config.NDConfig.NDBindDeviceCode ?? string.Empty, StringComparison.Ordinal);
             try
             {
-                if (_device.TrySaveCalibrationGroupConfiguration(SelectedGroup, ndServiceChanged, _configurationTarget))
+                if (TrySaveChanges(out string error))
                 {
                     Close();
                     return;
                 }
-                MessageBox.Show(this, EngineLocalization.Get("设备标定配置已变更，请重新打开后编辑。"), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, error, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
@@ -145,17 +258,92 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
             }
         }
 
-        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        internal bool TrySaveChanges(out string error)
         {
-            Close();
+            error = string.Empty;
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (SelectedGroup is not { } group || _config.CalibrationGroups.Any(item =>
+                string.IsNullOrWhiteSpace(item.GroupName) || !names.Add(item.GroupName.Trim())))
+            {
+                error = EngineLocalization.Get("SpectrumCalibrationGroups_InvalidNames");
+                return false;
+            }
+            if ((_config.NDConfig.HasConfiguredWheel || _hasLegacyDirectWheel) && _config.CalibrationGroups
+                .Where(item => item.NDHoleIndex >= 0).GroupBy(item => item.NDHoleIndex).Any(items => items.Count() > 1))
+            {
+                error = EngineLocalization.Get("SpectrumCalibrationGroups_NdInvalidHoles");
+                return false;
+            }
+            if (!TryApplyEditedRates(out error)) return false;
+            var nd = _config.NDConfig;
+            if (_hasLegacyDirectWheel && !nd.IsBingNDDevice && !nd.IsNDPort && !nd.LocalNDPortCount.HasValue)
+                nd.LocalNDPortCount = LocalSpectrumNd.GetDirectPortCount(nd);
+
+            _config.ActiveCalibrationGroupName = group.GroupName;
+            _config.WavelengthFile = group.WavelengthFile;
+            _config.MaguideFile = group.MaguideFile;
+            if (_live is { } live)
+            {
+                if (!live.Device.CanConfigure)
+                {
+                    error = EngineLocalization.Get("当前权限不足，无法保存设备配置。");
+                    return false;
+                }
+                if (live.Device.TrySaveCalibrationGroupConfiguration(_config, live.Target)) return true;
+                error = EngineLocalization.Get("设备标定配置已变更，请重新打开后编辑。");
+                return false;
+            }
+
+            _draftTarget!.ApplyCalibrationAndNdSettings(_config);
+            return true;
         }
+
+        private bool TryApplyEditedRates(out string error)
+        {
+            error = string.Empty;
+            var edits = _rateInputs.Where(pair => pair.Value.IsEdited).ToArray();
+            if (edits.Length == 0) return true;
+
+            var nd = _config.NDConfig;
+            var rates = nd.LocalNDRates != null ? new Dictionary<int, int>(nd.LocalNDRates)
+                : nd.NDRate.Select((rate, hole) => KeyValuePair.Create(hole, rate)).Where(pair => pair.Key != nd.DarkNDPort).ToDictionary();
+            foreach (var (hole, input) in edits)
+            {
+                if (string.IsNullOrWhiteSpace(input.Text))
+                {
+                    rates.Remove(hole);
+                    continue;
+                }
+                if (!int.TryParse(input.Text, out int rate) || rate < 0 || hole == nd.DarkNDPort)
+                {
+                    error = EngineLocalization.Get("SpectrumCalibrationGroups_NdInvalidRates");
+                    return false;
+                }
+
+                var group = _config.CalibrationGroups.FirstOrDefault(item => item.NDHoleIndex == hole);
+                if (group == null || string.IsNullOrWhiteSpace(group.WavelengthFile) || string.IsNullOrWhiteSpace(group.MaguideFile))
+                {
+                    error = string.Format(CultureInfo.CurrentCulture, EngineLocalization.Get("SpectrumCalibrationGroups_NdCalibrationRequired"), hole);
+                    return false;
+                }
+                rates[hole] = rate;
+            }
+            if (rates.Values.Distinct().Count() != rates.Count)
+            {
+                error = EngineLocalization.Get("SpectrumCalibrationGroups_NdInvalidRates");
+                return false;
+            }
+
+            nd.LocalNDRates = rates;
+            return true;
+        }
+
+        private void BtnClose_Click(object sender, RoutedEventArgs e) => Close();
 
         private void SelectFile(string? currentPath, Action<string> apply)
         {
-            if (SelectedGroup == null)
-                return;
-
-            if (SpectrumCalibrationFilePicker.Browse(this, currentPath, _device.IsLocalSpectrumBackend) is string file)
+            if (SelectedGroup == null) return;
+            if (SpectrumCalibrationFilePicker.Browse(this, currentPath, _live?.Device.IsLocalSpectrumBackend ?? _opensLocally) is string file)
                 apply(file);
         }
 
@@ -164,34 +352,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Calibration
             for (int i = 1; i < 999; i++)
             {
                 string name = $"Group{i}";
-                if (_device.Config.CalibrationGroups.All(a => !string.Equals(a.GroupName, name, StringComparison.OrdinalIgnoreCase)))
+                if (_config.CalibrationGroups.All(item => !string.Equals(item.GroupName, name, StringComparison.OrdinalIgnoreCase)))
                     return name;
             }
-            return $"Group{_device.Config.CalibrationGroups.Count + 1}";
+            return $"Group{_config.CalibrationGroups.Count + 1}";
         }
 
-        private sealed class NDHoleOption
+        private sealed class RateInput(int? rate)
         {
-            public NDHoleOption(int holeIndex, string displayName)
-            {
-                HoleIndex = holeIndex;
-                DisplayName = displayName;
-            }
-
-            public int HoleIndex { get; }
-            public string DisplayName { get; }
+            private readonly string _initial = rate?.ToString(CultureInfo.CurrentCulture) ?? string.Empty;
+            public string Text { get; set; } = rate?.ToString(CultureInfo.CurrentCulture) ?? string.Empty;
+            internal bool IsEdited => !string.Equals(_initial, Text.Trim(), StringComparison.Ordinal);
         }
 
-        private sealed class CfwServiceOption
-        {
-            public CfwServiceOption(string code, string displayName)
-            {
-                Code = code;
-                DisplayName = displayName;
-            }
-
-            public string Code { get; }
-            public string DisplayName { get; }
-        }
+        private sealed record NdHoleOption(int HoleIndex, string DisplayName);
+        private sealed record CfwServiceOption(string Code, string DisplayName, DeviceCfwPort? Wheel = null);
     }
 }

@@ -208,6 +208,42 @@ public class KBItemMasterExportTests
     }
 
     [Fact]
+    public void CsvAppendPreservesHistoricalEscapesAndCountsOnlyValidFalloutResults()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"ProjectKB-Historical-{Guid.NewGuid():N}.csv");
+        try
+        {
+            KBItemMaster result = CreateResult("NEW", "A", result: false);
+            result.SaveCsv(path, KBCsvDataType.Lv);
+            string[] template = File.ReadAllLines(path);
+            string[] fields = template[1].Split(',');
+            int resultColumn = Array.IndexOf(template[0].Split(','), "Result");
+            fields[2] = "\"历史,\r\n\"\"旧\"\"\"";
+            fields[resultColumn] = "T\"ru\"e";
+            string passed = string.Join(",", fields);
+            fields[2] = "Legacy";
+            fields[resultColumn] = "\" False \"";
+            string failed = string.Join(",", fields);
+            fields[resultColumn] = "unknown";
+            string unknown = string.Join(",", fields);
+            fields[0] = "\"faLLout=\"";
+            fields[resultColumn] = "True";
+            string formerSummary = string.Join(",", fields);
+
+            File.WriteAllText(path, $"{template[0]}\r{passed}\n{formerSummary}\r\n{failed}\r\n{unknown}\n \r\"Fallout=\",removed\r\n\t", Encoding.UTF8);
+            result.SaveCsv(path, KBCsvDataType.Lv, appendFalloutSummary: true);
+
+            string expected = string.Join(Environment.NewLine,
+                template[0], passed, formerSummary, failed, unknown, template[1], "Fallout=,66.67% (2/3)", string.Empty);
+            Assert.Equal(expected, File.ReadAllText(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void FailedCsvReplacementLeavesExistingBytesAndRemovesTheStagingFile()
     {
         DirectoryInfo directory = Directory.CreateTempSubdirectory("ProjectKB-FileInUse-");

@@ -6,15 +6,25 @@ using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
+using log4net;
 
 namespace ColorVision.Rbac.CloudDrive;
 
 public sealed record TransferCapabilities(bool AnonymousTransferUploadEnabled, long AnonymousTransferMaxBytes);
 public sealed record TransferSession(string UploadId, string Name, long TotalSize, long Offset, bool Complete, string ShareUrl, DateTimeOffset? ExpiresAt, int ChunkSize);
-public sealed record TransferProgress(long Sent, long Confirmed, long Total);
+public sealed record TransferProgress(long Sent, long Confirmed, long Total)
+{
+    internal bool AwaitingConfirmation { get; init; }
+    internal string? RetryNotice { get; init; }
+}
 
 public sealed class TransferClient(HttpClient http, Uri baseUri, string clientId)
 {
+    private const int MaxChunkSize = 1024 * 1024;
+    private const int MinChunkSize = 64 * 1024;
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan UploadInactivityTimeout = TimeSpan.FromSeconds(60);
+    private static readonly ILog Log = LogManager.GetLogger(typeof(TransferClient));
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
 
     public Task<TransferCapabilities> GetCapabilitiesAsync(CancellationToken token) => RequestAsync<TransferCapabilities>(HttpMethod.Get, "api/auth/session", null, null, token);
@@ -33,10 +43,12 @@ public sealed class TransferClient(HttpClient http, Uri baseUri, string clientId
         item.Fingerprint = fingerprint;
         checkpoint();
 
+        void ReportRetry(string message) => progress?.Report(new(item.Offset, item.Offset, item.Size) { RetryNotice = message });
+
         TransferSession? session = null;
         if (!string.IsNullOrEmpty(item.UploadId))
         {
-            try { session = await GetSessionAsync(item.UploadId, token); }
+            try { session = await RetryRequestAsync(() => GetSessionAsync(item.UploadId, token), ReportRetry, token); }
             catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
             {
                 // An expired receipt cannot be safely replaced under the same remote name.
@@ -46,46 +58,63 @@ public sealed class TransferClient(HttpClient http, Uri baseUri, string clientId
                 checkpoint();
             }
         }
-        session ??= await RequestAsync<TransferSession>(HttpMethod.Post, "api/transfer/uploads",
-            JsonContent.Create(new { filename = item.RemoteName, total_size = item.Size, fingerprint }, options: JsonOptions), null, token);
+        session ??= await RetryRequestAsync(() => RequestAsync<TransferSession>(HttpMethod.Post, "api/transfer/uploads",
+            JsonContent.Create(new { filename = item.RemoteName, total_size = item.Size, fingerprint }, options: JsonOptions), null, token), ReportRetry, token);
         ApplySession(item, session, checkpoint, progress);
-        int failures = 0;
-        var buffer = new byte[Math.Clamp(session.ChunkSize, 64 * 1024, 8 * 1024 * 1024)];
+        // Confirm smaller blocks more often so an interrupted connection has less data to resend.
+        int chunkSize = Math.Clamp(session.ChunkSize, MinChunkSize, MaxChunkSize);
+        var buffer = new byte[chunkSize];
         while (!session.Complete && session.Offset < item.Size)
         {
             token.ThrowIfCancellationRequested();
             long start = session.Offset;
-            file.Position = start;
-            int length = (int)Math.Min(buffer.Length, item.Size - start);
-            await file.ReadExactlyAsync(buffer.AsMemory(0, length), token);
-            try
+            string uploadId = session.UploadId;
+            bool mustCheckOffset = false;
+            HttpRequestException? conflict = null;
+            session = await RetryRequestAsync(async () =>
             {
-                session = await RequestAsync<TransferSession>(HttpMethod.Patch, "api/transfer/uploads/" + session.UploadId,
-                    new ProgressContent(buffer, length, sent => progress?.Report(new(start + sent, start, item.Size))), start, token);
-                ValidateSession(item, session);
-                if (!session.Complete && session.Offset <= start) throw new IOException("服务器没有确认分块进度，请稍后继续。");
-                failures = 0;
-            }
-            catch (Exception ex) when (!token.IsCancellationRequested && IsTransient(ex))
-            {
-                // Never blindly resend a chunk: even a lost final response may have committed the file.
-                TransferSession? recovered = null;
-                try { recovered = await GetSessionAsync(session.UploadId, token); }
-                catch (Exception statusError) when (!token.IsCancellationRequested && IsTransient(statusError)) { }
-                if (recovered != null)
+                if (mustCheckOffset)
                 {
+                    // A lost response can still have committed the block. A failed lookup must never resend it.
+                    ReportRetry("正在查询服务器断点…");
+                    var recovered = await GetSessionAsync(uploadId, token);
                     ValidateSession(item, recovered);
-                    session = recovered;
+                    if (recovered.Complete || recovered.Offset != start) return recovered;
+                    if (conflict != null) throw conflict;
                 }
-                failures = session.Complete || session.Offset != start ? 0 : failures + 1;
-                if (failures >= 3) throw new IOException("网络连接中断，上传断点已保留；点击继续上传即可恢复。", ex);
-                if (failures > 0) await Task.Delay(500 * failures, token);
-            }
+
+                file.Position = start;
+                int length = (int)Math.Min(chunkSize, item.Size - start);
+                await file.ReadExactlyAsync(buffer.AsMemory(0, length), token);
+                progress?.Report(new(start, start, item.Size));
+                mustCheckOffset = true;
+                try
+                {
+                    var updated = await RequestAsync<TransferSession>(HttpMethod.Patch, "api/transfer/uploads/" + uploadId,
+                        new ProgressContent(buffer, length, sent => progress?.Report(new(start + sent, start, item.Size)
+                        {
+                            AwaitingConfirmation = sent == length
+                        })), start, token);
+                    ValidateSession(item, updated);
+                    if (!updated.Complete && updated.Offset <= start) throw new HttpRequestException("服务器没有确认分块进度");
+                    return updated;
+                }
+                catch (TimeoutException)
+                {
+                    chunkSize = Math.Max(MinChunkSize, chunkSize / 2);
+                    throw;
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+                {
+                    conflict = ex;
+                    throw new HttpRequestException(ex.Message, ex);
+                }
+            }, message => ReportRetry(message + " 将先查询服务器断点。"), token);
             ApplySession(item, session, checkpoint, progress);
         }
         if (!session.Complete)
         {
-            session = await GetSessionAsync(session.UploadId, token);
+            session = await RetryRequestAsync(() => GetSessionAsync(item.UploadId, token), ReportRetry, token);
             ApplySession(item, session, checkpoint, progress);
         }
         if (!session.Complete) throw new IOException("服务器尚未确认上传完成，请稍后继续。");
@@ -101,8 +130,26 @@ public sealed class TransferClient(HttpClient http, Uri baseUri, string clientId
         return $"{stem}_{Guid.NewGuid():N}{extension}";
     }
 
-    private static bool IsTransient(Exception ex) => ex is TaskCanceledException ||
-        ex is HttpRequestException httpError && (!httpError.StatusCode.HasValue || httpError.StatusCode == HttpStatusCode.Conflict || (int)httpError.StatusCode >= 500);
+    internal static async Task<T> RetryRequestAsync<T>(Func<Task<T>> request, Action<string> onRetry, CancellationToken token)
+    {
+        int delaySeconds = 1;
+        while (true)
+        {
+            token.ThrowIfCancellationRequested();
+            try { return await request(); }
+            catch (Exception ex) when (!token.IsCancellationRequested && IsTransient(ex))
+            {
+                string message = $"{ex.Message} · {delaySeconds} 秒后自动重试。";
+                Log.Warn(message);
+                onRetry(message);
+                await Task.Delay(TimeSpan.FromSeconds(delaySeconds), token);
+                delaySeconds = Math.Min(delaySeconds * 2, 30);
+            }
+        }
+    }
+
+    private static bool IsTransient(Exception ex) => ex is TimeoutException or HttpIOException || ex is HttpRequestException httpError &&
+        (httpError.StatusCode is null or HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests || (int)httpError.StatusCode >= 500);
 
     private static void ValidateSession(CloudDriveItem item, TransferSession session)
     {
@@ -133,19 +180,38 @@ public sealed class TransferClient(HttpClient http, Uri baseUri, string clientId
 
     private async Task<T> RequestAsync<T>(HttpMethod method, string path, HttpContent? content, long? offset, CancellationToken token)
     {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+        var uploadContent = content as ProgressContent;
+        TimeSpan idleTimeout = uploadContent == null ? RequestTimeout : UploadInactivityTimeout;
+        timeout.CancelAfter(idleTimeout);
+        if (uploadContent != null) uploadContent.OnActivity = () => timeout.CancelAfter(idleTimeout);
         using var request = new HttpRequestMessage(method, new Uri(baseUri, path)) { Content = content };
         if (method == HttpMethod.Patch && content != null) content.Headers.ContentType = new MediaTypeHeaderValue("application/offset+octet-stream");
         request.Headers.Add("X-Transfer-Client", clientId);
         request.Headers.Accept.ParseAdd("application/json");
         if (offset.HasValue) request.Headers.Add("Upload-Offset", offset.Value.ToString(CultureInfo.InvariantCulture));
-        using var response = await http.SendAsync(request, token);
+        try
+        {
+            using var response = await http.SendAsync(request, timeout.Token);
+            return await ReadResponseAsync<T>(response, timeout.Token);
+        }
+        catch (OperationCanceledException ex) when (!token.IsCancellationRequested)
+        {
+            string operation = uploadContent == null ? "等待云盘服务器响应" : "等待分块发送或服务器确认";
+            throw new TimeoutException($"{operation}超时", ex);
+        }
+    }
+
+    private static async Task<T> ReadResponseAsync<T>(HttpResponseMessage response, CancellationToken token)
+    {
         if (!response.IsSuccessStatusCode)
         {
             string message = $"服务器返回 HTTP {(int)response.StatusCode}";
             try
             {
                 using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(token));
-                if (body.RootElement.TryGetProperty("error", out var error)) message += $"：{error.GetString()}";
+                if (body.RootElement.ValueKind == JsonValueKind.Object && body.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.String)
+                    message += $"：{error.GetString()}";
             }
             catch (JsonException) { }
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) message = "服务器尚未开放免账号上传，请联系管理员启用匿名文件中转。";
@@ -157,6 +223,8 @@ public sealed class TransferClient(HttpClient http, Uri baseUri, string clientId
 
     private sealed class ProgressContent(byte[] buffer, int length, Action<long> progress) : HttpContent
     {
+        public Action? OnActivity { get; set; }
+
         protected override bool TryComputeLength(out long size) { size = length; return true; }
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) => WriteAsync(stream, CancellationToken.None);
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken token) => WriteAsync(stream, token);
@@ -167,6 +235,7 @@ public sealed class TransferClient(HttpClient http, Uri baseUri, string clientId
                 int count = Math.Min(65536, length - sent);
                 await stream.WriteAsync(buffer.AsMemory(sent, count), token);
                 sent += count;
+                OnActivity?.Invoke();
                 progress(sent);
             }
         }

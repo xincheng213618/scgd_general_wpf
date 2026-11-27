@@ -3378,6 +3378,13 @@ ORB 特徵上限: {6:N0}    最少匹配/內點: {7}/{8}    重投影閾值: {9:
     <value>測量失敗 · {0}
 {1}</value>
   </data>
+  <data name="测量失败 · 找到 {0} 个候选点，目标 {1} 个 · {2}&#10;{3}" xml:space="preserve">
+    <value>測量失敗 · 找到 {0} 個候選點，目標 {1} 個 · {2}
+{3}</value>
+  </data>
+  <data name="原图用黄色圆圈标出 {0} 个检测点。" xml:space="preserve">
+    <value>原圖用黃色圓圈標出 {0} 個偵測點。</value>
+  </data>
   <data name="测量完成 · {0} × {1} · {2} 个点 · 检测 {3:F2} ms" xml:space="preserve">
     <value>測量完成 · {0} × {1} · {2} 個點 · 檢測 {3:F2} ms</value>
   </data>

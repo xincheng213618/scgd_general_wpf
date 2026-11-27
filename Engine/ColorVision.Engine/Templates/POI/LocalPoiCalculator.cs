@@ -98,7 +98,9 @@ namespace ColorVision.Engine.Templates.POI
             ValidateFrame(frame);
             ArgumentNullException.ThrowIfNull(poi);
             IList<PoiPoint> points = poi.PoiPoints;
-            if (poi.PoiPoints.Count == 0 && poi.Id > 0)
+            if (points.Count == 0 && poi.Storage != null)
+                points = poi.Storage.ReadPoints(poi.Id);
+            else if (points.Count == 0 && poi.Id > 0)
             {
                 if (endpoint == null) PoiParam.LoadPoiDetailFromDB(poi);
                 else

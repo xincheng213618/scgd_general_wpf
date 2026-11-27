@@ -138,24 +138,19 @@ bool resolveRoi(const cv::Mat& image, const cv::Rect& requested, cv::Rect& roi)
     return true;
 }
 
-bool convertToNormalizedGray(const cv::Mat& image, int channel, cv::Mat& gray32)
+bool isSupportedGrayInput(const cv::Mat& image, int channel)
 {
-    if (image.empty() || (image.depth() != CV_8U && image.depth() != CV_16U) ||
-        (image.channels() != 1 && image.channels() != 3)) {
-        return false;
-    }
+    return !image.empty() && (image.depth() == CV_8U || image.depth() == CV_16U)
+        && (image.channels() == 1 || image.channels() == 3) && channel < image.channels();
+}
 
+void convertToNormalizedGray(const cv::Mat& image, int channel, cv::Mat& gray32)
+{
     cv::Mat gray;
     if (image.channels() == 1) {
-        if (channel > 0) {
-            return false;
-        }
         gray = image;
     }
     else if (channel >= 0) {
-        if (channel >= image.channels()) {
-            return false;
-        }
         cv::extractChannel(image, gray, channel);
     }
     else {
@@ -164,7 +159,6 @@ bool convertToNormalizedGray(const cv::Mat& image, int channel, cv::Mat& gray32)
 
     const double scale = gray.depth() == CV_8U ? (1.0 / 255.0) : (1.0 / 65535.0);
     gray.convertTo(gray32, CV_32F, scale);
-    return !gray32.empty();
 }
 
 double clamp01(double value)
@@ -243,7 +237,7 @@ cv::Mat makeAnalysisResponse(const cv::Mat& gray32, const GhostDetectionConfig& 
     }
 
     if (level == 0) {
-        return gray32.clone();
+        return gray32;
     }
 
     cv::Mat response;
@@ -772,8 +766,7 @@ GhostDetectionResult detectGhosts(const cv::Mat& image, const GhostDetectionConf
             return result;
         }
 
-        cv::Mat gray32;
-        if (!convertToNormalizedGray(image, config.channel, gray32)) {
+        if (!isSupportedGrayInput(image, config.channel)) {
             result.statusCode = "invalid_image";
             result.message = "Input must be a non-empty 8-bit or 16-bit image with one or three channels; the selected channel must exist.";
             return result;
@@ -785,7 +778,9 @@ GhostDetectionResult detectGhosts(const cv::Mat& image, const GhostDetectionConf
             return result;
         }
 
-        cv::Mat grayRoi = gray32(result.roi).clone();
+        // Convert only the selected pixels. The float output owns its storage even for a source submatrix.
+        cv::Mat grayRoi;
+        convertToNormalizedGray(image(result.roi), config.channel, grayRoi);
         if (config.normalizeExposure) {
             result.exposureNormalized = normalizeExposureByPercentile(
                 grayRoi,

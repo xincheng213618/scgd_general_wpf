@@ -1,6 +1,7 @@
 using ColorVision.FileIO;
 using cvColorVision;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -44,25 +45,72 @@ public static class CalibrationMapCreation
                 long bytes = info.Version == 2 ? reader.ReadInt64() : reader.ReadInt32();
                 long required = checked((long)count * (info.Bpp / 8));
                 if (bytes < required || bytes > stream.Length - stream.Position) throw new InvalidDataException("CVRAW 像素数据长度无效。");
-                int sample = 0;
-                while (required > 0)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    int length = (int)Math.Min(buffer.Length, required);
-                    stream.ReadExactly(buffer.AsSpan(0, length));
-                    for (int i = 0; i < length; i += info.Bpp / 8)
-                    {
-                        int index = info.Channels == 3 && interleavedBgr ? (2 - sample % 3) * (count / 3) + sample / 3 : sample;
-                        result.Values[index] += info.Bpp == 8 ? buffer[i] : buffer[i] | buffer[i + 1] << 8;
-                        sample++;
-                    }
-                    required -= length;
-                }
+                int samplesPerGroup = info.Channels == 3 && interleavedBgr ? 3 : 1;
+                Accumulate(stream, buffer, result.Values, info.Bpp / 8, samplesPerGroup, cancellationToken);
             }
             progress?.Report($"已读取 {Path.GetFileName(path)}");
         }
-        for (int i = 0; i < result!.Values.Length; i++) result.Values[i] /= paths.Count;
-        return result;
+        int frames = paths.Count;
+        if (frames > 1)
+            for (int i = 0; i < result!.Values.Length; i++) result.Values[i] /= frames;
+        return result!;
+    }
+
+    private static void Accumulate(FileStream stream, byte[] buffer, double[] values, int bytesPerSample, int samplesPerGroup,
+        CancellationToken cancellationToken)
+    {
+        int bytesPerGroup = bytesPerSample * samplesPerGroup;
+        // Align reads to complete BGR pixels, or individual samples for planar input.
+        int groupsPerRead = buffer.Length / bytesPerGroup;
+        int groups = values.Length / samplesPerGroup;
+        for (int start = 0; start < groups;)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int count = Math.Min(groupsPerRead, groups - start);
+            Span<byte> input = buffer.AsSpan(0, count * bytesPerGroup);
+            stream.ReadExactly(input);
+            if (samplesPerGroup == 3)
+                AccumulateBgr(input, values.AsSpan(start + groups * 2, count), values.AsSpan(start + groups, count),
+                    values.AsSpan(start, count), bytesPerSample);
+            else
+                AccumulatePlane(input, values.AsSpan(start, count), bytesPerSample);
+            start += count;
+        }
+    }
+
+    private static void AccumulateBgr(ReadOnlySpan<byte> input, Span<double> blue, Span<double> green, Span<double> red, int bytesPerSample)
+    {
+        if (bytesPerSample == 1)
+        {
+            for (int i = 0, sample = 0; i < blue.Length; i++, sample += 3)
+            {
+                blue[i] += input[sample];
+                green[i] += input[sample + 1];
+                red[i] += input[sample + 2];
+            }
+        }
+        else
+        {
+            for (int i = 0, sample = 0; i < blue.Length; i++, sample += 6)
+            {
+                blue[i] += BinaryPrimitives.ReadUInt16LittleEndian(input[sample..]);
+                green[i] += BinaryPrimitives.ReadUInt16LittleEndian(input[(sample + 2)..]);
+                red[i] += BinaryPrimitives.ReadUInt16LittleEndian(input[(sample + 4)..]);
+            }
+        }
+    }
+
+    private static void AccumulatePlane(ReadOnlySpan<byte> input, Span<double> output, int bytesPerSample)
+    {
+        if (bytesPerSample == 1)
+        {
+            for (int i = 0; i < output.Length; i++) output[i] += input[i];
+        }
+        else
+        {
+            for (int i = 0, sample = 0; i < output.Length; i++, sample += 2)
+                output[i] += BinaryPrimitives.ReadUInt16LittleEndian(input[sample..]);
+        }
     }
 
     public static void WriteMap(Stream output, CalibrationRawAverage image, CalibrationType type, int centerRadius = 50, CancellationToken cancellationToken = default)
@@ -90,22 +138,38 @@ public static class CalibrationMapCreation
             targets[channel] = target;
         }
         // Native V1 map payload is interleaved B,G,R even for planar R,G,B RAW.
-        for (int i = 0; i < plane; i++)
+        const int bufferSize = 8192;
+        Span<byte> buffer = stackalloc byte[bufferSize];
+        bool dsnu = type == CalibrationType.DSNU;
+        int bytesPerSample = dsnu ? sizeof(ushort) : sizeof(float);
+        int pixelsPerBlock = buffer.Length / (image.Channels * bytesPerSample);
+        for (int start = 0; start < plane;)
         {
-            for (int outputChannel = 0; outputChannel < image.Channels; outputChannel++)
+            cancellationToken.ThrowIfCancellationRequested();
+            int end = start + Math.Min(pixelsPerBlock, plane - start);
+            int offset = 0;
+            for (int i = start; i < end; i++)
             {
-                if ((i & 65535) == 0) cancellationToken.ThrowIfCancellationRequested();
-                int channel = image.Channels == 3 ? 2 - outputChannel : 0;
-                double value = image.Values[channel * plane + i];
-                if (type == CalibrationType.DSNU) writer.Write((ushort)Math.Round(value, MidpointRounding.AwayFromZero));
-                else
+                for (int channel = image.Channels - 1; channel >= 0; channel--)
                 {
-                    if (value <= 0) throw new InvalidDataException("均匀场含零像素，请检查暗场扣除、曝光和缺陷点后重新导入。");
-                    float factor = (float)(targets[channel] / value);
-                    if (!float.IsFinite(factor) || factor <= 0) throw new InvalidDataException("均匀场增益超出有效范围。");
-                    writer.Write(factor);
+                    double value = image.Values[channel * plane + i];
+                    if (dsnu)
+                    {
+                        ushort sample = (ushort)Math.Round(value, MidpointRounding.AwayFromZero);
+                        BinaryPrimitives.WriteUInt16LittleEndian(buffer[offset..], sample);
+                    }
+                    else
+                    {
+                        if (value <= 0) throw new InvalidDataException("均匀场含零像素，请检查暗场扣除、曝光和缺陷点后重新导入。");
+                        float factor = (float)(targets[channel] / value);
+                        if (!float.IsFinite(factor) || factor <= 0) throw new InvalidDataException("均匀场增益超出有效范围。");
+                        BinaryPrimitives.WriteSingleLittleEndian(buffer[offset..], factor);
+                    }
+                    offset += bytesPerSample;
                 }
             }
+            writer.Write(buffer[..offset]);
+            start = end;
         }
     }
 

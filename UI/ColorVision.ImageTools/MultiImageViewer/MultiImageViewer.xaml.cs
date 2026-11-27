@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Enumeration;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -125,7 +126,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 return Task.CompletedTask;
             }
 
-            return LoadFilesAsync(() => Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly), folderPath, null, preferredFilePath);
+            return LoadFilesAsync(folderPath, null, preferredFilePath);
         }
 
         /// <summary>
@@ -145,9 +146,9 @@ namespace ColorVision.Solution.MultiImageViewer
         }
 
         private Task LoadFileListAsync(List<string> snapshot, string? preferredFilePath = null)
-            => snapshot.Count > 0 ? LoadFilesAsync(() => snapshot, null, snapshot, preferredFilePath) : Task.CompletedTask;
+            => snapshot.Count > 0 ? LoadFilesAsync(null, snapshot, preferredFilePath) : Task.CompletedTask;
 
-        private async Task LoadFilesAsync(Func<IEnumerable<string>> enumeratePaths, string? folderPath, List<string>? fileList, string? preferredFilePath)
+        private async Task LoadFilesAsync(string? folderPath, List<string>? fileList, string? preferredFilePath)
         {
             if (_disposed) return;
             using var load = new CancellationTokenSource();
@@ -164,7 +165,7 @@ namespace ColorVision.Solution.MultiImageViewer
                 List<ImageFileInfo> items;
                 try
                 {
-                    items = await Task.Run(() => PrepareFileList(enumeratePaths, limit, folderPath, selectionPath, token), token);
+                    items = await Task.Run(() => PrepareFileList(fileList, limit, folderPath, selectionPath, token), token);
                 }
                 catch (Exception error) when (folderPath != null && error is (IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException))
                 {
@@ -215,15 +216,15 @@ namespace ColorVision.Solution.MultiImageViewer
             }
         }
 
-        private static List<ImageFileInfo> PrepareFileList(Func<IEnumerable<string>> enumeratePaths, int limit, string? folderPath,
+        private static List<ImageFileInfo> PrepareFileList(List<string>? fileList, int limit, string? folderPath,
             string? selectionPath, CancellationToken token)
         {
+            IEnumerable<ImageFileInfo> files = folderPath == null ? EnumerateListedImages(fileList!, token) : EnumerateFolderImages(folderPath, token);
             var items = new List<ImageFileInfo>();
-            foreach (string path in enumeratePaths())
+            foreach (ImageFileInfo item in files)
             {
                 token.ThrowIfCancellationRequested();
-                if (!MultiImageViewerConfig.SupportedExtensions.Contains(Path.GetExtension(path).ToLowerInvariant())) continue;
-                items.Add(new ImageFileInfo(path, loadCachedInfo: false));
+                items.Add(item);
                 if (items.Count == limit) break;
             }
             // Keep the requested image in a capped folder without scanning the rest of the directory.
@@ -237,6 +238,40 @@ namespace ColorVision.Solution.MultiImageViewer
                 if (selected.FileExists) items[^1] = selected;
             }
             return items;
+        }
+
+        private static IEnumerable<ImageFileInfo> EnumerateListedImages(List<string> paths, CancellationToken token)
+        {
+            foreach (string path in paths)
+            {
+                token.ThrowIfCancellationRequested();
+                if (MultiImageViewerConfig.SupportedExtensions.Contains(Path.GetExtension(path).ToLowerInvariant()))
+                    yield return new ImageFileInfo(path, loadCachedInfo: false);
+            }
+        }
+
+        private static IEnumerable<ImageFileInfo> EnumerateFolderImages(string folderPath, CancellationToken token)
+        {
+            var extensions = new HashSet<string>(MultiImageViewerConfig.SupportedExtensions, StringComparer.OrdinalIgnoreCase);
+            var lookup = extensions.GetAlternateLookup<ReadOnlySpan<char>>();
+            // Keep Directory.EnumerateFiles' path shape, hidden files and access errors.
+            return new FileSystemEnumerable<ImageFileInfo>(folderPath,
+                static (ref FileSystemEntry entry) =>
+                {
+                    string path = entry.ToSpecifiedFullPath();
+                    // The enumeration already supplied the metadata for regular files.
+                    return (entry.Attributes & FileAttributes.ReparsePoint) != 0
+                        ? new ImageFileInfo(path, loadCachedInfo: false)
+                        : new ImageFileInfo(path, entry.Length, entry.LastWriteTimeUtc.LocalDateTime);
+                },
+                new EnumerationOptions { AttributesToSkip = 0, IgnoreInaccessible = false })
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    return !entry.IsDirectory && lookup.Contains(Path.GetExtension(entry.FileName));
+                },
+            };
         }
 
         private static bool IsTopLevelFile(string folderPath, string filePath)

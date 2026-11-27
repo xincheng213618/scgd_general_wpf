@@ -49,7 +49,6 @@ public sealed class FlowEngineManager : ViewModelBase
     public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; } = TemplateFlow.Params;
     public ContextMenu ContextMenu { get; }
     public RelayCommand EditTemplateFlowCommand { get; }
-    public RelayCommand MeasureBatchManagerCommand { get; }
     public RelayCommand OpenCameraLogCommand { get; }
     public RelayCommand AskCopilotFlowCommand { get; }
     public ViewFlow View { get; }
@@ -142,12 +141,10 @@ public sealed class FlowEngineManager : ViewModelBase
         WindowsServiceReg = new WindowsServiceBase(ServiceConfig.RegistrationCenterServiceInfo);
 
         EditTemplateFlowCommand = new RelayCommand(_ => EditSelectedFlowTemplate());
-        MeasureBatchManagerCommand = new RelayCommand(_ => OpenBatchManager());
         AskCopilotFlowCommand = new RelayCommand(_ => Copilot.AskAboutCurrentFlow());
         OpenCameraLogCommand = new RelayCommand(_ => OpenCameraLog());
 
         ContextMenu = new ContextMenu();
-        ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Inquire, Command = MeasureBatchManagerCommand });
         ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Flow_AskAiAnalyzeCurrentFlow, Command = AskCopilotFlowCommand });
         // The picker can bind its saved index before the workspace loads the remembered ID.
         if (TemplateFlow.IsUnavailableLocalTemplate(Config.LastSelectFlow))
@@ -166,25 +163,6 @@ public sealed class FlowEngineManager : ViewModelBase
             "CVMainWindowsService_x64_camera");
         if (!string.IsNullOrEmpty(latestLogPath))
             new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312")).Show();
-    }
-
-    private static void OpenBatchManager()
-    {
-        var frame = new Frame();
-        frame.Navigate(new MeasureBatchManagerPage(frame));
-        var window = new Window
-        {
-            Title = EngineLocalization.Get("流程结果管理"),
-            Owner = Application.Current.GetActiveWindow(),
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Height = 720,
-            Width = 1280,
-            MinWidth = 1050,
-            MinHeight = 640,
-            Content = frame,
-        };
-        ColorVision.Themes.ThemeManagerExtensions.ApplyCaption(window);
-        window.Show();
     }
 
     private void EditSelectedFlowTemplate()

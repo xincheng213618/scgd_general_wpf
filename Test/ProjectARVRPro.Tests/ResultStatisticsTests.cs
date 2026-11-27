@@ -152,6 +152,28 @@ public sealed class ResultStatisticsTests
     }
 
     [Fact]
+    public void HourlyTrendWeightsEachPointWithinTheExactRange()
+    {
+        DateTime hour = new(2026, 8, 1, 10, 0, 0);
+        DateTime from = hour.AddMinutes(15);
+        DateTime toExclusive = hour.AddMinutes(45);
+        ResultStatisticsTrendPoint[] details =
+        [
+            new() { Time = toExclusive.AddTicks(-1), TotalCount = 3, AverageCtMilliseconds = 300 },
+            new() { Time = from.AddTicks(-1), TotalCount = 9, AverageCtMilliseconds = 999 },
+            new() { Time = from, TotalCount = 1, AverageCtMilliseconds = 100 },
+            new() { Time = toExclusive, TotalCount = 9, AverageCtMilliseconds = 999 },
+            new() { Time = from.AddMinutes(1), TotalCount = 0, AverageCtMilliseconds = double.NaN },
+        ];
+
+        ResultStatisticsTrendPoint bucket = Assert.Single(ResultStatisticsTrendBuilder.BuildHourly(details, from, toExclusive));
+
+        Assert.Equal(hour, bucket.Time);
+        Assert.Equal(4, bucket.TotalCount);
+        Assert.Equal(250, bucket.AverageCtMilliseconds);
+    }
+
+    [Fact]
     public void TimelineBuilderUsesMeasuredPhaseBoundariesAndLeavesOnlyRealGapsUnknown()
     {
         DateTime start = new(2026, 9, 4, 21, 25, 9);
@@ -240,8 +262,8 @@ public sealed class ResultStatisticsTests
         DateTime start = new(2026, 9, 19, 10, 0, 0);
         ResultStatisticsRecordRow[] records =
         [
-            new() { Id = 1, SN = "NZQD03BP1LJ05EX_L_100000", StartTime = start, EndTime = start.AddSeconds(20) },
-            new() { Id = 2, PreviousObjectiveId = 1, SN = "NZQD03BP1LJ05EX_R_100025", StartTime = start.AddSeconds(25), EndTime = start.AddSeconds(45) },
+            new() { Id = 1, SN = "\u2003NZQD03BP1LJ05EX\t_l_100000\u00a0", StartTime = start, EndTime = start.AddSeconds(20) },
+            new() { Id = 2, PreviousObjectiveId = 1, SN = "nzqd03bp1lj05ex_R_100025", StartTime = start.AddSeconds(25), EndTime = start.AddSeconds(45) },
             new() { Id = 3, PreviousObjectiveId = 2, SN = "OTHER_L_100100", StartTime = start.AddMinutes(1), EndTime = start.AddMinutes(1).AddSeconds(20) },
             new() { Id = 4, PreviousObjectiveId = 3, SN = "interleaved", StartTime = start.AddMinutes(2), EndTime = start.AddMinutes(2).AddSeconds(1) },
             new() { Id = 5, PreviousObjectiveId = 4, SN = "OTHER_R_100125", StartTime = start.AddMinutes(2).AddSeconds(5), EndTime = start.AddMinutes(2).AddSeconds(25) },
@@ -249,11 +271,15 @@ public sealed class ResultStatisticsTests
             new() { Id = 7, PreviousObjectiveId = 6, SN = "REVERSED_L_100225", StartTime = start.AddMinutes(3).AddSeconds(25), EndTime = start.AddMinutes(3).AddSeconds(45) },
         ];
 
-        ResultStatisticsCombinedRecordRow pair = Assert.Single(ResultStatisticsLrPairMatcher.MatchAdjacent(records));
+        ResultStatisticsCombinedRecordRow pair = Assert.Single(ResultStatisticsLrPairMatcher.MatchAdjacent(records.Reverse()));
+        ResultStatisticsCombinedRecordRow ordered = Assert.Single(ResultStatisticsLrPairMatcher.MatchInIdOrder(records));
 
         Assert.Equal("NZQD03BP1LJ05EX", pair.SN);
         Assert.Equal(45_000, pair.CycleTimeMilliseconds);
         Assert.Equal(5_000, pair.TransitionMilliseconds);
+        Assert.Equal(pair.SN, ordered.SN);
+        Assert.Same(pair.Left, ordered.Left);
+        Assert.Same(pair.Right, ordered.Right);
         Assert.True(ResultStatisticsLrPairMatcher.TryParse("BODY_L_235959", out string baseSn, out ResultStatisticsSide side));
         Assert.Equal("BODY", baseSn);
         Assert.Equal(ResultStatisticsSide.Left, side);
@@ -510,6 +536,9 @@ public sealed class ResultStatisticsTests
             CreateSample(3, "SN-3", true, new DateTime(2026, 8, 9, 10, 0, 0), 3_000),
             CreateSample(4, "SN-4", false, new DateTime(2026, 8, 9, 10, 15, 0), 4_000),
         ];
+        samples[0].FlowRunTimeMilliseconds = -20;
+        samples[1].FlowRunTimeMilliseconds = 3_000;
+        Array.Reverse(samples);
 
         ResultStatistics statistics = ResultStatisticsCalculator.Calculate(samples, from, toExclusive, now);
 
@@ -521,6 +550,8 @@ public sealed class ResultStatisticsTests
         Assert.Equal(2_500, statistics.AverageCtMilliseconds);
         Assert.Equal(1_000, statistics.MinimumCtMilliseconds);
         Assert.Equal(4_000, statistics.MaximumCtMilliseconds);
+        Assert.Equal(2, statistics.FlowRunTimeSampleCount);
+        Assert.Equal(1_500, statistics.AverageFlowRunTimeMilliseconds);
         Assert.Equal(2, statistics.CurrentHourCount);
         Assert.Equal(3, statistics.TodayCount);
 
@@ -600,6 +631,7 @@ public sealed class ResultStatisticsTests
 
         Assert.Equal(["ab-10", "AB-20", "AB-30"], suggestions.Filter("ab", 3));
         Assert.Equal(["ab-10", "AB-20", "AB-30", "ZZ-AB"], suggestions.Filter(" ab ", 4));
+        Assert.Equal(["AB-20"], suggestions.Filter("ab-20", 1));
         Assert.Equal(["ZZ-AB", "AB-20"], suggestions.Filter(string.Empty, 2));
         Assert.Empty(suggestions.Filter("ab", 0));
         Assert.Empty(suggestions.Filter("missing", 20));
@@ -694,30 +726,39 @@ public sealed class ResultStatisticsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void RecordPageKeepsExecutionNumberAndBoundaryFromTrimmedHistoryOutsideFilters(bool readOnly)
+    public void RecordPageAndDashboardUseTheSameBoundaryFromHistoryOutsideFilters(bool readOnly)
     {
         using var database = new TemporaryResultDatabase();
         new ResultStatisticsDataStore(database.Path).InitializeSchema();
         var store = new ResultStatisticsDataStore(database.Path, readOnly);
         DateTime day = new(2026, 9, 19);
         var previous = CreateRecord("  SN-A", true, day.AddDays(-1), 1_000, "previous", true);
-        previous.ResultId = 10;
+        previous.ResultId = InsertFlow(previous, 10_000);
         var failed = CreateRecord("SN-A  ", false, day.AddHours(8), 1_000, "filtered", true);
-        failed.ResultId = 20;
+        failed.ResultId = InsertFlow(failed, 20_000);
         var interrupted = CreateRecord("SN-A", false, day.AddHours(9), 1_000, "unfinished", false);
-        interrupted.ResultId = 30;
+        interrupted.ResultId = InsertFlow(interrupted, 30_000);
         var selected = CreateRecord("SN-A", true, day.AddHours(10), 1_000, "selected", true);
-        selected.ResultId = 40;
-        database.Insert(previous, failed, interrupted, selected, CreateRecord("OTHER", true, day.AddHours(11), 1_000, "other", true));
+        selected.ResultId = InsertFlow(selected, 4_000);
+        var later = CreateRecord(" SN-A  ", true, day.AddDays(1), 1_000, "later", true);
+        later.ResultId = InsertFlow(later, 50_000);
+        database.Insert(previous, failed, interrupted, selected, CreateRecord("OTHER", true, day.AddHours(11), 1_000, "other", true), later);
 
-        ResultStatisticsRecordRow row = Assert.Single(store.QueryRecords(new ResultStatisticsQuery
+        var query = new ResultStatisticsQuery
         {
             From = day, ToExclusive = day.AddDays(1), SN = "SN-A", Result = true, PageSize = 1,
-        }));
+        };
+        ResultStatisticsRecordRow row = Assert.Single(store.QueryRecords(query));
 
         Assert.Equal("selected", row.LastModel);
         Assert.Equal(3, row.ExecutionIndex);
         Assert.Equal(interrupted.ResultId, row.PreviousResultId);
+        var summary = store.QueryDashboard(query, ResultStatisticsPeriodMode.Day, day).Summary;
+        Assert.Equal(1, summary.FlowRunTimeSampleCount);
+        Assert.Equal(4_000, summary.AverageFlowRunTimeMilliseconds);
+
+        int InsertFlow(ObjectiveTestResultRecord record, long runTime) =>
+            database.InsertFlow(new() { SN = "SN-A", CreateTime = record.CreateTime, RunTime = runTime }).Id;
     }
 
     [Theory]
@@ -752,6 +793,9 @@ public sealed class ResultStatisticsTests
         Assert.Equal(1, Assert.Single(monthlyDashboard.Trend).TotalCount);
         Assert.Equal(1, store.QueryFlowExecutionCount(flows));
         Assert.Equal(matchingModel, Assert.Single(store.QueryFlowExecutions(flows)).Model);
+        var search = store.QueryFlowSearchPage(flows);
+        Assert.Equal(1, search.TotalCount);
+        Assert.Equal(matchingModel, Assert.Single(search.Rows).Model);
     }
 
     [Fact]
@@ -817,7 +861,12 @@ public sealed class ResultStatisticsTests
 
         foreach (ResultStatisticsPeriodMode mode in Enum.GetValues<ResultStatisticsPeriodMode>())
         {
-            ResultStatistics summary = store.QueryDashboard(query, mode, day.AddDays(1)).Summary;
+            ResultStatisticsDashboard full = store.QueryDashboard(query, mode, day.AddDays(1));
+            ResultStatisticsDashboard withoutTrend = store.QueryDashboard(query, mode, day.AddDays(1), includeTrend: false);
+            Assert.NotEmpty(full.Trend);
+            Assert.Empty(withoutTrend.Trend);
+            Assert.Equal(System.Text.Json.JsonSerializer.Serialize(full.Summary), System.Text.Json.JsonSerializer.Serialize(withoutTrend.Summary));
+            ResultStatistics summary = withoutTrend.Summary;
             Assert.Equal(3, summary.TotalCount);
             Assert.Equal(2, summary.FlowRunTimeSampleCount);
             Assert.Equal(6_000, summary.AverageFlowRunTimeMilliseconds);
@@ -839,6 +888,91 @@ public sealed class ResultStatisticsTests
         Assert.Equal(1, missing.TotalCount);
         Assert.Equal(0, missing.FlowRunTimeSampleCount);
         Assert.Equal("-", missing.AverageFlowRunTimeText);
+    }
+
+    [Fact]
+    public void PreparedLiveStatisticsReadCommittedResultsWhileAWriterHoldsWalTransaction()
+    {
+        using var database = new TemporaryResultDatabase();
+        using var manager = new ViewResultManager(database.Path, new ViewResultManagerConfig());
+        DateTime day = new(2026, 9, 19);
+        database.Insert(
+            CreateRecord("LIVE_L_010000", true, day.AddHours(1), 20_000, "left", true),
+            CreateRecord("LIVE_R_010030", true, day.AddHours(1).AddSeconds(30), 20_000, "right", true));
+
+        using var writer = new SqliteConnection($"Data Source={database.Path};Pooling=False");
+        writer.Open();
+        using var pending = writer.BeginTransaction();
+        using var command = writer.CreateCommand();
+        command.Transaction = pending;
+        command.CommandText = """UPDATE "ObjectiveTestResultRecord" SET "TotalResult" = 0;""";
+        Assert.Equal(2, command.ExecuteNonQuery());
+
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1) };
+        var summary = manager.StatisticsStore.QueryDashboard(query, ResultStatisticsPeriodMode.Day, day).Summary;
+        Assert.Equal(2, summary.TotalCount);
+        Assert.Equal(2, summary.PassCount);
+        Assert.All(manager.StatisticsStore.QueryRecords(query), row => Assert.True(row.Result));
+        var combined = Assert.Single(manager.StatisticsStore.QueryCombinedRecords(new()
+        {
+            From = day.AddDays(-6), ToExclusive = day.AddDays(1),
+        }).Rows);
+        Assert.True(combined.Result);
+        Assert.Equal("left", combined.Left.LastModel);
+        Assert.Equal("right", combined.Right.LastModel);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void IndexlessOfflineStatisticsPreserveFlowBoundariesAndAcrossMidnightPairs(bool legacySchema)
+    {
+        using var database = new TemporaryResultDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        DateTime day = new(2026, 9, 19);
+        const string left = "  FRAME_L_235940  ";
+        const string right = "FRAME_R_000002";
+        int earlierRight = InsertExecution(right, day.AddMinutes(-5), 2_000);
+        database.InsertFlow(new() { SN = left.Trim(), CreateTime = day.AddSeconds(-30), RunTime = 99_000 });
+        InsertExecution(left, day.AddSeconds(-40), 3_000);
+        int firstRight = InsertExecution(right, day.AddSeconds(2), 5_000);
+        database.InsertFlow(new() { SN = $" {right} ", CreateTime = day.AddSeconds(35), RunTime = 98_000 });
+        InsertExecution(right, day.AddMinutes(1), 7_000);
+        database.DropFlowSerialIndexes();
+        if (legacySchema)
+            database.DropFinalizedColumnForLegacySchema();
+        HashSet<string> indexesBefore = database.QueryIndexNames();
+        HashSet<string> columnsBefore = database.QueryColumnNames();
+
+        var store = new ResultStatisticsDataStore(database.Path, readOnly: true);
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), PageSize = 2 };
+        foreach (ResultStatisticsPeriodMode mode in new[] { ResultStatisticsPeriodMode.Day, ResultStatisticsPeriodMode.All })
+        {
+            var dashboard = store.QueryDashboard(query, mode, day);
+            Assert.Equal(2, dashboard.Summary.TotalCount);
+            Assert.Equal(2, dashboard.Summary.FlowRunTimeSampleCount);
+            Assert.Equal(6_000, dashboard.Summary.AverageFlowRunTimeMilliseconds);
+            var combined = store.QueryCombinedDashboard(query, mode, day);
+            Assert.Equal(1, combined.Summary.TotalCount);
+            Assert.Equal(8_000, combined.Summary.AverageFlowRunTimeMilliseconds);
+        }
+
+        var page = store.QueryRecords(query);
+        Assert.Equal([7_000L, 5_000L], page.Select(row => row.FlowRunTimeMilliseconds));
+        Assert.Equal([firstRight, earlierRight], page.Select(row => row.PreviousResultId));
+        var pair = Assert.Single(store.QueryCombinedRecords(query).Rows);
+        Assert.Equal(3_000, pair.Left.FlowRunTimeMilliseconds);
+        Assert.Equal(5_000, pair.Right.FlowRunTimeMilliseconds);
+        Assert.True(indexesBefore.SetEquals(database.QueryIndexNames()));
+        Assert.True(columnsBefore.SetEquals(database.QueryColumnNames()));
+
+        int InsertExecution(string sn, DateTime start, long runtime)
+        {
+            var record = CreateRecord(sn, true, start, 20_000, "flow", true);
+            record.ResultId = database.InsertFlow(new() { SN = sn, CreateTime = start.AddSeconds(10), RunTime = runtime }).Id;
+            database.Insert(record);
+            return record.ResultId;
+        }
     }
 
     [Theory]
@@ -882,6 +1016,31 @@ public sealed class ResultStatisticsTests
         Assert.Equal(1, missing.TotalCount);
         Assert.Equal("-", missing.AverageFlowRunTimeText);
 
+        var page = store.QueryCombinedRecords(new()
+        {
+            From = day, ToExclusive = day.AddDays(1), SN = "BODY", Result = false, PageSize = 1,
+        });
+        var failedPair = Assert.Single(page.Rows);
+        Assert.Equal(2, failedPair.Left.FlowCount);
+        Assert.Equal(1, failedPair.Right.FlowCount);
+        Assert.Equal(1, failedPair.Left.ExecutionIndex);
+        Assert.Equal(1, failedPair.Right.ExecutionIndex);
+        Assert.Equal("flow", failedPair.Right.LastModel);
+
+        Assert.Equal("MISSING", Assert.Single(ReadPage(1).Rows).SN);
+        var middle = ReadPage(2);
+        Assert.Equal(3, middle.TotalCount);
+        Assert.True(Assert.Single(middle.Rows).Result);
+        Assert.False(Assert.Single(ReadPage(3).Rows).Result);
+        var pastEnd = ReadPage(4);
+        Assert.Equal(3, pastEnd.TotalCount);
+        Assert.Empty(pastEnd.Rows);
+
+        ResultStatisticsCombinedPage ReadPage(int pageNumber) => store.QueryCombinedRecords(new()
+        {
+            From = day, ToExclusive = day.AddDays(7), PageSize = 1, PageNumber = pageNumber,
+        });
+
         void InsertSide(string sn, DateTime start, bool pass, long[] runtimes)
         {
             int resultId = 0;
@@ -905,7 +1064,9 @@ public sealed class ResultStatisticsTests
             CreateRecord("BODY_r_000002\u2003", false, day.AddSeconds(2), 20_000, "right", true),
             CreateRecord("UNMATCHED_L_000100", true, day.AddMinutes(1), 20_000, "left-only", true),
             CreateRecord("OTHER", true, day.AddMinutes(2), 1_000, "interleaved", true),
-            CreateRecord("UNMATCHED_R_000125", true, day.AddMinutes(2).AddSeconds(5), 20_000, "right-only", true));
+            CreateRecord("UNMATCHED_R_000125", true, day.AddMinutes(2).AddSeconds(5), 20_000, "right-only", true),
+            CreateRecord("FUTURE_L_000000", true, day.AddDays(8), 20_000, "left", true),
+            CreateRecord("FUTURE_R_000030", true, day.AddDays(8).AddSeconds(30), 20_000, "right", true));
         var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), PageSize = 100 };
 
         ResultStatisticsCombinedPage page = store.QueryCombinedRecords(query);
@@ -918,6 +1079,16 @@ public sealed class ResultStatisticsTests
         Assert.Equal(3_000, pair.TransitionMilliseconds);
         Assert.False(pair.Result);
         Assert.Equal(1, dashboard.Summary.TotalCount);
+
+        var bounded = store.QueryCombinedDashboard(new() { From = day, ToExclusive = day.AddDays(7) },
+            ResultStatisticsPeriodMode.All, day);
+        Assert.Equal(1, bounded.Summary.TotalCount);
+        Assert.Equal(47_000, Assert.Single(bounded.Trend).AverageCtMilliseconds);
+
+        var fullHistory = store.QueryCombinedDashboard(new() { From = DateTime.MinValue, ToExclusive = DateTime.MaxValue },
+            ResultStatisticsPeriodMode.All, day);
+        Assert.Equal(2, fullHistory.Summary.TotalCount);
+        Assert.Equal(1, fullHistory.Summary.FailCount);
         Assert.Equal(1, dashboard.Summary.FailCount);
         Assert.Equal(47_000, dashboard.Summary.AverageCtMilliseconds);
         Assert.Equal(3_000, dashboard.AverageTransitionMilliseconds);
@@ -967,6 +1138,43 @@ public sealed class ResultStatisticsTests
         Assert.Equal(1, dashboard.Summary.FailCount);
     }
 
+    [Fact]
+    public void SparseWeekMatchesArchiveAndRetainsPreviousExecutionBoundaries()
+    {
+        using var database = new TemporaryResultDatabase();
+        var local = new ResultStatisticsDataStore(database.Path);
+        local.InitializeSchema();
+        DateTime day = new(2026, 9, 19);
+        const string leftSn = "BODY_L_235935", rightSn = "BODY_R_000002";
+        database.Insert(Enumerable.Range(0, 32)
+            .Select(index => CreateRecord($"prior-{index}", true, day.AddDays(-40), 1_000, "prior", true)).ToArray());
+        var priorLeft = CreateRecord($" {leftSn} ", false, day.AddDays(-20), 1_000, "prior left", false);
+        var priorRight = CreateRecord($" {rightSn} ", true, day.AddDays(-20), 1_000, "prior right", true);
+        var left = CreateRecord(leftSn, true, day.AddSeconds(-25), 24_000, "left", true);
+        var right = CreateRecord(rightSn, false, day.AddSeconds(2), 20_000, "right", true);
+        priorLeft.ResultId = InsertFlow(leftSn, priorLeft.CreateTime, 8_000);
+        priorRight.ResultId = InsertFlow(rightSn, priorRight.CreateTime, 9_000);
+        left.ResultId = InsertFlow(leftSn, left.CreateTime, 300);
+        right.ResultId = InsertFlow(rightSn, right.CreateTime, 700);
+        database.Insert(priorLeft, priorRight, left, right);
+
+        var archive = new ResultStatisticsDataStore(database.Path, readOnly: true);
+        var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(7) };
+        var single = local.QueryDashboard(query, ResultStatisticsPeriodMode.Week, day);
+        var combined = local.QueryCombinedDashboard(query, ResultStatisticsPeriodMode.Week, day);
+        Assert.Equal(1, single.Summary.TotalCount);
+        Assert.Equal(700, single.Summary.AverageFlowRunTimeMilliseconds);
+        Assert.Equal(1, combined.Summary.TotalCount);
+        Assert.Equal(1_000, combined.Summary.AverageFlowRunTimeMilliseconds);
+        Assert.Equal(right.UpdateTime, Assert.Single(combined.Trend).Time);
+        Assert.Equal(System.Text.Json.JsonSerializer.Serialize(archive.QueryDashboard(query, ResultStatisticsPeriodMode.Week, day)),
+            System.Text.Json.JsonSerializer.Serialize(single));
+        Assert.Equal(System.Text.Json.JsonSerializer.Serialize(archive.QueryCombinedDashboard(query, ResultStatisticsPeriodMode.Week, day)),
+            System.Text.Json.JsonSerializer.Serialize(combined));
+
+        int InsertFlow(string sn, DateTime time, long runtime) => database.InsertFlow(new() { SN = sn, CreateTime = time, RunTime = runtime }).Id;
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -1009,7 +1217,7 @@ public sealed class ResultStatisticsTests
         DateTime day = new(2026, 9, 19);
         const string leftSn = "BODY_L_120000";
         const string rightSn = "BODY_R_120030";
-        int interruptedId = InsertBatch(leftSn, day.AddHours(11), 9_000, false);
+        int interruptedId = InsertBatch(leftSn, day.AddHours(-1), 9_000, false);
         int leftId = InsertBatch(leftSn, day.AddHours(12), 2_000, true);
         int rightId = InsertBatch(rightSn, day.AddHours(12).AddSeconds(30), 3_000, true);
         var query = new ResultStatisticsQuery { From = day, ToExclusive = day.AddDays(1), PageSize = 10 };
@@ -1032,10 +1240,14 @@ public sealed class ResultStatisticsTests
         Assert.Equal(5_000, combined.FlowRunTimeMilliseconds);
         Assert.Equal([leftId, rightId], store.QueryFlowDetails(combined).Select(row => row.Id));
 
+        ResultStatistics combinedSummary = store.QueryCombinedDashboard(query, ResultStatisticsPeriodMode.Day, day.AddHours(13)).Summary;
+        Assert.Equal(1, combinedSummary.FlowRunTimeSampleCount);
+        Assert.Equal(5_000, combinedSummary.AverageFlowRunTimeMilliseconds);
+
         int InsertBatch(string sn, DateTime start, long runtime, bool isFinalized)
         {
             int resultId = database.InsertFlow(new() { SN = sn, CreateTime = start.AddSeconds(1), RunTime = runtime }).Id;
-            ObjectiveTestResultRecord record = CreateRecord(sn, true, start, 20_000, "flow", isFinalized);
+            ObjectiveTestResultRecord record = CreateRecord(isFinalized ? sn : $" {sn} ", true, start, 20_000, "flow", isFinalized);
             record.ResultId = resultId;
             database.Insert(record);
             return resultId;
@@ -1099,15 +1311,15 @@ public sealed class ResultStatisticsTests
         ResultStatisticsDataStore store = new(database.Path);
         store.InitializeSchema();
         database.Insert(
+            CreateRecord("SN-C", true, new DateTime(2026, 3, 1, 8, 0, 0), 2_000, "third", null),
             CreateRecord("SN-A", true, new DateTime(2026, 1, 3, 8, 0, 0), 1_000, "first", true),
             CreateRecord("SN-B", false, new DateTime(2026, 1, 4, 8, 0, 0), 3_000, "second", true),
-            CreateRecord("SN-C", true, new DateTime(2026, 3, 1, 8, 0, 0), 2_000, "third", null),
             CreateRecord("SN-D", true, new DateTime(2026, 4, 1, 8, 0, 0), 9_000, "unfinished", false));
         database.InsertFlow(new ProjectARVRReuslt
         {
             SN = "SN-A",
             Model = "White1_Fast_Test",
-            CreateTime = new DateTime(2025, 12, 1),
+            CreateTime = new DateTime(2026, 3, 1),
             RunTime = 1_000,
             Result = true,
         });
@@ -1115,7 +1327,7 @@ public sealed class ResultStatisticsTests
         {
             SN = "SN-C",
             Model = "White1_Fast_Test",
-            CreateTime = new DateTime(2026, 3, 1),
+            CreateTime = new DateTime(2025, 12, 1),
             RunTime = 2_000,
             Result = false,
         });
@@ -1145,7 +1357,14 @@ public sealed class ResultStatisticsTests
             [new DateTime(2026, 1, 3, 8, 0, 1), new DateTime(2026, 1, 4, 8, 0, 3)],
             januaryDashboard.Trend.Select(item => item.Time));
         Assert.Equal(3, store.QueryRecordCount(query));
-        Assert.Equal(3, store.QueryRecords(query).Count);
+        Assert.Equal(["SN-B", "SN-A", "SN-C"], store.QueryRecords(query).Select(row => row.SN));
+        Assert.Equal("SN-C", Assert.Single(store.QueryRecords(new ResultStatisticsQuery
+        {
+            From = range.From,
+            ToExclusive = range.ToExclusive,
+            PageNumber = 2,
+            PageSize = 2,
+        })).SN);
         ResultStatisticsDashboard filteredDashboard = store.QueryDashboard(new ResultStatisticsQuery
         {
             From = range.From,
@@ -1155,8 +1374,21 @@ public sealed class ResultStatisticsTests
         }, ResultStatisticsPeriodMode.All, new DateTime(2026, 3, 1, 8, 30, 0));
         Assert.Equal(1, filteredDashboard.Summary.TotalCount);
         var flowQuery = new FlowExecutionQuery { From = range.From, ToExclusive = range.ToExclusive };
+        Assert.Equal(["SN-C", "SN-A"], store.QueryFlowExecutions(flowQuery).Select(row => row.SN));
+
+        database.InsertFlow(new ProjectARVRReuslt { SN = "END-BOUNDARY", CreateTime = DateTime.MaxValue });
         Assert.Equal(2, store.QueryFlowExecutionCount(flowQuery));
-        Assert.Equal(2, store.QueryFlowExecutions(flowQuery).Count);
+        Assert.Equal("SN-A", Assert.Single(store.QueryFlowExecutions(new FlowExecutionQuery
+        {
+            From = range.From,
+            ToExclusive = range.ToExclusive,
+            PageNumber = 2,
+            PageSize = 1,
+        })).SN);
+
+        database.Insert(CreateRecord("END-BOUNDARY", true, DateTime.MaxValue.AddSeconds(-1), 1_000, "excluded", true));
+        Assert.Equal(3, store.QueryRecordCount(query));
+        Assert.Equal(["SN-B", "SN-A", "SN-C"], store.QueryRecords(query).Select(row => row.SN));
     }
 
     [Fact]
@@ -1307,22 +1539,24 @@ public sealed class ResultStatisticsTests
             PageSize = 1,
         };
         FlowExecutionRecordRow firstPage = Assert.Single(store.QueryFlowExecutions(firstPageQuery));
-        FlowExecutionRecordRow secondPage = Assert.Single(store.QueryFlowExecutions(new FlowExecutionQuery
+        var secondPageQuery = new FlowExecutionQuery
         {
             From = firstPageQuery.From,
             ToExclusive = firstPageQuery.ToExclusive,
             Model = firstPageQuery.Model,
             PageNumber = 2,
             PageSize = 1,
-        }));
-        IReadOnlyList<FlowExecutionRecordRow> failed = store.QueryFlowExecutions(new FlowExecutionQuery
+        };
+        FlowExecutionRecordRow secondPage = Assert.Single(store.QueryFlowExecutions(secondPageQuery));
+        var failedQuery = new FlowExecutionQuery
         {
             From = firstPageQuery.From,
             ToExclusive = firstPageQuery.ToExclusive,
             Model = firstPageQuery.Model,
             Result = false,
             PageSize = 10,
-        });
+        };
+        IReadOnlyList<FlowExecutionRecordRow> failed = store.QueryFlowExecutions(failedQuery);
 
         Assert.Equal(2, store.QueryFlowExecutionCount(firstPageQuery));
         Assert.Equal(second.Id, firstPage.Id);
@@ -1330,6 +1564,17 @@ public sealed class ResultStatisticsTests
         Assert.Equal("FAIL", firstPage.ResultText);
         Assert.Equal(first.Id, secondPage.Id);
         Assert.Equal(second.Id, Assert.Single(failed).Id);
+        Assert.Equal(second.Id, Assert.Single(store.QueryFlowSearchPage(firstPageQuery).Rows).Id);
+        Assert.Equal(first.Id, Assert.Single(store.QueryFlowSearchPage(secondPageQuery).Rows).Id);
+        var failedSearch = store.QueryFlowSearchPage(failedQuery);
+        Assert.Equal(1, failedSearch.TotalCount);
+        Assert.Equal(second.Id, Assert.Single(failedSearch.Rows).Id);
+        var pastEnd = store.QueryFlowSearchPage(new FlowExecutionQuery
+        {
+            From = firstPageQuery.From, ToExclusive = firstPageQuery.ToExclusive, Model = firstPageQuery.Model, PageNumber = 3, PageSize = 1,
+        });
+        Assert.Equal(2, pastEnd.TotalCount);
+        Assert.Empty(pastEnd.Rows);
         Assert.Equal(["Chessboard_Fast_Test", "White255_Fast_Test"], store.QueryFlowNames());
     }
 
@@ -1549,6 +1794,13 @@ public sealed class ResultStatisticsTests
             db.Ado.ExecuteCommand("DROP INDEX IF EXISTS \"IX_ObjectiveTestResultRecord_IsFinalized_UpdateTime\";");
             db.Ado.ExecuteCommand("DROP INDEX IF EXISTS \"IX_ObjectiveTestResultRecord_Statistics\";");
             db.Ado.ExecuteCommand("ALTER TABLE \"ObjectiveTestResultRecord\" DROP COLUMN \"IsFinalized\";");
+        }
+
+        public void DropFlowSerialIndexes()
+        {
+            using SqlSugarClient db = CreateClient();
+            db.Ado.ExecuteCommand("DROP INDEX IF EXISTS \"IX_ARVRReuslt_SN_Id\";");
+            db.Ado.ExecuteCommand("DROP INDEX IF EXISTS \"IX_ARVRReuslt_SN_CreateTime\";");
         }
 
         public void DropFlowImagePresentationColumnsForLegacySchema()

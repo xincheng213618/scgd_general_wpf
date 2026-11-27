@@ -29,6 +29,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private readonly Func<bool> getUseHikMvs;
         private readonly Func<int> getHikBayerQuality;
         private readonly Func<bool> getHikOutputBgr;
+        private readonly Action<bool>? measurementAvailabilityChanged;
+        private bool measurementActive;
         private string? openedCameraId;
         private (CameraModel Model, CameraMode Mode) openedCameraType;
         private int openedBpp;
@@ -41,7 +43,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         internal CameraPreviewColorOrder OpenedPreviewColorOrder { get; private set; }
         internal int OpenedBpp => openedBpp;
         private IntPtr handle;
-        private string? loadedCalibrationJson;
         private sealed record PreviewRegistration(Func<IntPtr, int> Register, Action Stop);
         private PreviewRegistration? preview;
         private PreviewRegistration? retiringPreview;
@@ -69,11 +70,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             getUseHikMvs = () => device.DisplayConfig.UseHikMvs;
             getHikBayerQuality = () => (int)device.DisplayConfig.HikBayerQuality;
             getHikOutputBgr = () => device.DisplayConfig.HikOutputBgr;
+            measurementAvailabilityChanged = active =>
+            {
+                if (active) device.LocalCalibrationCacheManager.OnMeasurementOpened();
+                else device.LocalCalibrationCacheManager.OnMeasurementClosed();
+            };
             getMotorConfig = () => device.PhyCamera?.Config.MotorConfig ?? device.Config.MotorConfig;
             motor = new LocalCameraMotorSession(new LocalCameraMotorNative());
         }
 
-        internal LocalCameraSession(ILocalCameraNative native, CameraBackendState backend, ConfigCamera? config = null, Action? saveConfig = null, Action<string?>? ensureAvailable = null, Func<bool>? getUseHikMvs = null, Func<int>? getHikBayerQuality = null, Func<bool>? getHikOutputBgr = null, Action? ensureLicenseAvailable = null, Func<string, string>? resolveCameraId = null, ILocalCameraMotorNative? motorNative = null)
+        internal LocalCameraSession(ILocalCameraNative native, CameraBackendState backend, ConfigCamera? config = null, Action? saveConfig = null, Action<string?>? ensureAvailable = null, Func<bool>? getUseHikMvs = null, Func<int>? getHikBayerQuality = null, Func<bool>? getHikOutputBgr = null, Action? ensureLicenseAvailable = null, Func<string, string>? resolveCameraId = null, ILocalCameraMotorNative? motorNative = null, Action<bool>? measurementAvailabilityChanged = null)
         {
             this.native = native;
             this.backend = backend;
@@ -86,6 +92,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             this.getUseHikMvs = getUseHikMvs ?? (() => true);
             this.getHikBayerQuality = getHikBayerQuality ?? (() => 3);
             this.getHikOutputBgr = getHikOutputBgr ?? (() => true);
+            this.measurementAvailabilityChanged = measurementAvailabilityChanged;
             getMotorConfig = () => cameraConfig.MotorConfig;
             motor = new LocalCameraMotorSession(motorNative ?? new LocalCameraMotorNative());
         }
@@ -155,6 +162,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     config.TakeImageMode = OpenedMode;
                     return cvErrorDefine.CV_ERR_SUCCESS;
                 }
+                SetMeasurementActive(false);
                 if (cameraId.Length == 0)
                 {
                     IReadOnlyList<string> cameraIds = native.GetCameraIds();
@@ -199,7 +207,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         OpenedHikOutputBgr = hikOutputBgr;
                         OpenedPreviewColorOrder = previewColorOrder;
                         openedBpp = imageBpp;
-                        loadedCalibrationJson = null;
                         EnsureLicenseAvailable();
                         if (result == cvErrorDefine.CV_ERR_SUCCESS)
                         {
@@ -226,6 +233,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         catch (Exception ex) { log.Error("保存本地相机 CameraID 失败；当前已打开的会话仍可使用。", ex); }
                     }
                     openedSuccessfully = result == cvErrorDefine.CV_ERR_SUCCESS;
+                    if (openedSuccessfully) SetMeasurementActive(takeImageMode != TakeImageMode.Live);
                     return result;
                 }
                 finally
@@ -346,12 +354,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         throw new InvalidOperationException("本地相机返回打开成功，但未建立会话。");
                     if (result == cvErrorDefine.CV_ERR_SUCCESS)
                     {
-                        loadedCalibrationJson = null;
+                        SetMeasurementActive(false);
                         OpenedMode = mode;
                         openedBpp = imageBpp;
                         RawBufferPool.Dispose();
                         RawBufferPool = new LocalCameraRawBufferPool();
                         getConfig().TakeImageMode = mode;
+                        SetMeasurementActive(mode != TakeImageMode.Live);
                     }
                     return result;
                 }
@@ -533,7 +542,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             if (native.IsOpen(handle)) throw new InvalidOperationException(failureMessage);
             nativeClosePending = false;
             filterWheelPrepared = false;
-            loadedCalibrationJson = null;
+            SetMeasurementActive(false);
+        }
+
+        private void SetMeasurementActive(bool active)
+        {
+            if (measurementActive == active) return;
+            measurementActive = active;
+            try { measurementAvailabilityChanged?.Invoke(active); }
+            catch (Exception error) { log.Warn("更新本地校正预热状态失败。", error); }
         }
 
         private void RequestFocusStop()
@@ -619,30 +636,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        public bool UpdateCalibration(string json)
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(json);
-            lock (SyncRoot)
-            {
-                ObjectDisposedException.ThrowIf(disposed, this);
-                if (requiresCloseAfterFailedOpen || handle == IntPtr.Zero || !native.IsOpen(handle))
-                {
-                    return false;
-                }
-                if (string.Equals(loadedCalibrationJson, json, StringComparison.Ordinal))
-                {
-                    return true;
-                }
-                if (!native.UpdateCalibration(handle, json))
-                {
-                    return false;
-                }
-
-                loadedCalibrationJson = json;
-                return true;
-            }
-        }
-
         public T UseOpened<T>(Func<IntPtr, T> operation)
         {
             ArgumentNullException.ThrowIfNull(operation);
@@ -685,6 +678,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             bool isOpen = IsOpen;
             if (!isOpen)
             {
+                SetMeasurementActive(false);
                 if (!nativeClosePending) CompletePreviewRetirement();
                 filterWheelPrepared = false;
                 RawBufferPool.Dispose();
@@ -716,6 +710,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             {
                 if (disposed) return;
                 disposed = true;
+                SetMeasurementActive(false);
                 RawBufferPool.Dispose();
                 if (handle == IntPtr.Zero) return;
 

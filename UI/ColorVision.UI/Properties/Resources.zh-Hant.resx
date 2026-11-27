@@ -419,7 +419,6 @@
   <data name="HotKey_LoadHotkey" xml:space="preserve"><value>Load Hotkey</value></data>
   <data name="Log_ReverseOrder" xml:space="preserve"><value>Reverse</value></data>
   <data name="Log_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
-  <data name="TimedOp_ViewStats" xml:space="preserve"><value>檢視耗時統計</value></data>
   <data name="TimedOp_NoHistory" xml:space="preserve"><value>暫無耗時記錄。</value></data>
   <data name="TimedOp_Warmup" xml:space="preserve"><value>預熱：</value></data>
   <data name="TimedOp_Last" xml:space="preserve"><value>上次：</value></data>

@@ -1,5 +1,6 @@
 using ColorVision.Algorithms;
 using ColorVision.Core;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.ImageEditor.Algorithms.Evidence;
 using ProjectARVRPro.AlgorithmEvidence;
 using System.IO;
@@ -194,6 +195,97 @@ public sealed class AlgorithmEvidenceTests
         finally
         {
             foreach (string file in Directory.EnumerateFiles(directory)) File.Delete(file);
+            Directory.Delete(directory);
+        }
+    }
+
+    [Fact]
+    public void ErrorNavigationUsesFilteredHistoryOrderAndKeepsRerunsIndependent()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "ColorVision-Evidence-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string source = Path.Combine(directory, "source.png");
+        string secondLocalSource = Path.Combine(directory, "second-local.png");
+        try
+        {
+            ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+            {
+                PngBitmapEncoder encoder = new();
+                encoder.Frames.Add(BitmapFrame.Create(BitmapSource.Create(2, 2, 96, 96, PixelFormats.Gray16, null,
+                    new ushort[] { 1000, 2000, 3000, 4000 }, 4)));
+                using (FileStream stream = File.Create(source)) encoder.Save(stream);
+                File.Copy(source, secondLocalSource);
+
+                const string failure = "点阵畸变失败：grid_not_found";
+                const string timeout = "采集等待超时";
+                int calls = 0;
+                AlgorithmEvidenceWindow window = new(
+                [
+                    new() { Id = 50, Model = "W51", FileName = source, FlowStatus = FlowStatus.Completed },
+                    new() { Id = 10, Model = "W51", FileName = source, FlowStatus = FlowStatus.Completed, Result = false },
+                    new() { Id = 90, Model = "W51", FileName = source, FlowStatus = FlowStatus.Canceled, Result = false },
+                    new() { Id = 2, Model = "W51", FileName = source, FlowStatus = FlowStatus.Failed, Msg = "用户停止测试", Result = false },
+                    new() { Id = 3, Model = "W51", FileName = source, FlowStatus = FlowStatus.Failed, Msg = "测试已取消", Result = false },
+                    new() { Id = 80, Model = "Distortion_Test", FileName = source, FlowStatus = FlowStatus.Failed, Result = false },
+                    new() { Id = 4, Model = "W51", FileName = Path.Combine(directory, "missing.png"), FlowStatus = FlowStatus.Failed, Result = false },
+                    new() { Id = 33, Model = "W51", FileName = source, FlowStatus = FlowStatus.Failed, Msg = failure, Result = false },
+                    new() { Id = 31, Model = "W51", FileName = source, FlowStatus = FlowStatus.Completed },
+                    new() { Id = 7, Model = "W51", FileName = source, FlowStatus = FlowStatus.OverTime, Msg = timeout, Result = false }
+                ], algorithms: [new("test.history-error", "Test", _ =>
+                {
+                    Interlocked.Increment(ref calls);
+                    return Success("test.history-error");
+                })]);
+                try
+                {
+                    var previous = (Button)window.FindName("PreviousErrorButton");
+                    var next = (Button)window.FindName("NextErrorButton");
+                    var sourceDetails = (TextBox)window.FindName("SourceDetails");
+                    var results = (TabControl)window.FindName("ResultsTabs");
+
+                    Complete(window.ResetAsync());
+                    Assert.Contains("ID：50", sourceDetails.Text);
+                    Assert.False(previous.IsEnabled);
+                    Assert.True(next.IsEnabled);
+
+                    Complete(window.NavigateAsync(1, errorsOnly: true));
+                    Assert.Contains("ID：33", sourceDetails.Text);
+                    Assert.Contains($"历史异常：{failure}", sourceDetails.Text);
+                    Assert.Contains("缺图 1 条", ((TextBlock)window.FindName("StatusText")).Text);
+                    Assert.Empty(results.Items);
+                    Assert.Equal(0, calls);
+
+                    Complete(window.RunCurrentAsync());
+                    Assert.Contains(failure, sourceDetails.Text);
+                    Assert.Single(results.Items);
+                    Assert.Equal(1, calls);
+
+                    Complete(window.NavigateAsync(1, errorsOnly: true));
+                    Assert.Contains("ID：7", sourceDetails.Text);
+                    Assert.Contains(timeout, sourceDetails.Text);
+                    Assert.True(previous.IsEnabled);
+                    Assert.False(next.IsEnabled);
+                    Assert.Empty(results.Items);
+                    Complete(window.NavigateAsync(-1, errorsOnly: true));
+                    Assert.Contains("ID：33", sourceDetails.Text);
+                    Complete(window.NavigateAsync(-1, errorsOnly: true));
+                    Assert.Contains("ID：33", sourceDetails.Text);
+                    Assert.Equal(1, calls);
+
+                    Complete(window.SelectImagesAsync([source, secondLocalSource]));
+                    Assert.Equal(System.Windows.Visibility.Collapsed, ((Panel)window.FindName("ErrorNavigationPanel")).Visibility);
+                    string localDetails = sourceDetails.Text;
+                    Complete(window.NavigateAsync(1, errorsOnly: true));
+                    Assert.Equal(localDetails, sourceDetails.Text);
+                    Assert.Equal(1, calls);
+                }
+                finally { window.Close(); }
+            });
+        }
+        finally
+        {
+            File.Delete(source);
+            File.Delete(secondLocalSource);
             Directory.Delete(directory);
         }
     }

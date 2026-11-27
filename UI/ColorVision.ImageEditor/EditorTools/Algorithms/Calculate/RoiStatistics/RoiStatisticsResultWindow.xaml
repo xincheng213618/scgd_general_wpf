@@ -12,11 +12,11 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBlock x:Name="SummaryText" Margin="4,0,4,8" TextWrapping="Wrap"/>
-        <TabControl Grid.Row="1">
+        <TabControl Grid.Row="1" SelectionChanged="Tabs_SelectionChanged">
             <TabItem Header="{display:DisplayText Key='统计摘要'}">
                 <DataGrid x:Name="SummaryGrid" IsReadOnly="True" AutoGenerateColumns="True" CanUserAddRows="False"/>
             </TabItem>
-            <TabItem Header="{display:DisplayText Key='直方图'}">
+            <TabItem x:Name="HistogramTab" Header="{display:DisplayText Key='直方图'}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="2*"/>
@@ -26,7 +26,7 @@
                     <DataGrid Grid.Row="1" x:Name="HistogramGrid" IsReadOnly="True" AutoGenerateColumns="True" CanUserAddRows="False"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="{display:DisplayText Key='坏点候选'}">
+            <TabItem x:Name="CandidatesTab" Header="{display:DisplayText Key='坏点候选'}">
                 <DataGrid x:Name="CandidatesGrid" IsReadOnly="True" AutoGenerateColumns="True" CanUserAddRows="False"/>
             </TabItem>
         </TabControl>

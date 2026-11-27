@@ -58,12 +58,47 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		get { lock (stateLock) return STMissingNode.GetExecutionBlockReason(attachedNodes); }
 	}
 
-    // A disconnected MQTT start can dispatch a graph that contains no remote service nodes.
-    // Keep transport readiness on the MQTT node itself, so external MQTT triggers still reconnect normally.
+    public CVBaseServerNode FindRemoteServiceNode(string startNodeName)
+    {
+        lock (stateLock)
+            return startNodeName != null && startNodeNames.TryGetValue(startNodeName, out var start)
+                ? FindRemoteServiceNode(start) : null;
+    }
+
+    private CVBaseServerNode FindRemoteServiceNode(BaseStartNode start)
+    {
+        if (attachedDeviceNodes.Count == 0 || start.m_op_start == null) return null;
+        var pending = new Stack<STNodeOption>();
+        var visited = new HashSet<STNodeOption>();
+        pending.Push(start.m_op_start);
+        while (pending.TryPop(out STNodeOption output))
+        {
+            if (!visited.Add(output)) continue;
+            foreach (STNodeOption input in output.ConnectedOption)
+            {
+                STNode node = input.Owner;
+                if (node == null || !attachedNodes.Contains(node)) continue;
+                if (node is CVBaseServerNode server && server.RequiresRemoteService) return server;
+                STNodeOption[] outputs = node.GetAllOutputOptions();
+                if (node is ISTNodeHub)
+                {
+                    // Relay and timer hubs forward each input only to its paired output.
+                    int index = Array.IndexOf(node.GetAllInputOptions(), input);
+                    if ((uint)index < (uint)outputs.Length) pending.Push(outputs[index]);
+                    continue;
+                }
+                // Branch outcomes are only known at runtime. Include every execution output,
+                // leaving MQTT replies and loop-continuation signals on their own ports.
+                foreach (STNodeOption next in outputs)
+                    if (typeof(CVStartCFC).IsAssignableFrom(next.DataType) && next.ConnectionCount > 0)
+                        pending.Push(next);
+            }
+        }
+        return null;
+    }
+
     private bool CanDispatchLocally(BaseStartNode startNode) =>
-        !isDisposed && attachedStartNodes.Contains(startNode)
-        && startNode is MQTTStartNode
-        && !attachedDeviceNodes.Keys.Any(node => node.RequiresRemoteService);
+        startNode is MQTTStartNode && FindRemoteServiceNode(startNode) == null;
 
     private bool IsStartReady(BaseStartNode startNode) => startNode.IsExecutionReady || CanDispatchLocally(startNode);
 
@@ -127,11 +162,10 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			{
 				return false;
 			}
-		}
-
-		if (!startNode.RequiresConnectionReady || CanDispatchLocally(startNode))
-		{
-			return true;
+			if (!startNode.RequiresConnectionReady || CanDispatchLocally(startNode))
+			{
+				return true;
+			}
 		}
 
 		using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -690,10 +724,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		{
 			StopStartNode(startNode);
 		}
-		foreach (DeviceNode device in devices)
-		{
-			NodeManager.RemoveDevice(device);
-		}
+		NodeManager.RemoveDevices(devices);
 	}
 
 	public void LoadFromFile(string strFileName, List<MQTTServiceInfo> services)
@@ -885,7 +916,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	/// <summary>Initializes process-local resources on the new run before dispatching its first node.</summary>
 	public bool TryStartNode(string name, string serialNumber, List<MQTTServiceInfo> services, Action<FlowRuntimeResources> initializeRuntimeResources)
 	{
-		FlowServiceManager.Instance.AddMQTTService(services);
+		if (services != null) FlowServiceManager.Instance.AddMQTTService(services);
 		return TryStartRun(name, serialNumber, trackCompletion: false, initializeRuntimeResources) != null;
 	}
 

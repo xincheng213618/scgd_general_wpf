@@ -1,9 +1,49 @@
+using ColorVision.Engine.Templates.Flow.Search;
 using ColorVision.Engine.Templates.Flow.Versioning;
+using Microsoft.Data.Sqlite;
+using System.Text.Json;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class FlowRevisionSidecarTests
 {
+    [Fact]
+    public void HistoryListsRevisionMetadataWithoutDecodingSnapshots()
+    {
+        string connectionString = $"Data Source={Guid.NewGuid():N};Mode=Memory;Cache=Shared;Pooling=False";
+        using var store = new SqliteFlowRevisionStore(connectionString);
+        var service = new FlowRevisionService(store);
+        FlowRevision first = CreateInitial(service, [7, 8], "history");
+        FlowRevision second = service.CreateRevision(new FlowRevisionCreateRequest
+        {
+            FlowKey = first.FlowKey,
+            FullSnapshot = [9, 10],
+            SemanticDocument = CreateDocument("history-2", x: 30),
+            Condition = FlowRevisionWriteCondition.FromHead(first),
+            Source = FlowRevisionSource.Publish,
+            IsPublished = true,
+            Author = "reviewer",
+            Message = "keep",
+            CreatedTimeUtc = new DateTime(2026, 10, 1, 12, 30, 0, DateTimeKind.Utc),
+        });
+
+        using var connection = new SqliteConnection(connectionString);
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE flow_definition_revision SET semantic_document = '{'
+            WHERE flow_key = $flow_key AND revision = 1;
+            """;
+        command.Parameters.AddWithValue("$flow_key", first.FlowKey);
+        Assert.Equal(1, command.ExecuteNonQuery());
+
+        var catalog = new FlowCatalogService(store, new InMemoryFlowNodeSearchIndex());
+        Assert.Equal(new[] { FlowRevisionSummary.FromRevision(second), FlowRevisionSummary.FromRevision(first) },
+            catalog.ListHistory(first.FlowKey));
+        Assert.Equal(second.FullSnapshot, catalog.GetRevision(first.FlowKey, second.Revision)!.FullSnapshot);
+        Assert.ThrowsAny<JsonException>(() => catalog.GetRevision(first.FlowKey, first.Revision));
+    }
+
     [Fact]
     public void RevisionIsImmutableAndRejectsStaleParentOrBaseHash()
     {

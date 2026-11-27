@@ -18,6 +18,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
 
 
+        [Browsable(false)]
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
     }
 }

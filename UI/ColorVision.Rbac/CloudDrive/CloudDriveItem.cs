@@ -21,14 +21,52 @@ public sealed class CloudDriveItem : ViewModelBase
     public string Status { get; set; } = "等待上传";
     public string Error { get; set; } = "";
 
-    private double _progress;
-    [JsonIgnore] public double Progress { get => _progress; set => SetProperty(ref _progress, value); }
+    internal long? SentBytes { get; set; }
+    internal double? UploadBytesPerSecond { get; set; }
+    internal TimeSpan? EstimatedRemaining { get; set; }
+    internal string TransferNotice { get; set; } = "";
+
+    [JsonIgnore] public double Progress
+    {
+        get
+        {
+            long displayedBytes = SentBytes ?? Offset;
+            if (IsComplete || (Size > 0 && displayedBytes >= Size)) return 100;
+            return Size > 0 ? Math.Min(99.9, 100d * displayedBytes / Size) : 0;
+        }
+    }
+
+    [JsonIgnore] public bool HasUploadProgress => SentBytes.HasValue && !IsComplete;
+    [JsonIgnore] public string ProgressText => $"{Progress:0.0}%";
     [JsonIgnore] public bool IsComplete => !string.IsNullOrEmpty(ShareUrl);
     [JsonIgnore] public bool CanShare => IsComplete && (!ExpiresAt.HasValue || ExpiresAt > DateTimeOffset.Now);
     [JsonIgnore] public string SizeText => FormatSize(Size);
-    [JsonIgnore] public string Detail => !string.IsNullOrEmpty(Error) ? Error : IsComplete
-        ? ExpiresAt.HasValue ? $"分享有效至 {ExpiresAt.Value.LocalDateTime:yyyy-MM-dd HH:mm}" : "上传完成，可分享"
-        : $"{FormatSize(Offset)} / {SizeText}";
+    [JsonIgnore] public string Detail
+    {
+        get
+        {
+            if (IsComplete)
+                return ExpiresAt.HasValue ? $"分享有效至 {ExpiresAt.Value.LocalDateTime:yyyy-MM-dd HH:mm}" : "上传完成，可分享";
+            if (SentBytes is long sent)
+                return $"已发送 {FormatSize(sent)} / {SizeText} · 服务端已确认 {FormatSize(Offset)}";
+            return Offset > 0 || !string.IsNullOrEmpty(UploadId) ? $"服务端已确认 {FormatSize(Offset)} / {SizeText}" : SizeText;
+        }
+    }
+    [JsonIgnore] public string UploadMessage => string.IsNullOrEmpty(Error) ? TransferNotice : Error;
+    [JsonIgnore] public bool HasUploadMessage => !string.IsNullOrEmpty(UploadMessage);
+    [JsonIgnore] public string CurrentSpeedText => UploadBytesPerSecond is double speed
+        ? $"当前速度 {FormatSize((long)Math.Round(speed))}/s"
+        : "正在测速…";
+    [JsonIgnore] public string RemainingTimeText => HasUploadProgress && SentBytes < Size && !HasUploadMessage
+        ? EstimatedRemaining is TimeSpan remaining ? $"预计剩余 {FormatRemainingTime(remaining)}" : "正在估算剩余时间…"
+        : "";
+
+    private static string FormatRemainingTime(TimeSpan remaining) => remaining switch
+    {
+        { TotalHours: >= 1 } => $"{(long)remaining.TotalHours} 小时 {remaining.Minutes} 分",
+        { TotalMinutes: >= 1 } => $"{remaining.Minutes} 分 {remaining.Seconds} 秒",
+        _ => $"{remaining.Seconds} 秒"
+    };
 
     public void Refresh()
     {

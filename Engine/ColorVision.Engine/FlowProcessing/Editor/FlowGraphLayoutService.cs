@@ -31,6 +31,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 VerticalSpacing,
                 _nodeEditor.ClientSize.Width,
                 _nodeEditor.ClientSize.Height);
+            using var boundsUpdate = _nodeEditor.DeferCanvasBoundsUpdates();
             layout.Execute(rootNode);
         }
 

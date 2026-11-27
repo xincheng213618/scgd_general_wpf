@@ -21,35 +21,49 @@ namespace ProjectARVRPro.Process.Chessboard
         {
             try
             {
-                ObservableCollection<PoiResultCIExyuvData> items = new ObservableCollection<PoiResultCIExyuvData>();
-                if (calculation?.Success == true && calculation.ClassifiedPoints.Count > 0)
-                {
-                    foreach (var classifiedPoint in calculation.ClassifiedPoints)
-                    {
-                        items.Add(classifiedPoint.Point);
-                    }
-                }
-                else if (poixyuvDatas != null)
-                {
-                    foreach (var point in poixyuvDatas)
-                    {
-                        items.Add(point);
-                    }
-                }
-
                 string exportDir = GetExportDirectory(ctx);
                 string safeOutputName = SanitizeFileName(string.IsNullOrWhiteSpace(outputName) ? "Chessboard" : outputName);
                 string filePath = Path.Combine(exportDir, $"{safeOutputName}_PoixyuvDatas_{DateTime.Now:yyyyMMdd_HHmmssfff}.csv");
-                items.SaveCsv(filePath);
-                string baseCsv = File.ReadAllText(filePath, Encoding.UTF8);
-                string enhancedCsv = BuildEnhancedCsvContent(baseCsv, calculation, reportedContrast, contrastResultName, contrastSource);
-                File.WriteAllText(filePath, enhancedCsv, Encoding.UTF8);
+                WriteCsvFile(filePath, poixyuvDatas, calculation, reportedContrast, contrastResultName, contrastSource);
                 ctx.Log.Info($"Chessboard PoixyuvDatas CSV saved: {filePath}");
             }
             catch (Exception ex)
             {
                 ctx.Log.Error("Chessboard PoixyuvDatas CSV save failed", ex);
             }
+        }
+
+        internal static void WriteCsvFile(
+            string filePath,
+            IEnumerable<PoiResultCIExyuvData>? poixyuvDatas,
+            ChessboardContrastCalculationResult? calculation,
+            double? reportedContrast,
+            string contrastResultName,
+            string contrastSource)
+        {
+            IReadOnlyList<ChessboardPoiClassification>? classifiedPoints = calculation?.Success == true &&
+                calculation.ClassifiedPoints.Count > 0 ? calculation.ClassifiedPoints : null;
+            var items = new ObservableCollection<PoiResultCIExyuvData>(classifiedPoints != null
+                ? classifiedPoints.Select(point => point.Point)
+                : poixyuvDatas ?? []);
+
+            items.SaveCsv(filePath);
+            using var csv = new StringWriter(CultureInfo.InvariantCulture);
+            if (classifiedPoints != null)
+            {
+                using var source = new StreamReader(filePath, Encoding.UTF8);
+                using var parser = CreateParser(source);
+                int recordIndex = 0;
+                // The POI exporter emits a header followed by one record per item and its measurement rows.
+                while (parser.Read())
+                    WriteRecord(csv, parser.RawRecord.AsSpan().TrimEnd("\r\n"), classifiedPoints, recordIndex++);
+            }
+
+            WriteSummary(csv, classifiedPoints != null ? 16 : 15, calculation, reportedContrast, contrastResultName, contrastSource);
+            // Without colors only the summary is new. For colored output finish parsing before overwriting the base file.
+            using var output = new StreamWriter(filePath, append: classifiedPoints == null, Encoding.UTF8);
+            foreach (ReadOnlyMemory<char> chunk in csv.GetStringBuilder().GetChunks())
+                output.Write(chunk.Span);
         }
 
         public static string BuildEnhancedCsvContent(
@@ -64,28 +78,39 @@ namespace ProjectARVRPro.Process.Chessboard
                 calculation.ClassifiedPoints.Count > 0 &&
                 records.Count > calculation.ClassifiedPoints.Count;
 
-            if (includeCellColor)
+            IReadOnlyList<ChessboardPoiClassification>? classifiedPoints = includeCellColor ? calculation!.ClassifiedPoints : null;
+            using var csv = new StringWriter(CultureInfo.InvariantCulture);
+            for (int index = 0; index < records.Count; index++)
+                WriteRecord(csv, records[index], classifiedPoints, index);
+
+            WriteSummary(csv, includeCellColor ? 16 : 15, calculation, reportedContrast, contrastResultName, contrastSource);
+            return csv.ToString();
+        }
+
+        private static void WriteRecord(TextWriter csv, ReadOnlySpan<char> record,
+            IReadOnlyList<ChessboardPoiClassification>? classifiedPoints, int index)
+        {
+            csv.Write(record);
+            if (classifiedPoints != null)
             {
-                records[0] = $"{records[0]},cell_color";
-                for (int index = 0; index < calculation!.ClassifiedPoints.Count; index++)
-                {
-                    records[index + 1] = $"{records[index + 1]},{calculation.ClassifiedPoints[index].CellColor}";
-                }
-
-                for (int index = calculation.ClassifiedPoints.Count + 1; index < records.Count; index++)
-                {
-                    records[index] = $"{records[index]},";
-                }
+                csv.Write(',');
+                if (index == 0)
+                    csv.Write("cell_color");
+                else if (index <= classifiedPoints.Count)
+                    csv.Write(classifiedPoints[index - 1].CellColor.ToString());
             }
+            csv.WriteLine();
+        }
 
-            int columnCount = includeCellColor ? 16 : 15;
-            var csv = new StringBuilder();
-            foreach (string record in records)
-            {
-                csv.AppendLine(record);
-            }
-
-            csv.AppendLine(new string(',', columnCount - 1));
+        private static void WriteSummary(
+            TextWriter csv,
+            int columnCount,
+            ChessboardContrastCalculationResult? calculation,
+            double? reportedContrast,
+            string contrastResultName,
+            string contrastSource)
+        {
+            csv.WriteLine(new string(',', columnCount - 1));
             AppendSummaryRow(csv, columnCount, "Chessboard Measurement Item", "Value", "Unit");
             AppendSummaryRow(csv, columnCount, "Contrast Result Name", contrastResultName);
             AppendSummaryRow(csv, columnCount, "Contrast Source", contrastSource);
@@ -113,17 +138,12 @@ namespace ProjectARVRPro.Process.Chessboard
 
             if (reportedContrast.HasValue)
                 AppendSummaryRow(csv, columnCount, "Reported Chessboard Contrast", FormatNumber(reportedContrast.Value));
-
-            return csv.ToString();
         }
 
         private static List<string> ReadRecords(string value)
         {
             var records = new List<string>();
-            using var parser = new CsvParser(new StringReader(value ?? string.Empty), new CsvConfiguration(CultureInfo.InvariantCulture)
-            {
-                IgnoreBlankLines = false
-            });
+            using var parser = CreateParser(new StringReader(value ?? string.Empty));
             while (parser.Read())
             {
                 // Preserve the original quoting and line breaks inside each field.
@@ -132,13 +152,16 @@ namespace ProjectARVRPro.Process.Chessboard
             return records;
         }
 
-        private static void AppendSummaryRow(StringBuilder csv, int columnCount, string item, string value, string unit = "")
+        private static CsvParser CreateParser(TextReader reader)
+            => new CsvParser(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { IgnoreBlankLines = false });
+
+        private static void AppendSummaryRow(TextWriter csv, int columnCount, string item, string value, string unit = "")
         {
             var cells = new string[columnCount];
             cells[0] = EscapeCsv(item);
             cells[1] = EscapeCsv(value);
             cells[2] = EscapeCsv(unit);
-            csv.AppendLine(string.Join(",", cells));
+            csv.WriteLine(string.Join(",", cells));
         }
 
         private static string EscapeCsv(string? value)

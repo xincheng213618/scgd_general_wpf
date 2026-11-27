@@ -1,3 +1,4 @@
+using ColorVision.ImageEditor.Algorithms;
 using System;
 using System.Buffers;
 using System.Security.Cryptography;
@@ -19,27 +20,31 @@ namespace ColorVision.ImageEditor.Tif
                 && format != PixelFormats.Bgr24 && format != PixelFormats.Rgb24 && format != PixelFormats.Rgb48)
                 throw new NotSupportedException($"Pixel binding does not support {format}.");
 
-            int stride = checked(source.PixelWidth * format.BitsPerPixel / 8);
-            byte[] row = ArrayPool<byte>.Shared.Rent(stride);
+            int width = source.PixelWidth, height = source.PixelHeight;
+            int stride = checked(width * format.BitsPerPixel / 8);
+            // Keep WIC copies bounded while hashing several tightly packed rows at a time.
+            const int blockBytes = 512 * 1024;
+            int rowsPerBlock = Math.Min(height, Math.Max(1, blockBytes / Math.Max(1, stride)));
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(checked(stride * rowsPerBlock));
             try
             {
                 using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-                for (int y = 0; y < source.PixelHeight; y++)
+                for (int y = 0; y < height;)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    source.CopyPixels(new Int32Rect(0, y, source.PixelWidth, 1), row, stride, 0);
+                    int rows = Math.Min(rowsPerBlock, height - y);
+                    source.CopyPixels(new Int32Rect(0, y, width, rows), buffer, stride, 0);
+                    Span<byte> pixels = buffer.AsSpan(0, rows * stride);
                     if (format == PixelFormats.Bgr24)
-                    {
-                        for (int offset = 0; offset < stride; offset += 3)
-                            (row[offset], row[offset + 2]) = (row[offset + 2], row[offset]);
-                    }
-                    hash.AppendData(row, 0, stride);
+                        ImageAlgorithmInputFactory.SwapRedBlue24(pixels);
+                    hash.AppendData(pixels);
+                    y += rows;
                 }
                 return Convert.ToHexString(hash.GetHashAndReset());
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(row);
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
     }

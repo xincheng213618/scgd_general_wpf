@@ -84,9 +84,14 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 {
                     IBatchImageLoader loader = GetLoader(item.FilePath)
                         ?? throw new NotSupportedException(string.Format(Properties.Resources.BatchUnsupportedFormat, Path.GetExtension(item.FilePath)));
-                    using Mat source = loader.Load(item.FilePath);
-                    AlgorithmInvocation invocation = CloneInvocation(request.Invocation, item.FilePath);
-                    AlgorithmImageBuffer input = AlgorithmImageInterop.FromMat(source, cancellationToken: cancellationToken);
+                    AlgorithmInvocation invocation;
+                    AlgorithmImageBuffer input;
+                    // The canonical input owns its pixels. Release the decoder's full frame before running the analysis.
+                    using (Mat source = loader.Load(item.FilePath))
+                    {
+                        invocation = CloneInvocation(request.Invocation, item.FilePath);
+                        input = AlgorithmImageInterop.FromMat(source, cancellationToken: cancellationToken);
+                    }
                     using AlgorithmResult result = await _runtime.Runner.RunAsync(new AlgorithmRunRequest
                     {
                         Invocation = invocation,

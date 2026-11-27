@@ -7,14 +7,17 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading;
+using Microsoft.Win32.SafeHandles;
 using ColorVision.ImageEditor.Tif;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     /// <summary>
     /// Owns a bounded LRU of opencv_helper calibration contexts. Parsed tables
-    /// and geometric maps remain alive while their layout and ordered file set
+    /// and geometric maps remain alive while their ordered file revisions
     /// stay cached. LocalCalibrationCacheManager validates inputs and provides
     /// synchronization.
     /// </summary>
@@ -23,99 +26,149 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         // Keep the camera and downstream templates hot without allowing native
         // correction maps to grow with every workflow variant.
         private const int MaxCachedContexts = 2;
-        // Deferred color contexts hold only calibration parameters. These two
-        // slots add no RAW scratch or spatial map capacity to the general cache.
-        private const int MaxDeferredColorContexts = 2;
         private const int CalibrationHashBufferSize = 256 * 1024;
+        private static long accessSequence;
         private readonly LinkedList<CachedContext> contexts = new();
-        private readonly LinkedList<CachedContext> deferredColorContexts = new();
         private bool disposed;
 
-        public int CachedItemCount => contexts.Sum(entry => entry.Files.Length)
-            + deferredColorContexts.Sum(entry => entry.Files.Length);
+        public int CachedItemCount => contexts.Sum(entry => entry.Files.Length);
+
+        internal (long LastAccess, LocalCalibrationWarmupPlan Plan)[] CaptureWarmupPlans(string deviceCode)
+            => contexts.Select(context => (context.LastAccess, new LocalCalibrationWarmupPlan(deviceCode,
+                context.Files.Select(file => new LocalCalibrationWarmupFile(
+                    file.CalibrationType, file.DisplayName, file.FullPath, file.EstimatedMemoryBytes,
+                    file.Sha256, file.Revision)).ToArray()))).ToArray();
+
+        internal void Warm(LocalCalibrationWarmupPlan plan, CalibrationSharedCacheSnapshot existing)
+        {
+            ulong budget = existing.Statistics.BudgetBytes;
+            ulong used = existing.Statistics.EstimatedMemoryBytes;
+            if (budget == 0 || used > budget) return;
+
+            var retained = existing.Entries
+                .Where(entry => (entry.Flags & CalibrationSharedCacheEntryStates.Ready) != 0)
+                .ToDictionary(entry => (entry.CalibrationType, entry.FilePath.ToUpperInvariant()),
+                    entry => entry.EstimatedMemoryBytes);
+            // The native cache indexes one generation per type and path. A replacement
+            // removes the old generation from its retained-byte total.
+            var additional = plan.Files.GroupBy(file => file.CacheKey).Select(group =>
+            {
+                ulong estimate = group.Max(file => file.EstimatedMemoryBytes);
+                ulong current = retained.GetValueOrDefault(group.Key);
+                return estimate > current ? estimate - current : 0;
+            });
+            if (!LocalCalibrationWarmupHistory.FitsWithin(additional, budget - used, out _)) return;
+
+            var assets = new LocalCalibrationAsset[plan.Files.Length];
+            for (int i = 0; i < assets.Length; i++)
+            {
+                var file = plan.Files[i];
+                var asset = CreateCachedFile(new(string.Empty, file.Type, file.DisplayName, string.Empty, file.FullPath),
+                    verifyHash: file.Revision == null);
+                if (file.Revision != null && file.Revision != asset.Revision) return;
+                if (asset.Sha256 != null && file.Sha256 != asset.Sha256) return;
+                assets[i] = asset with { Sha256 = file.Sha256 };
+            }
+            GetContext(assets);
+        }
+
+        internal (LocalCalibrationAsset[] Assets, uint InputDepth) Prepare(IReadOnlyList<DeviceCameraCalibrationFile> files)
+        {
+            if (files.Count == 0) return ([], 0);
+            var assets = InExecutionOrder(files).Select(file => CreateCachedFile(file)).ToArray();
+            var context = GetContext(assets);
+            return (context.Files, context.InputDepth);
+        }
+
+        internal static IEnumerable<DeviceCameraCalibrationFile> InExecutionOrder(IReadOnlyList<DeviceCameraCalibrationFile> files)
+        {
+            var ordered = files.OrderBy(file => LocalFrameCalibrationService.IsColorCalibration(file.CalibrationType)).ToArray();
+            int lastOffset = Array.FindLastIndex(ordered, file => file.CalibrationType == CalibrationType.DSNU);
+            if (lastOffset <= 0) return ordered;
+
+            // Correct the dark offset before multiplying the signal. The stable sort moves only
+            // DarkNoise stages that precede a DSNU map. Other RAW stages retain their relative order.
+            return ordered.Take(lastOffset + 1).OrderBy(file => file.CalibrationType == CalibrationType.DarkNoise)
+                .Concat(ordered.Skip(lastOffset + 1));
+        }
 
         public LocalCalibrationExecution Execute(
             LocalCalibrationLayout layout,
-            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
+            LocalCalibrationAsset[] calibrationFiles,
             IntPtr rawPointer,
+            ulong rawLength,
             IntPtr ciePointer,
+            ulong cieLength,
             float[] exposure,
             LocalCalibrationRoi calibrationRoi,
-            bool allowAcceleration = false,
-            CVImageFlipMode rawOutputFlip = CVImageFlipMode.None)
+            CalibrationOutputMode outputMode,
+            CVImageFlipMode rawOutputFlip)
         {
             ObjectDisposedException.ThrowIf(disposed, this);
             LocalFrameMirrorService.ValidateFlipMode(rawOutputFlip);
-            bool hasBasicCalibration = calibrationFiles.Any(file => !IsColorCalibration(file.CalibrationType));
-            if (rawOutputFlip != CVImageFlipMode.None
-                && (!hasBasicCalibration || (!allowAcceleration && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType)))))
-                throw new ArgumentException("合并翻转要求校正包含常规步骤且输出 RAW。", nameof(rawOutputFlip));
-
-            if (allowAcceleration && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType)))
+            if (calibrationFiles.Length == 0)
             {
-                // Extract the color parameters before executing the basic stages, without allocating XYZ.
-                DeviceCameraCalibrationFile[] colorFiles = calibrationFiles.Where(file => IsColorCalibration(file.CalibrationType)).ToArray();
-                CachedContext colorContext = FlowNodeTiming.Run("LoadCalibrationResources",
-                    () => Prepare(layout, colorFiles, ciePointer, deferredColorOnly: true));
-                CalibrationExecutionOptionsV1 deferredOptions = CreateExecutionOptions(exposure, calibrationRoi);
-                RawColorTransformV1 deferred = RawColorTransformV1.Create();
-                int deferredResult = OpenCVMediaHelper.M_CalibrationGetColorTransformV1(colorContext.Context, in deferredOptions, ref deferred);
-                if (deferredResult != OpenCVCalibration.CalibrationOk)
-                    throw CreateNativeException("读取色度校正参数失败", deferredResult, colorContext.Context);
-                DeviceCameraCalibrationFile[] basicFiles = calibrationFiles.Where(file => !IsColorCalibration(file.CalibrationType)).ToArray();
-                ImageCalibrationSource[] basicSources = [];
-                if (basicFiles.Length > 0)
-                    basicSources = Execute(layout, basicFiles, rawPointer, IntPtr.Zero, exposure, calibrationRoi, rawOutputFlip: rawOutputFlip).Sources;
-                else FlowNodeTiming.Skip("CalibrationAlgorithm");
-                return new(deferred, basicSources.Concat(GetSources(colorContext.Files)).ToArray());
+                // RAW-only on a color-only template has no pixel stages, just the requested orientation.
+                if (outputMode != CalibrationOutputMode.RawOnly || ciePointer != IntPtr.Zero || cieLength != 0)
+                    throw new InvalidOperationException("缺少亮度/颜色模型，无法生成色度输出。");
+                if (rawOutputFlip != CVImageFlipMode.None)
+                    LocalFrameMirrorService.FlipRaw(rawPointer, checked((int)rawLength), layout.Width, layout.Height,
+                        layout.Bpp, layout.Channels, rawOutputFlip);
+                return new(null, []);
             }
-
-            CachedContext cachedContext = FlowNodeTiming.Run("LoadCalibrationResources", () => Prepare(layout, calibrationFiles, ciePointer));
-            CalibrationExecutionOptionsV1 options = CreateExecutionOptions(exposure, calibrationRoi);
-            (ulong rawByteLength, ulong cieFloatCount) = GetBufferLengths(layout, cachedContext.Files);
+            CachedContext cachedContext = FlowNodeTiming.Run("LoadCalibrationResources", () => GetContext(calibrationFiles));
+            CalibrationFrameRequestV2 request = CreateFrameRequest(layout, exposure, calibrationRoi, outputMode, rawOutputFlip);
+            ImageCalibrationSource[] sources = GetSources(cachedContext.Files);
             using var computeStage = FlowNodeTiming.Measure("CalibrationAlgorithm");
-            int result = rawOutputFlip != CVImageFlipMode.None
-                ? OpenCVCalibration.M_CalibrationExecuteRawWithFlipV1(
-                    cachedContext.Context, checked((uint)layout.Width), checked((uint)layout.Height),
-                    checked((uint)layout.Bpp), checked((uint)layout.Channels), rawPointer, rawByteLength,
-                    in options, (int)rawOutputFlip)
-                : OpenCVCalibration.M_CalibrationExecute(
-                cachedContext.Context,
-                checked((uint)layout.Width),
-                checked((uint)layout.Height),
-                checked((uint)layout.Bpp),
-                checked((uint)layout.Channels),
-                rawPointer,
-                rawByteLength,
-                ciePointer,
-                cieFloatCount,
-                in options);
+            int result = OpenCVMediaHelper.ExecuteCalibrationFrame(cachedContext.Context, in request, rawPointer, rawLength,
+                ciePointer, cieLength, out RawColorTransformV1 transform);
             if (result != OpenCVCalibration.CalibrationOk)
             {
                 throw CreateNativeException("执行本地校正失败", result, cachedContext.Context);
             }
             computeStage?.Complete();
-            if (!cachedContext.Files.Any(file => IsColorCalibration(file.CalibrationType))) return new(null, GetSources(cachedContext.Files));
-            RawColorTransformV1 transform = RawColorTransformV1.Create();
-            int snapshotResult = OpenCVMediaHelper.M_CalibrationGetColorTransformV1(cachedContext.Context, in options, ref transform);
-            if (snapshotResult != OpenCVCalibration.CalibrationOk)
-                throw CreateNativeException("读取已执行的色度校正参数失败", snapshotResult, cachedContext.Context);
-            return new(transform, GetSources(cachedContext.Files));
+            return new(outputMode == CalibrationOutputMode.RawOnly ? null : transform, sources);
         }
 
-        internal static CalibrationExecutionOptionsV1 CreateExecutionOptions(float[] exposure, LocalCalibrationRoi calibrationRoi)
+        internal static CalibrationFrameRequestV2 CreateFrameRequest(
+            LocalCalibrationLayout layout, ReadOnlySpan<float> exposure, LocalCalibrationRoi calibrationRoi,
+            CalibrationOutputMode outputMode, CVImageFlipMode rawOutputFlip)
         {
-            CalibrationExecutionOptionsV1 options = CalibrationExecutionOptionsV1.Create(exposure);
-            if (!calibrationRoi.IsConfigured)
+            CalibrationFrameRequestV2 request = new()
             {
-                return options;
+                Width = checked((uint)layout.Width),
+                Height = checked((uint)layout.Height),
+                BitsPerChannel = checked((uint)layout.Bpp),
+                RawLayout = layout.Channels switch
+                {
+                    1 => CalibrationRawLayout.Mono,
+                    3 => CalibrationRawLayout.BgrInterleaved,
+                    _ => throw new ArgumentOutOfRangeException(nameof(layout)),
+                },
+                OutputMode = outputMode,
+                RawFlip = rawOutputFlip switch
+                {
+                    CVImageFlipMode.None => CalibrationRawFlip.None,
+                    CVImageFlipMode.X => CalibrationRawFlip.Vertical,
+                    CVImageFlipMode.Y => CalibrationRawFlip.Horizontal,
+                    CVImageFlipMode.XY => CalibrationRawFlip.Both,
+                    _ => throw new ArgumentOutOfRangeException(nameof(rawOutputFlip)),
+                },
+            };
+            if (!exposure.IsEmpty)
+            {
+                request.ExposureX = exposure[0];
+                request.ExposureY = exposure.Length > 1 ? exposure[1] : request.ExposureX;
+                request.ExposureZ = exposure.Length > 2 ? exposure[2] : request.ExposureY;
             }
-
-            options.RoiX = checked((uint)calibrationRoi.X);
-            options.RoiY = checked((uint)calibrationRoi.Y);
-            options.RoiWidth = checked((uint)calibrationRoi.Width);
-            options.RoiHeight = checked((uint)calibrationRoi.Height);
-            return options;
+            if (calibrationRoi.IsConfigured)
+            {
+                request.RoiX = checked((uint)calibrationRoi.X);
+                request.RoiY = checked((uint)calibrationRoi.Y);
+                request.RoiWidth = checked((uint)calibrationRoi.Width);
+                request.RoiHeight = checked((uint)calibrationRoi.Height);
+            }
+            return request;
         }
 
         public int Release()
@@ -137,45 +190,29 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private CachedContext Prepare(
-            LocalCalibrationLayout layout,
-            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-            IntPtr ciePointer,
-            bool deferredColorOnly = false)
+        private CachedContext GetContext(LocalCalibrationAsset[] requestedFiles)
         {
-            CachedCalibrationFile[] requestedFiles = calibrationFiles.Select(CreateCachedFile).ToArray();
-            int colorFileCount = requestedFiles.Count(file => IsColorCalibration(file.CalibrationType));
-            if (colorFileCount > 1) throw new InvalidOperationException("本地校正一次只能选择一个亮度/颜色校正文件。");
-            if (colorFileCount == 1 && ciePointer == IntPtr.Zero && !deferredColorOnly)
-            {
-                throw new ArgumentException("选择亮度/颜色校正后，CIE 输出指针不能为空。", nameof(ciePointer));
-            }
-
-            LinkedList<CachedContext> cache = deferredColorOnly ? deferredColorContexts : contexts;
-            LinkedListNode<CachedContext>? mostRecent = cache.First;
-            CachedContext? previous = deferredColorOnly ? null : mostRecent?.Value;
-            LinkedListNode<CachedContext>? cachedNode = Find(cache, layout, requestedFiles);
+            LinkedListNode<CachedContext>? mostRecent = contexts.First;
+            CachedContext? previous = mostRecent?.Value;
+            LinkedListNode<CachedContext>? cachedNode = Find(contexts, requestedFiles);
             if (cachedNode != null)
             {
+                cachedNode.Value.LastAccess = Interlocked.Increment(ref accessSequence);
                 if (cachedNode != mostRecent)
                 {
                     TransferRawWorkBuffers(previous, cachedNode.Value);
-                    cache.Remove(cachedNode);
-                    cache.AddFirst(cachedNode);
+                    contexts.Remove(cachedNode);
+                    contexts.AddFirst(cachedNode);
                 }
                 return cachedNode.Value;
             }
 
-            int capacity = deferredColorOnly ? MaxDeferredColorContexts : MaxCachedContexts;
-            if (cache.Count >= capacity)
-            {
-                EvictLeastRecentlyUsed(cache);
-            }
-
-            // Keep the donor's buffers until the requested file set has loaded successfully.
-            CachedContext created = CreateContext(layout, requestedFiles);
-            cache.AddFirst(created);
+            // Retain working contexts if the requested revision can no longer be loaded.
+            CachedContext created = CreateContext(requestedFiles);
+            created.LastAccess = Interlocked.Increment(ref accessSequence);
+            contexts.AddFirst(created);
             TransferRawWorkBuffers(previous, created);
+            if (contexts.Count > MaxCachedContexts) EvictLeastRecentlyUsed(contexts);
             return created;
         }
 
@@ -188,29 +225,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private static (ulong RawByteLength, ulong CieFloatCount) GetBufferLengths(
-            LocalCalibrationLayout layout,
-            IReadOnlyList<CachedCalibrationFile> files)
-        {
-            ulong pixelCount = checked((ulong)layout.Width * (ulong)layout.Height);
-            ulong rawByteLength = checked(pixelCount * (ulong)layout.Channels * (ulong)(layout.Bpp / 8));
-            ulong cieFloatCount = files.Any(file => file.CalibrationType == CalibrationType.Luminance)
-                ? pixelCount
-                : files.Any(file => IsColorCalibration(file.CalibrationType))
-                    ? checked(pixelCount * 3)
-                    : 0;
-            return (rawByteLength, cieFloatCount);
-        }
-
         private static LinkedListNode<CachedContext>? Find(
             LinkedList<CachedContext> cache,
-            LocalCalibrationLayout layout,
-            IReadOnlyList<CachedCalibrationFile> requestedFiles)
+            IReadOnlyList<LocalCalibrationAsset> requestedFiles)
         {
             LinkedListNode<CachedContext>? node = cache.First;
             while (node != null)
             {
-                if (Matches(node.Value, layout, requestedFiles)) return node;
+                if (Matches(node.Value, requestedFiles)) return node;
                 node = node.Next;
             }
             return null;
@@ -218,11 +240,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         private static bool Matches(
             CachedContext cachedContext,
-            LocalCalibrationLayout layout,
-            IReadOnlyList<CachedCalibrationFile> requestedFiles)
+            IReadOnlyList<LocalCalibrationAsset> requestedFiles)
         {
             if (cachedContext.Context == IntPtr.Zero
-                || cachedContext.Layout != layout
                 || cachedContext.Files.Length != requestedFiles.Count)
             {
                 return false;
@@ -235,13 +255,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             return true;
         }
 
-        private static bool SameFile(CachedCalibrationFile cached, CachedCalibrationFile requested)
+        private static bool SameFile(LocalCalibrationAsset cached, LocalCalibrationAsset requested)
             => cached.CalibrationType == requested.CalibrationType
+                && cached.DisplayName == requested.DisplayName
                 && string.Equals(cached.FullPath, requested.FullPath, StringComparison.OrdinalIgnoreCase)
                 && cached.Length == requested.Length
-                && cached.LastWriteTimeUtcTicks == requested.LastWriteTimeUtcTicks;
+                && cached.LastWriteTimeUtcTicks == requested.LastWriteTimeUtcTicks
+                && cached.Revision == requested.Revision
+                && (requested.Sha256 == null || requested.Sha256 == cached.Sha256);
 
-        private static CachedContext CreateContext(LocalCalibrationLayout layout, CachedCalibrationFile[] requestedFiles)
+        private static CachedContext CreateContext(LocalCalibrationAsset[] requestedFiles)
         {
             IntPtr newContext = IntPtr.Zero;
             int createResult = OpenCVCalibration.M_CalibrationCreate(out newContext);
@@ -255,23 +278,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             try
             {
                 Span<byte> nativeSha256 = stackalloc byte[SHA256.HashSizeInBytes];
-                foreach (CachedCalibrationFile file in requestedFiles)
+                LocalCalibrationAsset[] loaded = new LocalCalibrationAsset[requestedFiles.Length];
+                for (int index = 0; index < requestedFiles.Length; index++)
                 {
+                    LocalCalibrationAsset file = requestedFiles[index];
                     // Keep the file stable while fingerprinting and loading the native resource.
                     using FileStream source = new(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    if (source.Length != file.Length || File.GetLastWriteTimeUtc(file.FullPath).Ticks != file.LastWriteTimeUtcTicks)
-                        throw new IOException("校正资源在加载前已变化，请重试。");
+                    if (source.Length != file.Length || File.GetLastWriteTimeUtc(file.FullPath).Ticks != file.LastWriteTimeUtcTicks
+                        || LocalCalibrationFileRevision.Read(source.SafeFileHandle) != file.Revision)
+                        throw new IOException($"校正资源“{file.DisplayName}”已变化，请重新准备模板。");
                     int loadResult;
+                    string? digest = null;
                     if ((file.CalibrationType is CalibrationType.DSNU or CalibrationType.Uniformity)
                         && OpenCVCalibration.TryLoadCalibrationMapWithSha256(
                             newContext, (int)file.CalibrationType, file.FullPath, nativeSha256, out loadResult))
                     {
                         if (loadResult == OpenCVCalibration.CalibrationOk)
-                            file.Sha256 = Convert.ToHexString(nativeSha256);
+                            digest = Convert.ToHexString(nativeSha256);
                     }
                     else
                     {
-                        file.Sha256 = ComputeSourceHash(source, file.Length);
+                        digest = ComputeSourceHash(source, file.Length);
                         loadResult = OpenCVCalibration.M_CalibrationLoadFileW(newContext, (int)file.CalibrationType, file.FullPath);
                     }
 
@@ -282,9 +309,29 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                             loadResult,
                             newContext);
                     }
+                    if (file.Sha256 != null && file.Sha256 != digest)
+                        throw new IOException($"校正资源“{file.DisplayName}”的内容已变化，请重新准备模板。");
+                    ulong estimatedMemoryBytes;
+                    try { estimatedMemoryBytes = OpenCVCalibration.GetCalibrationItemEstimatedBytes(newContext, (uint)index); }
+                    catch (NotSupportedException exception) when (exception.InnerException is EntryPointNotFoundException)
+                    {
+                        estimatedMemoryBytes = 0;
+                    }
+                    loaded[index] = file with { Sha256 = digest, EstimatedMemoryBytes = estimatedMemoryBytes };
                 }
 
-                return new CachedContext(newContext, layout, requestedFiles);
+                uint inputDepth;
+                try
+                {
+                    int depthResult = OpenCVMediaHelper.GetCalibrationInputDepth(newContext, out inputDepth);
+                    if (depthResult != OpenCVCalibration.CalibrationOk)
+                        throw CreateNativeException("校正模板的 RAW 位深要求不兼容", depthResult, newContext);
+                }
+                catch (EntryPointNotFoundException error)
+                {
+                    throw new InvalidOperationException("请更新 opencv_helper.dll，当前版本缺少模板位深接口 M_CalibrationGetInputDepthV1。", error);
+                }
+                return new CachedContext(newContext, loaded, inputDepth);
             }
             catch (Exception loadError)
             {
@@ -332,19 +379,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         {
             int released = CachedItemCount;
             List<Exception>? releaseErrors = null;
-            foreach (LinkedList<CachedContext> cache in new[] { contexts, deferredColorContexts })
+            while (contexts.First != null)
             {
-                while (cache.First != null)
+                CachedContext cachedContext = contexts.First.Value;
+                contexts.RemoveFirst();
+                IntPtr contextToRelease = cachedContext.Context;
+                cachedContext.Context = IntPtr.Zero;
+                Exception? releaseError = TryDestroyContext(contextToRelease);
+                if (releaseError != null)
                 {
-                    CachedContext cachedContext = cache.First.Value;
-                    cache.RemoveFirst();
-                    IntPtr contextToRelease = cachedContext.Context;
-                    cachedContext.Context = IntPtr.Zero;
-                    Exception? releaseError = TryDestroyContext(contextToRelease);
-                    if (releaseError != null)
-                    {
-                        (releaseErrors ??= new List<Exception>()).Add(releaseError);
-                    }
+                    (releaseErrors ??= new List<Exception>()).Add(releaseError);
                 }
             }
 
@@ -377,22 +421,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 : $"{operation}，原生错误码：{result}，{detail}");
         }
 
-        private static CachedCalibrationFile CreateCachedFile(DeviceCameraCalibrationFile file)
+        private static LocalCalibrationAsset CreateCachedFile(DeviceCameraCalibrationFile file, bool verifyHash = false)
         {
             if (!IsSupported(file.CalibrationType))
             {
                 throw new NotSupportedException($"本地指针校正暂不支持校正项：{file.DisplayName}（{file.CalibrationType}）。");
             }
 
-            FileInfo fileInfo = new(Path.GetFullPath(file.FullPath));
-            fileInfo.Refresh();
-            if (!fileInfo.Exists) throw new FileNotFoundException($"校正文件不存在：{file.DisplayName}。", fileInfo.FullName);
-            return new CachedCalibrationFile(
+            string path = Path.GetFullPath(file.FullPath);
+            using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var revision = LocalCalibrationFileRevision.Read(source.SafeFileHandle);
+            return new LocalCalibrationAsset(
                 file.CalibrationType,
                 file.DisplayName,
-                fileInfo.FullName,
-                fileInfo.Length,
-                fileInfo.LastWriteTimeUtc.Ticks);
+                path,
+                source.Length,
+                File.GetLastWriteTimeUtc(path).Ticks,
+                revision,
+                verifyHash || revision == null ? ComputeSourceHash(source, source.Length) : null);
         }
 
         private static bool IsSupported(CalibrationType type)
@@ -412,13 +458,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 or CalibrationType.LumFourColor
                 or CalibrationType.LumMultiColor;
 
-        private static bool IsColorCalibration(CalibrationType type)
-            => type is CalibrationType.Luminance
-                or CalibrationType.LumOneColor
-                or CalibrationType.LumFourColor
-                or CalibrationType.LumMultiColor;
-
-        private static ImageCalibrationSource[] GetSources(IEnumerable<CachedCalibrationFile> files)
+        private static ImageCalibrationSource[] GetSources(LocalCalibrationAsset[] files)
             => files.Select(file => new ImageCalibrationSource
             {
                 CalibrationType = (int)file.CalibrationType, Name = file.DisplayName,
@@ -426,26 +466,54 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 FileModifiedUtc = new DateTime(file.LastWriteTimeUtcTicks, DateTimeKind.Utc), FileSha256 = file.Sha256
             }).ToArray();
 
-        private sealed record CachedCalibrationFile(
-            CalibrationType CalibrationType,
-            string DisplayName,
-            string FullPath,
-            long Length,
-            long LastWriteTimeUtcTicks)
-        {
-            public string? Sha256 { get; set; }
-        }
-
-        private sealed class CachedContext(
-            IntPtr context,
-            LocalCalibrationLayout layout,
-            CachedCalibrationFile[] files)
+        private sealed class CachedContext(IntPtr context, LocalCalibrationAsset[] files, uint inputDepth)
         {
             public IntPtr Context { get; set; } = context;
-            public LocalCalibrationLayout Layout { get; } = layout;
-            public CachedCalibrationFile[] Files { get; } = files;
+            public long LastAccess { get; set; }
+            public LocalCalibrationAsset[] Files { get; } = files;
+            public uint InputDepth { get; } = inputDepth;
             public bool UsesRawWorkBuffers { get; } = files.Any(file => file.CalibrationType is
                 CalibrationType.Distortion or CalibrationType.ColorShift or CalibrationType.ColorDiff or CalibrationType.AngleShift);
         }
+    }
+
+    internal sealed record LocalCalibrationAsset(CalibrationType CalibrationType, string DisplayName, string FullPath,
+        long Length, long LastWriteTimeUtcTicks, LocalCalibrationFileRevision? Revision, string? Sha256 = null,
+        ulong EstimatedMemoryBytes = 0);
+
+    // A replaced or rewritten file can retain its length and last-write timestamp. Keep the
+    // same revision identity as the native asset cache; hash directly on volumes lacking it.
+    internal readonly record struct LocalCalibrationFileRevision(uint Volume, ulong FileId, long ChangeTime)
+    {
+        internal static LocalCalibrationFileRevision? Read(SafeFileHandle handle)
+        {
+            if (!GetFileInformationByHandle(handle, out ByHandleFileInformation file)
+                || !GetFileInformationByHandleEx(handle, 0 /* FileBasicInfo */, out FileBasicInformation basic,
+                    (uint)Marshal.SizeOf<FileBasicInformation>())) return null;
+            ulong id = ((ulong)file.FileIndexHigh << 32) | file.FileIndexLow;
+            return id != 0 && basic.ChangeTime != 0 ? new(file.VolumeSerialNumber, id, basic.ChangeTime) : null;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ByHandleFileInformation
+        {
+            public uint FileAttributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME CreationTime, LastAccessTime, LastWriteTime;
+            public uint VolumeSerialNumber, FileSizeHigh, FileSizeLow, NumberOfLinks, FileIndexHigh, FileIndexLow;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FileBasicInformation
+        {
+            public long CreationTime, LastAccessTime, LastWriteTime, ChangeTime;
+            public uint FileAttributes;
+        }
+
+        [DllImport("kernel32.dll", ExactSpelling = true)]
+        private static extern bool GetFileInformationByHandle(SafeFileHandle handle, out ByHandleFileInformation info);
+
+        [DllImport("kernel32.dll", ExactSpelling = true)]
+        private static extern bool GetFileInformationByHandleEx(SafeFileHandle handle, int infoClass,
+            out FileBasicInformation info, uint size);
     }
 }

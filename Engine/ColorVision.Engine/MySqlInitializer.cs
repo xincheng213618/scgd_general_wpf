@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using ColorVision.UI;
 using ColorVision.UI.ServiceHost;
+using ColorVision.Engine.Services;
 using log4net;
 using System;
 using System.IO;
@@ -21,11 +22,17 @@ namespace ColorVision.Engine
 
         public override async Task InitializeAsync()
         {
-            MySqlConnectionAttempt attempt = await MySqlControl.GetInstance().ConnectWithOutcomeAsync();
-            if (!ShouldRepairLocalConnection(attempt))
-                return;
-
-            await TryRepairLocalMySqlViaServiceHostAsync(attempt);
+            WorkstationConfiguration.BeginStartup();
+            try
+            {
+                MySqlConnectionAttempt attempt = await MySqlControl.GetInstance().ConnectWithOutcomeAsync();
+                if (ShouldRepairLocalConnection(attempt))
+                    await TryRepairLocalMySqlViaServiceHostAsync(attempt);
+            }
+            finally
+            {
+                WorkstationConfiguration.CompleteStartup();
+            }
         }
 
         internal static bool ShouldRepairLocalConnection(MySqlConnectionAttempt attempt) =>

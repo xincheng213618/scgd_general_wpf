@@ -89,10 +89,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public PhyExpTimeCfg ExpTimeCfg { get; set; } = new PhyExpTimeCfg();
 
+        [Browsable(false)]
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
-        private bool _IsAutoOpen = true;
+        private bool _IsAutoOpen;
 
         // Remote camera services still read this value from the saved configuration.
         [Browsable(false)]

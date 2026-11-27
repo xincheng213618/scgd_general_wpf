@@ -1,4 +1,5 @@
 #include "../algorithm/calibration/calibration_context.h"
+#include "../algorithm/calibration/calibration_color_eval.h"
 #include "../native_log.h"
 #include "../../include/opencv_media_export.h"
 
@@ -14,6 +15,7 @@ namespace {
 using cvcore::calibration::CalibrationContext;
 using cvcore::calibration::CalibrationFileDigest;
 using cvcore::calibration::CalibrationType;
+using cvcore::calibration::ColorTransform;
 using cvcore::calibration::ExecutionOptions;
 using cvcore::calibration::ImageView;
 
@@ -73,6 +75,27 @@ ExecutionOptions convertOptions(const MCalibrationExecutionOptionsV1* value)
     return result;
 }
 
+void storeColorTransform(const ColorTransform& value, bool interleavedBgr, MRawColorTransformV1& result)
+{
+    result = {};
+    result.structSize = sizeof(result);
+    result.calibrationType = static_cast<std::int32_t>(value.type);
+    result.channels = value.channels;
+    result.kind = value.kind;
+    result.interleavedBgr = interleavedBgr;
+    std::copy(value.coefficients.begin(), value.coefficients.end(), result.coefficients);
+}
+
+bool overlapsColorTransform(const void* pixels, std::uint64_t byteLength, const MRawColorTransformV1* transform)
+{
+    if (pixels == nullptr || byteLength == 0 || transform == nullptr) return false;
+    const auto pixelsAddress = reinterpret_cast<std::uintptr_t>(pixels);
+    const auto transformAddress = reinterpret_cast<std::uintptr_t>(transform);
+    return pixelsAddress <= transformAddress
+        ? transformAddress - pixelsAddress < byteLength
+        : pixelsAddress - transformAddress < sizeof(*transform);
+}
+
 } // namespace
 
 #define fail(...) failImpl(__func__, __VA_ARGS__)
@@ -84,18 +107,12 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetColorTransformV1(
         || transform == nullptr || transform->structSize < sizeof(*transform))
         return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Invalid color snapshot arguments");
     try {
-        cvcore::calibration::ColorTransform value;
+        ColorTransform value;
         if (!asContext(context)->colorTransform(convertOptions(options), value))
             return fail(context, M_CALIBRATION_UNSUPPORTED, "Context has no unique color transform");
         for (double factor : value.coefficients)
             if (!std::isfinite(factor)) return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Non-finite color factor");
-        *transform = {};
-        transform->structSize = sizeof(*transform);
-        transform->calibrationType = static_cast<std::int32_t>(value.type);
-        transform->channels = value.channels;
-        transform->kind = value.kind;
-        transform->interleavedBgr = options->interleavedBgr != 0;
-        std::copy(value.coefficients.begin(), value.coefficients.end(), transform->coefficients);
+        storeColorTransform(value, options->interleavedBgr != 0, *transform);
         return M_CALIBRATION_OK;
     }
     catch (const std::exception& ex) { return fail(context, M_CALIBRATION_INTERNAL_ERROR, ex.what()); }
@@ -217,6 +234,24 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationLoadFileW(
     }
     catch (...) {
         return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while loading calibration file");
+    }
+}
+
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetInputDepthV1(void* context, std::uint32_t* bitsPerChannel)
+{
+    if (context == nullptr || bitsPerChannel == nullptr)
+        return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Context and input depth output are required");
+    try {
+        if (!asContext(context)->requiredInputDepth(*bitsPerChannel))
+            return M_CALIBRATION_INVALID_ARGUMENT;
+        globalError.clear();
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while reading calibration input depth");
     }
 }
 
@@ -393,6 +428,81 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecuteToV1(
     }
 }
 
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationExecuteFrameV2(
+    void* context,
+    const MCalibrationFrameRequestV2* request,
+    std::uint8_t* rawData,
+    std::uint64_t rawByteLength,
+    float* cieData,
+    std::uint64_t cieByteLength,
+    MRawColorTransformV1* transform)
+{
+    if (context == nullptr || request == nullptr || request->structSize != sizeof(*request)
+        || request->rawLayout > M_CALIBRATION_RGB_PLANAR || request->outputMode > M_CALIBRATION_DEFERRED_COLOR
+        || request->rawFlip > M_CALIBRATION_FLIP_BOTH || rawData == nullptr
+        || rawByteLength > (std::numeric_limits<std::size_t>::max)()
+        || cieByteLength > (std::numeric_limits<std::size_t>::max)()
+        || cieByteLength % sizeof(float) != 0) {
+        return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Invalid calibration frame request");
+    }
+
+    const bool useColor = request->outputMode != M_CALIBRATION_RAW_ONLY;
+    if ((useColor && transform == nullptr)
+        || (request->outputMode == M_CALIBRATION_FULL_CIE
+            ? cieData == nullptr || request->rawFlip != M_CALIBRATION_FLIP_NONE
+            : cieData != nullptr || cieByteLength != 0)) {
+        return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Calibration outputs do not match the requested mode");
+    }
+    if (overlapsColorTransform(rawData, rawByteLength, transform)
+        || overlapsColorTransform(cieData, cieByteLength, transform)) {
+        return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Color transform and pixel buffers must not overlap");
+    }
+
+    try {
+        ExecutionOptions options;
+        options.interleavedBgr = request->rawLayout != M_CALIBRATION_RGB_PLANAR;
+        options.preserveRawLayout = true;
+        std::copy_n(request->sensorRoi, options.roi.size(), options.roi.begin());
+        std::copy_n(request->opticalBlack, options.ob.size(), options.ob.begin());
+        std::copy_n(request->exposure, options.exposure.size(), options.exposure.begin());
+        switch (request->rawFlip) {
+        case M_CALIBRATION_FLIP_NONE: break;
+        case M_CALIBRATION_FLIP_VERTICAL: options.rawOutputFlip = 0; break;
+        case M_CALIBRATION_FLIP_HORIZONTAL: options.rawOutputFlip = 1; break;
+        case M_CALIBRATION_FLIP_BOTH: options.rawOutputFlip = -1; break;
+        }
+
+        const ImageView raw{ request->width, request->height, request->bitsPerChannel,
+            request->rawLayout == M_CALIBRATION_MONO ? 1U : 3U, rawData, static_cast<std::size_t>(rawByteLength) };
+        ColorTransform color;
+        if (!asContext(context)->execute(raw, cieData, static_cast<std::size_t>(cieByteLength) / sizeof(float),
+                options, useColor ? &color : nullptr)) {
+            cvnative::LogFailure(cvnative::LogLevel::Warn, "calibration.export", __func__, M_CALIBRATION_EXECUTE_FAILED);
+            return M_CALIBRATION_EXECUTE_FAILED;
+        }
+
+        if (useColor) {
+            MRawColorTransformV1 result;
+            storeColorTransform(color, options.interleavedBgr, result);
+            const std::size_t pixels = static_cast<std::size_t>(raw.width) * raw.height;
+            if (!cvcore::calibration::color::frameValuesAreFinite(raw.data, pixels, raw.bitsPerChannel, result, cieData)) {
+                return fail(context, M_CALIBRATION_EXECUTE_FAILED,
+                    "Color output exceeds the finite float range for this frame; check calibration coefficients, gain and exposure");
+            }
+            *transform = result;
+        }
+        else if (transform != nullptr) *transform = {};
+        globalError.clear();
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while executing calibration frame request");
+    }
+}
+
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetLastError(
     void* context,
     char* buffer,
@@ -436,6 +546,25 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemCount(void* conte
     }
 }
 
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationGetItemEstimatedBytesV1(
+    void* context, std::uint32_t itemIndex, std::uint64_t* estimatedBytes)
+{
+    if (context == nullptr || estimatedBytes == nullptr)
+        return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Context and item size output are required");
+    try {
+        if (!asContext(context)->itemEstimatedBytes(itemIndex, *estimatedBytes))
+            return fail(context, M_CALIBRATION_INVALID_ARGUMENT, "Calibration item index is out of range");
+        globalError.clear();
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(context, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while reading calibration item size");
+    }
+}
+
 extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheGetStatsV1(
     MCalibrationCacheStatsV1* stats)
 {
@@ -463,6 +592,21 @@ extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheGetStatsV1(
     catch (...) {
         return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR,
             "Unknown error while reading calibration cache stats");
+    }
+}
+
+extern "C" COLORVISIONCORE_API int __cdecl M_CalibrationCacheSetBudgetV1(std::uint64_t budgetBytes)
+{
+    try {
+        cvcore::calibration::setCalibrationFileCacheBudget(budgetBytes);
+        globalError.clear();
+        return M_CALIBRATION_OK;
+    }
+    catch (const std::exception& ex) {
+        return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR, ex.what());
+    }
+    catch (...) {
+        return fail(nullptr, M_CALIBRATION_INTERNAL_ERROR, "Unknown error while setting the calibration cache budget");
     }
 }
 

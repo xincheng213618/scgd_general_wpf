@@ -11,17 +11,20 @@ namespace ColorVision.Engine.Services.PhySpectrums
 {
     internal static class PhySpectrumStore
     {
-        private static SqlSugarClient OpenDatabase()
+        private static SqlSugarClient OpenDatabase(MySqlConnectedEndpoint? endpoint)
         {
-            if (!MySqlControl.GetInstance().IsConnect)
+            endpoint ??= WorkstationConfiguration.ConnectedEndpoint;
+            if (endpoint == null)
                 throw new InvalidOperationException(Properties.Resources.SpectrumDatabaseRequired);
-            return new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = DbType.MySql, IsAutoCloseConnection = true });
+            if (!endpoint.IsCurrent)
+                throw new InvalidOperationException(Properties.Resources.SpectrumCatalogSourceChanged);
+            return endpoint.CreateDbClient();
         }
 
-        internal static IReadOnlyList<PhySpectrum> Load(bool? useLocal = null)
+        internal static IReadOnlyList<PhySpectrum> Load(bool? useLocal = null, MySqlConnectedEndpoint? endpoint = null)
         {
             bool local = useLocal ?? SysResourceDao.Instance.UseLocal;
-            using var db = local ? null : OpenDatabase();
+            using var db = local ? null : OpenDatabase(endpoint);
             var resources = local ? SysResourceDao.Instance.GetLocal()
                 : db!.Queryable<SysResourceModel>().Where(r => r.Type == (int)ServiceTypes.PhySpectrums || r.Type == (int)ServiceTypes.Spectrum).ToList();
             resources = resources.Where(r => !r.IsDelete).ToList();
@@ -52,7 +55,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
                 .Select(sn => new PhySpectrum { SN = sn, ResourceId = physical.GetValueOrDefault(sn)?.Id, License = licenseBySn.GetValueOrDefault(sn) }).ToArray();
         }
 
-        internal static void Register(string sn, bool? useLocal = null)
+        internal static void Register(string sn, bool? useLocal = null, MySqlConnectedEndpoint? endpoint = null)
         {
             sn = NormalizeSerial(sn);
             if (useLocal ?? SysResourceDao.Instance.UseLocal)
@@ -64,7 +67,7 @@ namespace ColorVision.Engine.Services.PhySpectrums
                 SysResourceDao.Instance.Save(resource, local: true);
                 return;
             }
-            using var db = OpenDatabase();
+            using var db = OpenDatabase(endpoint);
             var existing = db.Queryable<SysResourceModel>().Where(r => r.Type == (int)ServiceTypes.PhySpectrums).ToList()
                 .FirstOrDefault(r => string.Equals(r.Code?.Trim(), sn, StringComparison.OrdinalIgnoreCase));
             if (existing != null)
@@ -84,11 +87,11 @@ namespace ColorVision.Engine.Services.PhySpectrums
             return sn;
         }
 
-        internal static void SaveLicense(LicenseModel license, bool? useLocal = null)
+        internal static void SaveLicense(LicenseModel license, bool? useLocal = null, MySqlConnectedEndpoint? endpoint = null)
         {
             bool local = PhyLicenseDao.IsLocalId(license.Id) || (useLocal ?? PhyLicenseDao.Instance.UseLocal);
             if (local && license.Id > 0) throw new InvalidOperationException("MySQL 未连接，不能修改服务器许可证。");
-            using var db = local ? null : OpenDatabase();
+            using var db = local ? null : OpenDatabase(endpoint);
             var existing = local ? PhyLicenseDao.Instance.GetLocal().Where(l => string.Equals(l.MacAddress, license.MacAddress, StringComparison.OrdinalIgnoreCase)).ToList()
                 : db!.Queryable<LicenseModel>().Where(l => l.MacAddress == license.MacAddress).ToList();
             // Preserve existing IDs and associations. Never overwrite a camera license with the same SN.
@@ -123,5 +126,48 @@ namespace ColorVision.Engine.Services.PhySpectrums
             })
             .Where(item => item.LiceType == 1 && item.MacAddress == license.MacAddress)
             .ExecuteCommand();
+
+        internal static bool TryRemoveLicense(LicenseModel expected, MySqlConnectedEndpoint? endpoint)
+        {
+            if (endpoint == null) return PhyLicenseDao.Instance.TryRemoveSpectrumLicense(expected);
+
+            using var db = OpenDatabase(endpoint);
+            bool removed = TryRemoveLicenseRecords(db, expected, () => endpoint.IsCurrent);
+            if (!removed && !endpoint.IsCurrent)
+                throw new InvalidOperationException(Properties.Resources.SpectrumCatalogSourceChanged);
+            return removed;
+        }
+
+        internal static bool TryRemoveLicenseRecords(ISqlSugarClient db, LicenseModel expected, Func<bool> isCurrent)
+        {
+            if (expected.Id <= 0 || !isCurrent()) return false;
+            var ids = db.Queryable<LicenseModel>().Where(row => row.LiceType == 1)
+                .Select(row => new { row.Id, row.MacAddress }).ToList()
+                .Where(row => PhyLicenseDao.MatchesSpectrumSerial(row.MacAddress, expected.MacAddress)).Select(row => row.Id).ToArray();
+            if (!ids.Contains(expected.Id)) return false;
+
+            // Recheck the displayed license under a write lock before deleting the matching group.
+            db.Ado.BeginTran();
+            bool committed = false;
+            try
+            {
+                var query = db.Queryable<LicenseModel>().In(ids);
+                if (db.CurrentConnectionConfig.DbType == DbType.MySql) query = query.TranLock(DbLockType.Wait);
+                var matches = query.ToList().Where(row => PhyLicenseDao.MatchesSpectrumSerial(row, expected.MacAddress)).ToArray();
+                if (!matches.Any(row => row.Id == expected.Id && PhyLicenseDao.HasSameLicense(row, expected)) || !isCurrent())
+                    return false;
+
+                int[] matchingIds = matches.Select(row => row.Id).ToArray();
+                if (db.Deleteable<LicenseModel>().In(matchingIds).Where(row => row.LiceType == 1).ExecuteCommand() != matchingIds.Length
+                    || !isCurrent()) return false;
+                db.Ado.CommitTran();
+                committed = true;
+                return true;
+            }
+            finally
+            {
+                if (!committed) db.Ado.RollbackTran();
+            }
+        }
     }
 }

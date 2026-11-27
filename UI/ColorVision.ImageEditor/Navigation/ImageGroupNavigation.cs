@@ -6,7 +6,9 @@ namespace ColorVision.ImageEditor.Navigation
     /// <summary>Owns image-group selection and follow behavior without depending on a view or Dispatcher.</summary>
     internal sealed class ImageGroupNavigation
     {
+        private const int MinimumIndexedPaths = 64;
         private readonly List<ImageViewImageItem> _items = new();
+        private Dictionary<string, int>? _indexByPath;
         private readonly Action<string> _openImage;
         private bool _userPinned;
 
@@ -26,11 +28,20 @@ namespace ColorVision.ImageEditor.Navigation
         // after document invalidation, preserving the ordering of its revision callbacks.
         internal bool TryOpenGroup(IEnumerable<ImageViewImageItem>? images, int selectedIndex)
         {
-            List<ImageViewImageItem> items = Normalize(images);
+            if (images == null) return false;
+            List<ImageViewImageItem> items = new();
+            Dictionary<string, int> indexByPath = new(StringComparer.OrdinalIgnoreCase);
+            foreach (ImageViewImageItem image in images)
+            {
+                if (string.IsNullOrWhiteSpace(image.FilePath) || !indexByPath.TryAdd(image.FilePath, items.Count)) continue;
+                items.Add(image);
+            }
             if (items.Count == 0) return false;
 
+            _items.EnsureCapacity(items.Count);
             _items.Clear();
             _items.AddRange(items);
+            _indexByPath = items.Count >= MinimumIndexedPaths ? indexByPath : null;
             SelectedIndex = Math.Clamp(selectedIndex, 0, _items.Count - 1);
             _userPinned = false;
             OpenItem(SelectedIndex, false);
@@ -47,7 +58,19 @@ namespace ColorVision.ImageEditor.Navigation
                 return;
             }
 
-            _items.Add(new ImageViewImageItem(filePath));
+            ImageViewImageItem item = new(filePath);
+            int index = _items.Count;
+            _items.EnsureCapacity(index + 1);
+            if (_indexByPath == null && index == MinimumIndexedPaths - 1)
+            {
+                Dictionary<string, int> indexByPath = new(MinimumIndexedPaths, StringComparer.OrdinalIgnoreCase);
+                for (int existing = 0; existing < index; existing++)
+                    indexByPath.Add(_items[existing].FilePath, existing);
+                indexByPath.Add(filePath, index);
+                _indexByPath = indexByPath;
+            }
+            else _indexByPath?.Add(filePath, index);
+            _items.Add(item);
             if (SelectedIndex < 0) SelectedIndex = 0;
 
             if (open && AutoFollow && !_userPinned) OpenItem(_items.Count - 1, false);
@@ -63,6 +86,7 @@ namespace ColorVision.ImageEditor.Navigation
 
         internal void Clear()
         {
+            _indexByPath = null;
             _items.Clear();
             SelectedIndex = -1;
             _userPinned = false;
@@ -78,8 +102,11 @@ namespace ColorVision.ImageEditor.Navigation
                 return;
             }
 
+            ImageViewImageItem item = new(filePath);
+            _items.EnsureCapacity(1);
             _items.Clear();
-            _items.Add(new ImageViewImageItem(filePath));
+            _items.Add(item);
+            _indexByPath = null;
             SelectedIndex = 0;
             _userPinned = false;
             Changed?.Invoke(this, EventArgs.Empty);
@@ -95,22 +122,10 @@ namespace ColorVision.ImageEditor.Navigation
             SelectedImageChanged?.Invoke(this, new ImageViewImageChangedEventArgs(item, SelectedIndex, _items.Count, userInitiated));
         }
 
-        private static List<ImageViewImageItem> Normalize(IEnumerable<ImageViewImageItem>? images)
-        {
-            List<ImageViewImageItem> items = new();
-            HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
-            if (images == null) return items;
-
-            foreach (ImageViewImageItem image in images)
-            {
-                if (string.IsNullOrWhiteSpace(image.FilePath) || !seen.Add(image.FilePath)) continue;
-                items.Add(image);
-            }
-            return items;
-        }
-
         private int FindIndex(string filePath)
         {
+            if (_indexByPath != null)
+                return _indexByPath.TryGetValue(filePath, out int index) ? index : -1;
             for (int i = 0; i < _items.Count; i++)
                 if (string.Equals(_items[i].FilePath, filePath, StringComparison.OrdinalIgnoreCase)) return i;
             return -1;

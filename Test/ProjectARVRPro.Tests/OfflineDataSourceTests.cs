@@ -27,6 +27,47 @@ public sealed class OfflineDataSourceTests
     private static readonly DateTime Day = new(2026, 9, 16);
     private static ResultStatisticsQuery All => new() { From = Day, ToExclusive = Day.AddDays(1) };
 
+    [Fact]
+    public void StatisticsFirstShowLoadsOnlyTheSelectedTabAndSkipsTheEmptyPlot()
+    {
+        using var fixture = new Files();
+        fixture.CreateProject("{}");
+        var source = ArvrOfflineDataSource.Open(fixture.Root, fixture.Cache);
+        ArvrDrawingOverlayCompatibilityTests.RunOnStaThread(() =>
+        {
+            var window = new CycleTimeStatisticsWindow(source)
+            {
+                ShowInTaskbar = false,
+                ShowActivated = false,
+                WindowStartupLocation = WindowStartupLocation.Manual,
+                Left = -20000,
+                Top = -20000,
+            };
+            try
+            {
+                var tabs = (TabControl)window.FindName("StatisticsTabs");
+                var records = (DataGrid)window.FindName("RecordDataGrid");
+                var refreshRecords = (Button)window.FindName("RecordRefreshButton");
+                var homeStatus = (TextBlock)window.FindName("HomeStatusText");
+                var plotHost = (Grid)window.FindName("HomeTrendPlotHost");
+                tabs.SelectedIndex = 0;
+                ((DatePicker)window.FindName("HomeAnchorDatePicker")).SelectedDate = source.LatestDate.AddDays(1);
+                window.Show();
+
+                PumpUntil(() => homeStatus.Text.StartsWith("已查询", StringComparison.Ordinal)
+                    && plotHost.Visibility == Visibility.Hidden);
+                Assert.Empty(plotHost.Children);
+                Assert.Empty(records.Items);
+                Assert.True(refreshRecords.IsEnabled);
+
+                tabs.SelectedIndex = 1;
+                PumpUntil(() => records.Items.Count > 0 && refreshRecords.IsEnabled);
+                Assert.IsType<ResultStatisticsRecordRow>(records.Items[0]);
+            }
+            finally { window.Close(); }
+        });
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -579,19 +620,38 @@ public sealed class OfflineDataSourceTests
         var flowA = new FlowAnalysisDataSource(a.FlowDatabasePath, "a");
         var flowB = new FlowAnalysisDataSource(b.FlowDatabasePath, "b");
         Assert.True(flowA.FlushPendingWrites(TimeSpan.Zero));
-        Assert.Equal("first-node", Assert.Single(flowA.GetByRun(20, "sameSN_20260916T120000")).NodeName);
+        var legacyDetails = flowA.GetRunDetails(20, "sameSN_20260916T120000");
+        Assert.Equal("first-node", Assert.Single(legacyDetails.Records).NodeName);
+        Assert.Single(legacyDetails.Messages);
+        Assert.Null(legacyDetails.Run);
+        Assert.Empty(legacyDetails.Events);
         Assert.Equal("second-node", flowB.GetLatestRecord()!.NodeName);
         Assert.Equal("first-node", flowA.GetLastByNodeId("node")!.NodeName);
         Assert.Equal("first-node", flowA.GetMessagePayloads(1).SendPayload);
         Assert.Equal("second-node", flowB.GetMessagePayloads(1).SendPayload);
         Assert.Equal(20, Assert.Single(flowA.GetRecentRunSummaries(5, default)).BatchId);
-        Assert.Single(flowA.GetRunSummariesBySerialNumbers(["sameSN_20260916T120000"], default));
-        Assert.Single(flowA.GetMessagesByRun(20, "sameSN_20260916T120000"));
+        Assert.Single(flowA.GetRunSummariesForFlowRuns([new FlowRunRecord { SerialNumber = "sameSN_20260916T120000" }], default));
         Assert.Single(flowA.GetHistoryMessagesByNodeId("node", [20]));
         var session = new FlowExecutionAnalysisSession(20, "sameSN_20260916T120000", null, null, [], [], [], Day, 0, flowA);
         Assert.Empty(flowA.GetSameFlowRuns(session));
         Assert.Null(flowA.GetFlowRun(20, "sameSN_20260916T120000"));
         Assert.Empty(flowA.GetExecutionEvents(1));
+    }
+
+    [Fact]
+    public void ZipImportRejectsCompanionEntriesThatMapToTheSameDatabase()
+    {
+        using var fixture = new Files();
+        string project = fixture.CreateProject("{}");
+        string zip = Path.Combine(fixture.Root, "duplicate.zip");
+        using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+        {
+            archive.CreateEntryFromFile(project, "Database/ProjectARVRPro.db");
+            archive.CreateEntry("Database/SocketMessages.db");
+            archive.CreateEntry("Database/socketmessages.db");
+        }
+        var error = Assert.Throws<InvalidDataException>(() => ArvrOfflineDataSource.Open(zip, fixture.Cache));
+        Assert.Contains("重复的 SocketMessages.db", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -614,6 +674,51 @@ public sealed class OfflineDataSourceTests
         flow.Open();
         Execute(flow, "INSERT INTO FlowNodeRecord VALUES(2,20,'sameSN_another','node','other','2026-09-16 12:00:00',3)");
         Assert.Throws<InvalidDataException>(() => source.ResolveFlowSerialNumber(new() { SN = "sameSN", BatchId = 20 }));
+    }
+
+    [Fact]
+    public void FlowHistoryUsesTheStoredCodeWhenTheBatchIdHasBeenReused()
+    {
+        using var fixture = new Files();
+        fixture.CreateProject("{}");
+        fixture.CreateFlow("new-node", false);
+        string path = Path.Combine(fixture.Root, "FlowNodeRecords.db");
+        using (var db = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            db.Open();
+            Execute(db, """
+                INSERT INTO FlowNodeRecord VALUES(2,20,'2026_09_16 11_58_00','node','old-node','2026-09-16 11:58:00',3);
+                INSERT INTO FlowNodeRecord VALUES(3,21,'SN__20260916T120000','node','legacy-node','2026-09-16 12:00:00',3);
+                """);
+        }
+
+        var source = ArvrOfflineDataSource.Open(fixture.Root, fixture.Cache);
+        var result = new ProjectARVRReuslt { BatchId = 20, Code = "2026_09_16 11_58_00", SN = "sameSN" };
+        string code = ArvrFlowAnalysisHistory.ResolveSerialNumber(path, result);
+        Assert.Equal(result.Code, code);
+        Assert.Equal(code, source.ResolveFlowSerialNumber(result));
+        Assert.Equal("old-node", Assert.Single(new FlowAnalysisDataSource(path).GetByRun(result.BatchId, code)).NodeName);
+        Assert.Throws<InvalidDataException>(() => source.ResolveFlowSerialNumber(new() { BatchId = 21, Code = result.Code, SN = "sameSN" }));
+        Assert.Throws<InvalidDataException>(() => source.ResolveFlowSerialNumber(new() { BatchId = 20, Code = "missing", SN = "sameSN" }));
+        Assert.Equal("SN__20260916T120000", source.ResolveFlowSerialNumber(new() { BatchId = 21, SN = "SN?" }));
+    }
+
+    [Fact]
+    public void FlowHistoryFindsJournalOnlyRunsAndRejectsDuplicateRunIdentities()
+    {
+        using var fixture = new Files();
+        string path = Path.Combine(fixture.Root, "FlowNodeRecords.db");
+        using var db = new SqliteConnection($"Data Source={path};Pooling=False");
+        db.Open();
+        Execute(db, """
+            CREATE TABLE FlowRunRecord(id INTEGER PRIMARY KEY,batch_id INTEGER,serial_number TEXT);
+            INSERT INTO FlowRunRecord VALUES(1,20,'2026_09_16 12_00_00_a1b2c3d4e5f60718');
+            """);
+        var result = new ProjectARVRReuslt { BatchId = 20, Code = "2026_09_16 12_00_00_a1b2c3d4e5f60718" };
+
+        Assert.Equal(result.Code, ArvrFlowAnalysisHistory.ResolveSerialNumber(path, result));
+        Execute(db, "INSERT INTO FlowRunRecord VALUES(2,20,'2026_09_16 12_00_00_a1b2c3d4e5f60718');");
+        Assert.Contains("多个流程运行", Assert.Throws<InvalidDataException>(() => ArvrFlowAnalysisHistory.ResolveSerialNumber(path, result)).Message);
     }
 
     [Fact]
@@ -675,16 +780,13 @@ public sealed class OfflineDataSourceTests
         foreach (var detail in details)
         {
             string serial = source.ResolveFlowSerialNumber(detail);
-            var nodes = flow.GetByRun(detail.BatchId, serial);
+            var (nodes, messages, run, events) = flow.GetRunDetails(detail.BatchId, serial);
             Assert.NotEmpty(nodes);
             Assert.NotEmpty(flow.GetByNodeId(nodes[0].NodeId, 20));
-            var messages = flow.GetMessagesByRun(detail.BatchId, serial);
             foreach (var message in messages.Take(1)) Assert.NotNull(flow.GetMessagePayloads(message.Id).SendPayload);
-            var run = flow.GetFlowRun(detail.BatchId, serial);
             if (run != null)
             {
                 Assert.Equal(serial, run.SerialNumber);
-                var events = flow.GetExecutionEvents(run.Id);
                 var session = new FlowExecutionAnalysisSession(detail.BatchId, serial, null, run, nodes, messages, events, record.StartTime, 0, flow);
                 Assert.NotEmpty(flow.GetSameFlowRuns(session));
             }

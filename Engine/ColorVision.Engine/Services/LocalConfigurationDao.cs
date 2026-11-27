@@ -15,17 +15,18 @@ namespace ColorVision.Engine.Services
     {
         private readonly string kind;
         protected readonly LocalTemplateStore LocalStore;
-        private readonly Func<bool> isConnected;
+        private readonly Func<bool>? isConnected;
         private static readonly JsonSerializerSettings JsonSettings = new() { ContractResolver = new ConfigurationContractResolver() };
 
         protected LocalConfigurationDao(string kind, LocalTemplateStore? store = null, Func<bool>? isConnected = null)
         {
             this.kind = kind;
             LocalStore = store ?? new LocalTemplateStore(LocalTemplateStore.DefaultDatabasePath);
-            this.isConnected = isConnected ?? (() => MySqlSetting.IsConnect);
+            this.isConnected = isConnected;
         }
 
-        public bool UseLocal => !isConnected();
+        public bool UseLocal => isConnected == null ? WorkstationConfiguration.UseLocal : !isConnected();
+        protected override SqlSugarClient OpenDatabase() => WorkstationConfiguration.RequireEndpoint().CreateDbClient();
         public static bool IsLocalId(int id) => id <= -2;
 
         public List<T> GetAll(int limit = -1) => UseLocal ? GetLocal(limit) : BaseTableDaoExtensions.GetAll(this, limit);
@@ -98,6 +99,19 @@ namespace ColorVision.Engine.Services
             T model = Decode(document);
             return update(model) && LocalStore.TryUpdate(kind, document, typeof(T).Name, 1,
                 JsonConvert.SerializeObject(model, JsonSettings));
+        }
+
+        internal bool TryUpdateLocalBatch(IReadOnlyList<int> ids, Func<T, (bool Accepted, bool Changed)> update, Func<bool> isCurrent)
+        {
+            if (ids.Any(id => !IsLocalId(id))) return false;
+            int[] documentIds = ids.Select(id => checked(-1 - id)).ToArray();
+            return LocalStore.TryUpdateBatch(kind, documentIds, document =>
+            {
+                T model = Decode(document);
+                var (accepted, changed) = update(model);
+                if (!accepted) return null;
+                return changed ? JsonConvert.SerializeObject(model, JsonSettings) : document.Payload;
+            }, isCurrent);
         }
 
         protected int TryInsertLocalChild(int parentId, T child, Func<T, bool> matchesParent, Func<T, bool> conflicts,

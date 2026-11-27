@@ -73,11 +73,11 @@ internal interface ILocalGridDistortionNodeServices
     void Publish(LocalGridDistortionPublishRequest request);
 }
 
-internal sealed class LocalGridDistortionNodeServices : ILocalGridDistortionNodeServices
+internal sealed class LocalGridDistortionNodeServices(PoiTemplateStorage? templateStorage = null) : ILocalGridDistortionNodeServices
 {
     public static LocalGridDistortionNodeServices Instance { get; } = new();
     public Int32Rect LoadSearchRegionTemplate(string templateName, MySqlConnectedEndpoint? endpoint) =>
-        LocalPoiSearchRegionResolver.Load(templateName, RequireEndpoint(endpoint));
+        LocalPoiSearchRegionResolver.Load(templateName, endpoint, templateStorage);
 
     public LocalFlowFrame LoadFrame(string filePath) => LocalFrameFileService.Load(filePath);
     public MeasureResultImgModel? GetImageResult(int masterId, MySqlConnectedEndpoint? endpoint) =>

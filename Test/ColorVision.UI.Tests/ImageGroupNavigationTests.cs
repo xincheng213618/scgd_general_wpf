@@ -126,4 +126,37 @@ public sealed class ImageGroupNavigationTests
         Assert.Empty(opened);
         Assert.Equal(0, selectionCount);
     }
+
+    [Fact]
+    public void AppendingUsesTheWholePathAndRetiresIndicesAcrossGroupChanges()
+    {
+        List<string> opened = new();
+        ImageGroupNavigation navigation = new(opened.Add);
+        ImageViewImageItem first = new(@"C:\Station1\Frame.tif", "First camera");
+        ImageViewImageItem second = new(@"C:\Station2\Frame.tif", "Second camera");
+        ImageViewImageItem[] additional = Enumerable.Range(1, 70).Select(i => new ImageViewImageItem($@"C:\Archive\Frame-{i}.tif")).ToArray();
+        ImageViewImageItem[] group = [first, second, .. additional];
+        navigation.TryOpenGroup(group, 0);
+
+        navigation.Append(@"c:\station2\FRAME.TIF", true);
+        Assert.Equal(group, navigation.Items);
+        Assert.Equal(second.FilePath, opened[^1]);
+        Assert.Equal(1, navigation.SelectedIndex);
+
+        navigation.TryOpenGroup([second], 0);
+        navigation.Append(first.FilePath, false);
+        Assert.Equal(new[] { second.FilePath, first.FilePath }, navigation.Items.Select(item => item.FilePath));
+        foreach (ImageViewImageItem image in additional) navigation.Append(image.FilePath, false);
+        navigation.Append(@"c:\archive\FRAME-70.TIF", true);
+        Assert.Equal(group.Length, navigation.Items.Count);
+        Assert.Equal(additional[^1].FilePath, opened[^1]);
+
+        navigation.SetSingle(first.FilePath);
+        navigation.Append(second.FilePath, false);
+        Assert.Equal(new[] { first.FilePath, second.FilePath }, navigation.Items.Select(item => item.FilePath));
+
+        navigation.Clear();
+        navigation.Append(first.FilePath, false);
+        Assert.Equal(first.FilePath, Assert.Single(navigation.Items).FilePath);
+    }
 }

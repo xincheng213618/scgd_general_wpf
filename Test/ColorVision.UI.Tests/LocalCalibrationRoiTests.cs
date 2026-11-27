@@ -1,9 +1,11 @@
+using ColorVision.Core;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.Tif;
 using cvColorVision;
+using FlowEngineLib.Algorithm;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -61,7 +63,8 @@ public class LocalCalibrationRoiTests
         frame.PrepareForCalibration("test", 12 * sizeof(float), hasBasicCalibration: false);
 
         LocalCalibrationRoi roi = LocalCalibrationRoi.ResolveForFrame(frame.Metadata, cameraConfig);
-        var options = OpenCvLocalCalibrationCache.CreateExecutionOptions([10], roi);
+        var options = OpenCvLocalCalibrationCache.CreateFrameRequest(LocalCalibrationLayout.FromFrame(frame.Metadata),
+            [10], roi, CalibrationOutputMode.FullCie, CVImageFlipMode.None);
         Assert.Equal(cropped ? 2u : 0u, options.RoiX);
         Assert.Equal(cropped ? 3u : 0u, options.RoiY);
         Assert.Equal(cropped ? 4u : 0u, options.RoiWidth);
@@ -107,7 +110,7 @@ public class LocalCalibrationRoiTests
             }
             if (!cropped.HasValue) CameraFileMetadata.Save(path, CameraFileMetadata.AcquisitionKind, new { Width = width, Height = height });
 
-            using LocalFlowFrame frame = LocalFrameFileService.Load(path, exposureOverride: [10], gainOverride: 1);
+            using LocalFlowFrame frame = LocalFrameFileService.Load(path, [10], 1);
             Assert.Equal(cropped.HasValue ? acquisition.SensorRoi : null, frame.Metadata.Acquisition!.SensorRoi);
             LocalCalibrationRoi roi = LocalCalibrationRoi.ResolveForFrame(frame.Metadata, currentConfig);
             if (cvcie)
@@ -127,8 +130,8 @@ public class LocalCalibrationRoiTests
                     writer.Write(2u);
                 }
                 using var cache = new LocalCalibrationCacheManager("file-roi");
-                LocalFrameCalibrationService.CalibrateInPlace(frame, cache,
-                    [new DeviceCameraCalibrationFile("defect", CalibrationType.DefectPoint, "defects", "defects.dat", defects)], "defects", roi);
+                var plan = cache.Prepare([new("defect", CalibrationType.DefectPoint, "defects", "defects.dat", defects)], "defects");
+                plan.Apply(frame, CalibrationOutputMode.RawOnly, LocalCalibrationRoi.FromCameraConfig(currentConfig));
                 using LocalFlowFrameLease lease = frame.Acquire();
                 Assert.Equal(cropped.HasValue ? 10 : 100, Marshal.ReadByte(lease.RawPointer));
             }
@@ -163,7 +166,8 @@ public class LocalCalibrationRoiTests
     {
         LocalCalibrationRoi roi = new(5000, 2200, 800, 700);
 
-        var options = OpenCvLocalCalibrationCache.CreateExecutionOptions(new[] { 100f, 101f, 102f }, roi);
+        var options = OpenCvLocalCalibrationCache.CreateFrameRequest(new(800, 700, 16, 3),
+            [100, 101, 102], roi, CalibrationOutputMode.FullCie, CVImageFlipMode.None);
 
         Assert.Equal((uint)5000, options.RoiX);
         Assert.Equal((uint)2200, options.RoiY);

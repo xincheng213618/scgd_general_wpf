@@ -27,4 +27,15 @@ public sealed class CieAnalysisMathTests
 
         Assert.False(CieAnalysisMath.EstimateCct(xy).IsFinite);
     }
+
+    [Fact]
+    public void EstimateCctKeepsTheDistanceCutoffAroundAnInteriorProjection()
+    {
+        CieCctResult near = CieAnalysisMath.EstimateCct(new(0.2992992213503914, 0.4211016546004334));
+        CieCctResult far = CieAnalysisMath.EstimateCct(new(0.29861018334142014, 0.4258851138993185));
+
+        Assert.True(near.IsFinite);
+        Assert.InRange(near.Duv, 0.04899, 0.04901);
+        Assert.False(far.IsFinite);
+    }
 }

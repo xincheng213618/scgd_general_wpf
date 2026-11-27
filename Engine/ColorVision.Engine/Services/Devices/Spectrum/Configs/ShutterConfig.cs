@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.PropertyEditor;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using ColorVision.Engine.Utilities;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services.Devices.CfwPort;
@@ -9,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
     public class ShutterConfig:ViewModelBase
     {
-        [DisplayName("SpectrumUseFilterWheelShutter")]
+        [DisplayName("SpectrumUseFilterWheelShutter"), Display(Order = -2)]
         public bool UseFilterWheel { get => useFilterWheel; set { useFilterWheel = value; OnPropertyChanged(); } }
         private bool useFilterWheel;
 
@@ -40,7 +41,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public string CloseCmd { get => _CloseCmd; set { _CloseCmd = value; OnPropertyChanged(); } }
         private string _CloseCmd = "b";
 
-        [DisplayName("遮光使用打开指令（本地）"), Description("选中：遮光使用打开指令，通光使用关闭指令；取消：两者互换。只影响本地光闸，服务端继续使用既有配置和流程。"), PropertyVisibility(nameof(UseFilterWheel), true)]
+        [DisplayName("遮光使用打开指令（本地）"), Description("选中：遮光使用打开指令，通光使用关闭指令；取消：两者互换。只影响本地光闸，服务端继续使用既有配置和流程。"), PropertyVisibility(nameof(UseFilterWheel), true), Display(Order = -1)]
         public bool OpenForDark { get => openForDark; set { openForDark = value; OnPropertyChanged(); } }
         private bool openForDark = true;
 

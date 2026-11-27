@@ -28,6 +28,19 @@ namespace ColorVision.Core
     {
         private const string LibPath = "opencv_helper.dll";
 
+        /// <summary>Reads the prepared context's required RAW depth. Zero accepts either 8 or 16 bits.</summary>
+        [DllImport(LibPath, EntryPoint = "M_CalibrationGetInputDepthV1", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern int GetCalibrationInputDepth(IntPtr context, out uint bitsPerChannel);
+
+        /// <summary>
+        /// Executes the prepared plan on mutable RAW and returns the effective transform for color output modes.
+        /// Buffer capacities are in bytes. A failed execution may leave partially updated pixels.
+        /// </summary>
+        [DllImport(LibPath, EntryPoint = "M_CalibrationExecuteFrameV2", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern int ExecuteCalibrationFrame(
+            IntPtr context, in CalibrationFrameRequestV2 request, IntPtr rawBuffer, ulong rawBufferBytes,
+            IntPtr cieBuffer, ulong cieBufferBytes, out RawColorTransformV1 colorTransform);
+
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalibrationGetColorTransformV1(IntPtr context, in CalibrationExecutionOptionsV1 options, ref RawColorTransformV1 transform);
 

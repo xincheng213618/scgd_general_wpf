@@ -2,7 +2,7 @@
 knowledge_id: "ui.database"
 knowledge_type: "topic"
 status: "current"
-summary: "MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。"
+summary: "MySQL 连接配置与业务 DAO、POI 模板的工位存储来源，以及旧插件注册的二进制兼容。"
 aliases: ["数据库操作", "数据库浏览器", "连接数据库", "SQL", "MySQL", "SQLite", "ColorVision.Database", "BaseTableDao", "MySqlControl", "BatchExecuteNonQuery", "数据库事务回滚", "LegacyDatabaseBrowserRegistration", "ColorVision.Local.db", "POI 本地模板", "PoiTemplateStorage"]
 code_paths: ["UI/ColorVision.Database", "UI/ColorVision.Database/Compatibility/LegacyDatabaseBrowserRegistration.cs", "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml", "Engine/ColorVision.Engine/Mysql/MySqlConnect.xaml.cs", "Engine/ColorVision.Engine/Templates/POI/PoiTemplateStorage.cs", "Engine/ColorVision.Engine/Media/PoiImageViewComponent.cs"]
 related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance", "operations.data", "ui.configuration", "ui.desktop", "flow.session"]
@@ -14,9 +14,9 @@ related: ["ui.database-query", "ui.sqlite-storage", "engine.database-maintenance
 
 `LocalTemplateStore` 管理当前用户 `ApplicationData/ColorVision/Config/ColorVision.Local.db`，SQLite 引擎随应用提供，无需安装数据库服务。首次使用自动建库；`local_templates` 按 `kind` 区分配置类型，保存名称、业务 schema 版本、完整 JSON、顺序和可空的 created_utc。新建文档记录 UTC 创建时间，更新、重命名及交换顺序不改变该时间；旧库自动新增可空列，已有记录保留未知日期，不按迁移时刻回填。当前接入 POI、流程、设备资源与许可证配置，后续类型由各 owner 定义 payload；该库只保存配置，不保存图片、检测结果、运行日志或执行记录。POI 及其全部点位作为一个文档原子保存，点位保留小数坐标；流程保存完整 STN 与稳定身份，并通过条件更新防止并发覆盖。读取失败和不支持的业务版本必须报错，不能当成空模板。
 
-POI 的 `PoiTemplateStorage` 在 MySQL 未连接或列表查询失败时自动使用本地库，不主动调用 `MySqlControl.Connect()`。ImageView 底部模板下拉框的右键菜单提供保存、编辑、管理和刷新。管理器打开时选中当前模板，标题和下拉框提示标识当前存储。新建、编辑、重命名、复制、删除、排序和 `.cfg` 导入导出均走该存储入口。文件导入及导出不要求宿主 Solution 初始化。
+POI 的 `PoiTemplateStorage` 按本次工位来源读写 MySQL 或本地 SQLite，不主动调用 `MySqlControl.Connect()`。ImageView 底部模板下拉框的右键菜单提供保存、编辑、管理和刷新。管理器打开时选中当前模板，标题和下拉框提示标识当前存储。新建、编辑、重命名、复制、删除、排序和 `.cfg` 导入导出均走该存储入口。文件导入及导出不要求宿主 Solution 初始化。
 
-POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持正数，两库同名模板独立，不自动同步。已经打开的本地模板即使 MySQL 恢复也继续读写本地；重新打开/刷新模板列表重新判定可用后端。POI 服务器保存失败时，只有已完整加载明细的模板才能保留为新的本地副本，并显示本地保存提示，不能拿服务器 ID 覆盖本地同号记录。未加载明细的服务器模板断线后禁止保存不完整副本，重新打开列表即可使用本地模板。流程按其所属存储保存，服务器流程断线时保留失败，不自动生成本地副本；其本地管理、STN 导入与运行限制见流程模板主题。其他 DAO、服务算法和 MySQL 表结构保持原有契约。
+POI 本地 ID 使用小于 -1 的值，-1 保留为空模板；MySQL ID 保持正数，两库同名模板独立，不自动同步。本地工位即使 MySQL 恢复也继续读写 SQLite。MySQL 工位读写失败会报错，恢复原连接后重新打开模板可继续编辑。服务器保存失败不会创建本地副本。流程按其所属存储保存，服务器流程断线时保留失败，不自动生成本地副本；其本地管理、STN 导入与运行限制见流程模板主题。其他 DAO、服务算法和 MySQL 表结构保持原有契约。
 
 `DatabaseCleanupWindow` 虽使用同一命名空间，源码实际属于 Engine，是独立的[多数据源维护宿主](../engine-components/database-maintenance.md)。
 

@@ -98,17 +98,15 @@ void buildSignedRelativeDelta(const cv::Mat& source32, int scale, cv::Mat& delta
 
     cv::Mat denominator;
     cv::absdiff(background, cv::Scalar::all(0.0), denominator);
-    cv::Mat epsilon(denominator.size(), denominator.type(), cv::Scalar::all(1e-6));
-    cv::max(denominator, epsilon, denominator);
+    cv::max(denominator, cv::Scalar::all(1e-6), denominator);
 
     cv::subtract(source32, background, delta);
     cv::divide(delta, denominator, delta);
 }
 
-void thresholdResidual(const cv::Mat& residual, double threshold, int openKernel, int closeKernel, cv::Mat& mask)
+void thresholdResidual(const cv::Mat& residual, double threshold, int comparison, int openKernel, int closeKernel, cv::Mat& mask)
 {
-    cv::threshold(residual, mask, threshold, 255.0, cv::THRESH_BINARY);
-    mask.convertTo(mask, CV_8U);
+    cv::compare(residual, cv::Scalar::all(threshold), mask, comparison);
 
     int openSize = normalizedOddKernel(openKernel);
     if (openSize > 1) {
@@ -371,15 +369,15 @@ SurfaceDefectResult detectSurfaceDefects(const cv::Mat& image, const SurfaceDefe
 
         if (config.enableBright && config.brightThreshold > 0.0) {
             cv::Mat brightMask;
-            thresholdResidual(delta, config.brightThreshold, config.openKernel, config.closeKernel, brightMask);
+            thresholdResidual(delta, config.brightThreshold, cv::CMP_GT, config.openKernel, config.closeKernel, brightMask);
             appendComponents(delta, brightMask, "bright", scale, config, defects);
         }
 
         if (config.enableDark && config.darkThreshold > 0.0) {
-            cv::Mat darkResidual;
-            cv::multiply(delta, -1.0, darkResidual);
             cv::Mat darkMask;
-            thresholdResidual(darkResidual, config.darkThreshold, config.openKernel, config.closeKernel, darkMask);
+            // The original CV_32F threshold rounded the positive cutoff before comparing negated pixels.
+            const float darkCut = static_cast<float>(config.darkThreshold);
+            thresholdResidual(delta, -darkCut, cv::CMP_LT, config.openKernel, config.closeKernel, darkMask);
             appendComponents(delta, darkMask, "dark", scale, config, defects);
         }
     }

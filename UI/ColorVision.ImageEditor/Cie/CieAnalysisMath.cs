@@ -12,9 +12,13 @@ public static class CieAnalysisMath
     private const double Epsilon = 216.0 / 24389;
     private const double Kappa = 24389.0 / 27;
     private const int LocusBlockSize = 32;
+    private const double MaximumProjectionDistance = 0.05;
     private static readonly Lazy<PlanckianLocus> Planckian = new(CreatePlanckianLocus);
 
-    private sealed record PlanckianLocus((double Temperature, CieChromaticity Uv)[] Samples, ProjectionBounds[] Bounds);
+    private sealed record PlanckianLocus(ProjectionSegment[] Segments, ProjectionBounds[] Bounds);
+
+    private readonly record struct ProjectionSegment(
+        CieChromaticity Start, double Temperature, double TemperatureStep, double Dx, double Dy, double LengthSquared);
 
     private readonly record struct ProjectionBounds(double MinU, double MaxU, double MaxStepU, double MinV, double MaxV, double MaxStepV)
     {
@@ -34,7 +38,8 @@ public static class CieAnalysisMath
             samples.Add((t, CieColorConverter.XyToCie1960uv(CieColorConverter.CctToApproximatePlanckianXy(t))));
         samples.Add((25000, CieColorConverter.XyToCie1960uv(CieColorConverter.CctToApproximatePlanckianXy(25000))));
 
-        ProjectionBounds[] bounds = new ProjectionBounds[(samples.Count - 2) / LocusBlockSize + 1];
+        var segments = new ProjectionSegment[samples.Count - 1];
+        ProjectionBounds[] bounds = new ProjectionBounds[(segments.Length - 1) / LocusBlockSize + 1];
         for (int block = 0; block < bounds.Length; block++)
         {
             int start = block * LocusBlockSize;
@@ -45,16 +50,20 @@ public static class CieAnalysisMath
             {
                 CieChromaticity point = samples[i].Uv;
                 CieChromaticity next = samples[i + 1].Uv;
+                double dx = next.X - point.X, dy = next.Y - point.Y;
+                double temperature = samples[i].Temperature;
+                segments[i] = new ProjectionSegment(point, temperature, samples[i + 1].Temperature - temperature,
+                    dx, dy, dx * dx + dy * dy);
                 minU = Math.Min(minU, point.X);
                 maxU = Math.Max(maxU, point.X);
                 minV = Math.Min(minV, point.Y);
                 maxV = Math.Max(maxV, point.Y);
-                maxStepU = Math.Max(maxStepU, Math.Abs(next.X - point.X));
-                maxStepV = Math.Max(maxStepV, Math.Abs(next.Y - point.Y));
+                maxStepU = Math.Max(maxStepU, Math.Abs(dx));
+                maxStepV = Math.Max(maxStepV, Math.Abs(dy));
             }
             bounds[block] = new ProjectionBounds(minU, maxU, maxStepU, minV, maxV, maxStepV);
         }
-        return new PlanckianLocus(samples.ToArray(), bounds);
+        return new PlanckianLocus(segments, bounds);
     }
 
     public static CieXyz XyYToXyz(double x, double y, double luminance)
@@ -190,10 +199,10 @@ public static class CieAnalysisMath
     {
         CieChromaticity target = CieColorConverter.XyToCie1960uv(xy);
         if (!target.IsFinite) return CieCctResult.Empty;
-        double best = double.MaxValue, kelvin = double.NaN, signed = double.NaN;
+        double best = MaximumProjectionDistance, kelvin = double.NaN, signed = double.NaN;
         int bestIndex = int.MaxValue;
         PlanckianLocus locus = Planckian.Value;
-        var samples = locus.Samples;
+        var segments = locus.Segments;
         Span<double> minimumDistances = stackalloc double[locus.Bounds.Length];
         int firstBlock = 0;
         for (int block = 0; block < locus.Bounds.Length; block++)
@@ -201,6 +210,7 @@ public static class CieAnalysisMath
             minimumDistances[block] = Math.Sqrt(locus.Bounds[block].MinimumDistanceSquared(target));
             if (minimumDistances[block] < minimumDistances[firstBlock]) firstBlock = block;
         }
+        if (minimumDistances[firstBlock] > best) return CieCctResult.Empty;
 
         for (int block = -1; block < locus.Bounds.Length; block++)
         {
@@ -209,25 +219,25 @@ public static class CieAnalysisMath
             if (minimumDistances[candidateBlock] > best) continue;
 
             int startIndex = candidateBlock * LocusBlockSize;
-            int endIndex = Math.Min(startIndex + LocusBlockSize, samples.Length - 1);
+            int endIndex = Math.Min(startIndex + LocusBlockSize, segments.Length);
             for (int i = startIndex; i < endIndex; i++)
             {
-                double temp = samples[i].Temperature, endTemp = samples[i + 1].Temperature;
-                CieChromaticity start = samples[i].Uv, end = samples[i + 1].Uv;
-                double dx = end.X - start.X, dy = end.Y - start.Y;
-                double fraction = Math.Clamp(((target.X - start.X) * dx + (target.Y - start.Y) * dy) / (dx * dx + dy * dy), 0, 1);
-                double ex = target.X - start.X - fraction * dx, ey = target.Y - start.Y - fraction * dy;
+                ref readonly ProjectionSegment segment = ref segments[i];
+                double dx = segment.Dx, dy = segment.Dy;
+                double tx = target.X - segment.Start.X, ty = target.Y - segment.Start.Y;
+                double fraction = Math.Clamp((tx * dx + ty * dy) / segment.LengthSquared, 0, 1);
+                double ex = tx - fraction * dx, ey = ty - fraction * dy;
                 double distance = Math.Sqrt(ex * ex + ey * ey);
                 // The closest block is visited first. An exact tie still belongs to the earlier segment.
                 if (distance < best || (distance == best && i < bestIndex))
                 {
                     best = distance;
                     bestIndex = i;
-                    kelvin = temp + fraction * (endTemp - temp);
+                    kelvin = segment.Temperature + fraction * segment.TemperatureStep;
                     signed = Math.CopySign(distance, dy * ex - dx * ey);
                 }
             }
         }
-        return best > 0.05 || kelvin <= 1667 || kelvin >= 25000 ? CieCctResult.Empty : new(kelvin, signed);
+        return bestIndex == int.MaxValue || kelvin <= 1667 || kelvin >= 25000 ? CieCctResult.Empty : new(kelvin, signed);
     }
 }

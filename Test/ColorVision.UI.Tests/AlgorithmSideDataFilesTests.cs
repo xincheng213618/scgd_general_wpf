@@ -7,7 +7,6 @@ using ColorVision.Engine.Templates.Jsons.Ghost2;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
-using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Microsoft.VisualBasic.FileIO;
 using SqlSugar;
@@ -115,42 +114,6 @@ public sealed class AlgorithmSideDataFilesTests
         Assert.Equal(["Content", "Value"], csv.ReadFields());
         Assert.Equal([content, 1.25.ToString(CultureInfo.CurrentCulture)], csv.ReadFields());
         Assert.Equal(["Right", "0"], csv.ReadFields());
-        Assert.True(csv.EndOfData);
-    }
-
-    [Fact]
-    public void SfrRequeriesAfterAMalformedLaterPointAndRetainsEarlierExport()
-    {
-        using var files = new ExportDirectory();
-        const string firstName = "Area,\"left\"";
-        PoiPointResultModel firstPoint = new() { Id = 1, PoiName = firstName, Value = "{\"angle\":0,\"center\":{\"x\":1,\"y\":2}}" };
-        PoiPointResultModel secondPoint = new() { Id = 2, PoiName = "second", Value = "{\"angle\":1}" };
-        int attempts = 0;
-        var handler = new ViewHandleSFRFindROI(_ => ++attempts == 1 ? [firstPoint, secondPoint] : [firstPoint]);
-        var context = new ViewResultContext();
-        var first = new ViewResultAlg { Id = 17, Batch = "Batch-A", ResultType = ViewResultAlgType.ARVR_SFR_FindROI };
-
-        handler.Load(context, first);
-        Assert.Null(first.ViewResults);
-        Assert.Throws<InvalidOperationException>(() => handler.SideSave(first, files.OutputDirectory));
-        Assert.False(Directory.Exists(files.OutputDirectory));
-
-        WpfTestHost.Invoke(() => handler.Load(context, first));
-        handler.SideSave(first, files.OutputDirectory);
-        string firstPath = files.Output("ARVR_SFR_FindROI_Batch-A.csv");
-        byte[] original = File.ReadAllBytes(firstPath);
-        var changed = new PoiPointResultModel { Id = 2, PoiName = "Second", Value = firstPoint.Value };
-        handler.SideSave(new ViewResultAlg
-        {
-            Id = 23, Batch = first.Batch, ResultType = first.ResultType, ViewResults = [new ViewSFRFindROI(changed)],
-        }, files.OutputDirectory);
-
-        Assert.Equal(2, attempts);
-        Assert.Equal(original, File.ReadAllBytes(firstPath));
-        Assert.Contains("Second", File.ReadAllText(files.Output("ARVR_SFR_FindROI_Batch-A_result-ARVR_SFR_FindROI-23.csv")));
-        using var csv = OpenCsv(firstPath);
-        Assert.Equal(7, csv.ReadFields()!.Length);
-        Assert.Equal(["1", firstName, "|", "|", firstPoint.PoiType.ToString(), "0", "1|2"], csv.ReadFields());
         Assert.True(csv.EndOfData);
     }
 

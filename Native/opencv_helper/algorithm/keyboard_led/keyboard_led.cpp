@@ -29,6 +29,8 @@ struct KeyboardGrayPlane
 {
     cv::Mat values;
     double normalizationScale = 1.0;
+    cv::Size imageSize;
+    cv::Point origin;
 };
 
 struct CoordinateCluster
@@ -155,6 +157,31 @@ int scaledPixels(int referenceSize, double ratio, int minimum, int maximum)
         return maximum;
     }
     return std::max(minimum, static_cast<int>(std::llround(scaled)));
+}
+
+cv::Rect expandHaloBounds(const cv::Rect& samplingRect, int gap, int width, const cv::Size& imageSize)
+{
+    const int expansion = static_cast<int>(
+        std::min<int64_t>(std::max(imageSize.width, imageSize.height), static_cast<int64_t>(gap) + width));
+    return expandRect(samplingRect, expansion, imageSize);
+}
+
+cv::Rect findKeySampleBounds(const std::vector<KeyHaloRegion>& keys, const cv::Size& imageSize)
+{
+    cv::Rect bounds;
+    for (const KeyHaloRegion& key : keys) {
+        if (clipRect(key.rect, imageSize).empty()) continue;
+        if (key.calculateKey) {
+            bounds |= offsetRect(key.rect, key.keyOffsetX, key.keyOffsetY, imageSize);
+        }
+        if (key.calculateHalo) {
+            // The editor sends pixel margins. Ratio-based requests keep their full gray plane.
+            if (key.haloGapPixels < 0 || key.haloWidthPixels <= 0) return {};
+            const cv::Rect samplingRect = offsetRect(key.rect, key.haloOffsetX, key.haloOffsetY, imageSize);
+            bounds |= expandHaloBounds(samplingRect, key.haloGapPixels, key.haloWidthPixels, imageSize);
+        }
+    }
+    return bounds;
 }
 
 bool validateGrayConfig(const GrayConfig& config, std::string& error)
@@ -384,6 +411,33 @@ double quarterTurnDistance(double first, double second)
     return std::abs(normalizeQuarterTurn(first - second));
 }
 
+size_t countAngleInliers(const std::vector<double>& sortedAngles, double candidate, double tolerance)
+{
+    const auto first = std::partition_point(sortedAngles.begin(), sortedAngles.end(), [=](double angle) {
+        return candidate - angle > tolerance;
+    });
+    const auto last = std::partition_point(first, sortedAngles.end(), [=](double angle) {
+        return candidate - angle >= -tolerance;
+    });
+    size_t count = static_cast<size_t>(last - first);
+
+    // A range crossing ±45° has a second interval at the opposite end of the sorted angles.
+    // Keep the original subtraction and normalization for values on the tolerance boundary.
+    if (candidate >= 0.0) {
+        const auto wrappedEnd = std::partition_point(sortedAngles.begin(), first, [=](double angle) {
+            return candidate - angle >= Pi * 0.25 && quarterTurnDistance(candidate, angle) <= tolerance;
+        });
+        count += static_cast<size_t>(wrappedEnd - sortedAngles.begin());
+    }
+    else {
+        const auto wrappedBegin = std::partition_point(last, sortedAngles.end(), [=](double angle) {
+            return !(candidate - angle < -Pi * 0.25 && quarterTurnDistance(candidate, angle) <= tolerance);
+        });
+        count += static_cast<size_t>(sortedAngles.end() - wrappedBegin);
+    }
+    return count;
+}
+
 void estimateGridAxes(
     const std::vector<cv::Point2d>& points,
     cv::Point2d& colAxis,
@@ -425,18 +479,19 @@ void estimateGridAxes(
     }
 
     constexpr double inlierTolerance = 12.0 * Pi / 180.0;
-    size_t bestInlierCount = 0;
+    const auto [minimumAngle, maximumAngle] = std::minmax_element(angles.begin(), angles.end());
+    size_t bestInlierCount = angles.size();
     double bestAngle = angles.front();
-    for (double candidate : angles) {
-        size_t count = 0;
-        for (double angle : angles) {
-            if (quarterTurnDistance(candidate, angle) <= inlierTolerance) {
-                ++count;
+    if (*maximumAngle - *minimumAngle > inlierTolerance) {
+        std::vector<double> sortedAngles = angles;
+        std::sort(sortedAngles.begin(), sortedAngles.end());
+        bestInlierCount = 0;
+        for (double candidate : angles) {
+            const size_t count = countAngleInliers(sortedAngles, candidate, inlierTolerance);
+            if (count > bestInlierCount) {
+                bestInlierCount = count;
+                bestAngle = candidate;
             }
-        }
-        if (count > bestInlierCount) {
-            bestInlierCount = count;
-            bestAngle = candidate;
         }
     }
 
@@ -1011,7 +1066,7 @@ KeyHaloMeasurement measureKeyRegion(
     }
 
     const int referenceSize = std::min(item.clippedKeyRect.width, item.clippedKeyRect.height);
-    const int maximumExpansion = std::max(gray.values.cols, gray.values.rows);
+    const int maximumExpansion = std::max(gray.imageSize.width, gray.imageSize.height);
     const int inset = key.keyInsetPixels >= 0
         ? key.keyInsetPixels
         : static_cast<int>(std::llround(referenceSize * config.innerInsetRatio));
@@ -1034,12 +1089,12 @@ KeyHaloMeasurement measureKeyRegion(
     }
 
     if (item.calculateKey) {
-        const cv::Rect keySamplingRect = offsetRect(key.rect, key.keyOffsetX, key.keyOffsetY, gray.values.size());
+        const cv::Rect keySamplingRect = offsetRect(key.rect, key.keyOffsetX, key.keyOffsetY, gray.imageSize);
         item.innerRect = insetRect(keySamplingRect, inset);
         if (item.innerRect.area() > 0) {
             const PixelStats keyStats = calculateStats(
                 gray.values,
-                item.innerRect,
+                item.innerRect - gray.origin,
                 {},
                 keyValidMin,
                 keyValidMax,
@@ -1055,13 +1110,11 @@ KeyHaloMeasurement measureKeyRegion(
     }
 
     if (item.calculateHalo) {
-        const cv::Rect haloSamplingRect = offsetRect(key.rect, key.haloOffsetX, key.haloOffsetY, gray.values.size());
-        const int haloExpansion = static_cast<int>(
-            std::min<int64_t>(maximumExpansion, static_cast<int64_t>(gap) + haloWidth));
-        item.haloBounds = expandRect(haloSamplingRect, haloExpansion, gray.values.size());
+        const cv::Rect haloSamplingRect = offsetRect(key.rect, key.haloOffsetX, key.haloOffsetY, gray.imageSize);
+        item.haloBounds = expandHaloBounds(haloSamplingRect, gap, haloWidth, gray.imageSize);
         if (item.haloBounds.area() > 0) {
             cv::Mat haloMask(item.haloBounds.size(), CV_8U, cv::Scalar(255));
-            clearMaskRect(haloMask, item.haloBounds, expandRect(haloSamplingRect, gap, gray.values.size()));
+            clearMaskRect(haloMask, item.haloBounds, expandRect(haloSamplingRect, gap, gray.imageSize));
             if (config.excludeKeyRectsFromHalo) {
                 for (const cv::Rect& keyRect : haloExclusionRects) {
                     clearMaskRect(haloMask, item.haloBounds, keyRect);
@@ -1069,7 +1122,7 @@ KeyHaloMeasurement measureKeyRegion(
             }
             const PixelStats haloStats = calculateStats(
                 gray.values,
-                item.haloBounds,
+                item.haloBounds - gray.origin,
                 haloMask,
                 haloValidMin,
                 haloValidMax,
@@ -1223,8 +1276,20 @@ KeyHaloResult measureKeyHalo(
     result.imageSize = image.empty() ? cv::Size() : image.size();
 
     std::string error;
+    cv::Mat sampleImage = image;
     KeyboardGrayPlane gray;
-    if (!validateKeyHaloConfig(config, error) || !prepareKeyboardGrayPlane(image, config.gray, gray, error)) {
+    gray.imageSize = result.imageSize;
+    // Keep the original layout for floating-point average-channel reductions.
+    if (config.gray.mode != GrayMode::AverageChannels && image.dims == 2 && image.total() >= 1024 * 1024
+        && (image.channels() == 3 || image.channels() == 4)) {
+        const cv::Rect bounds = findKeySampleBounds(keys, gray.imageSize);
+        const size_t sampledPixels = static_cast<size_t>(bounds.width) * bounds.height;
+        if (!bounds.empty() && sampledPixels <= image.total() - image.total() / 4) {
+            sampleImage = image(bounds);
+            gray.origin = bounds.tl();
+        }
+    }
+    if (!validateKeyHaloConfig(config, error) || !prepareKeyboardGrayPlane(sampleImage, config.gray, gray, error)) {
         result.statusCode = "invalid_input";
         result.message = error;
         return result;
@@ -1238,13 +1303,13 @@ KeyHaloResult measureKeyHalo(
     std::vector<cv::Rect> clippedRects;
     clippedRects.reserve(keys.size());
     for (const KeyHaloRegion& key : keys) {
-        clippedRects.push_back(clipRect(key.rect, gray.values.size()));
+        clippedRects.push_back(clipRect(key.rect, gray.imageSize));
     }
 
     std::vector<cv::Rect> haloExclusionRects = clippedRects;
     haloExclusionRects.reserve(clippedRects.size() + config.haloExclusionRects.size());
     for (const cv::Rect& rect : config.haloExclusionRects) {
-        const cv::Rect clipped = clipRect(rect, gray.values.size());
+        const cv::Rect clipped = clipRect(rect, gray.imageSize);
         if (clipped.area() > 0) {
             haloExclusionRects.push_back(clipped);
         }

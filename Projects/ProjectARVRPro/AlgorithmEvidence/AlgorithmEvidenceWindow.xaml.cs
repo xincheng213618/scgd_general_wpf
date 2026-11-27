@@ -159,6 +159,7 @@ public partial class AlgorithmEvidenceWindow : Window
         _index = IsLocalSelection ? Math.Min(selectedLocalIndex, Math.Max(0, _localPaths.Count - 1)) - 1 : _initialRecordId.HasValue
             ? Math.Max(-1, _sources.ToList().FindIndex(record => record.Id == _initialRecordId.Value) - 1)
             : -1;
+        UpdateErrorNavigation();
         await NavigateAsync(1);
     }
 
@@ -225,6 +226,8 @@ public partial class AlgorithmEvidenceWindow : Window
     }
     private async void Previous_Click(object sender, RoutedEventArgs e) => await NavigateAsync(-1);
     private async void Next_Click(object sender, RoutedEventArgs e) => await NavigateAsync(1);
+    private async void PreviousError_Click(object sender, RoutedEventArgs e) => await NavigateAsync(-1, errorsOnly: true);
+    private async void NextError_Click(object sender, RoutedEventArgs e) => await NavigateAsync(1, errorsOnly: true);
     private async void Run_Click(object sender, RoutedEventArgs e)
     {
         await RunCurrentAsync();
@@ -287,10 +290,25 @@ public partial class AlgorithmEvidenceWindow : Window
         catch (Exception ex) { StatusText.Text = "加载畸变参数失败：" + ex.Message; }
     }
 
-    internal async Task NavigateAsync(int direction)
+    private IEnumerable<int> GetNavigationIndices(int direction, bool errorsOnly)
     {
-        if (_busy || _closed) return;
         for (int index = _index + direction; index >= 0 && index < SourceCount; index += direction)
+            if (!errorsOnly || ArvrEvidenceImages.HasExecutionError(_sources[index]))
+                yield return index;
+    }
+
+    private void UpdateErrorNavigation()
+    {
+        bool history = !IsLocalSelection;
+        ErrorNavigationPanel.Visibility = history ? Visibility.Visible : Visibility.Collapsed;
+        PreviousErrorButton.IsEnabled = history && GetNavigationIndices(-1, errorsOnly: true).Any();
+        NextErrorButton.IsEnabled = history && GetNavigationIndices(1, errorsOnly: true).Any();
+    }
+
+    internal async Task NavigateAsync(int direction, bool errorsOnly = false)
+    {
+        if (_busy || _closed || (errorsOnly && IsLocalSelection)) return;
+        foreach (int index in GetNavigationIndices(direction, errorsOnly))
         {
             if (GetSources(index).Count == 0)
             {
@@ -305,6 +323,11 @@ public partial class AlgorithmEvidenceWindow : Window
                 SkipSource(index);
                 continue;
             }
+            return;
+        }
+        if (errorsOnly)
+        {
+            StatusText.Text = DisplayText.Format($"该方向没有可查看的报错记录。已跳过缺图 {SkippedCount} 条。");
             return;
         }
         StatusText.Text = IsLocalSelection && SourceCount == 0 ? "请点击“选择图像”添加用于比对的原图。" : _index < 0
@@ -327,6 +350,11 @@ public partial class AlgorithmEvidenceWindow : Window
         if (loadedPath == null) EvidenceImage.ReleaseImageContent();
         string sourceDetails = record == null ? $"自选图像 {index + 1} / {SourceCount}\n\n文件：{Path.GetFileName(_localPaths[index])}"
             : $"记录 {index + 1} / {SourceCount}\n\nID：{record.Id}\nSN：{record.SN}\n流程：{record.Model}\n时间：{record.CreateTime:yyyy-MM-dd HH:mm:ss}\n批次：{record.BatchId}";
+        if (record != null && ArvrEvidenceImages.HasExecutionError(record))
+        {
+            string reason = string.IsNullOrWhiteSpace(record.Msg) ? DisplayText.Get("该记录未保存具体原因。") : record.Msg;
+            sourceDetails += "\n" + DisplayText.Format($"历史异常：{reason}");
+        }
         SourceDetails.Text = sourceDetails;
         string? sourcePath = loadedPath;
         _currentSourcePath = loadedPath;
@@ -453,6 +481,7 @@ public partial class AlgorithmEvidenceWindow : Window
         NavigationPanel.IsEnabled = SourceFilter.IsEnabled = AlgorithmCategory.IsEnabled = AlgorithmsList.IsEnabled = ServerAaPanel.IsEnabled
             = ServerDistortionPanel.IsEnabled = PatternPanel.IsEnabled = EvidenceImage.IsEnabled = ImageSourceActions.IsEnabled = !busy;
         UploadCurrentImageButton.IsEnabled = !busy && CurrentSourcePath != null;
+        if (!busy) UpdateErrorNavigation();
     }
     private void ClearResults()
     {

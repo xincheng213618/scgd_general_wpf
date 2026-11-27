@@ -122,7 +122,7 @@ public sealed class LocalFlowTemplateStorageTests
     }
 
     [Fact]
-    public void MySqlReadFailureLoadsLocalListAndAnOpenedLocalFlowStaysLocalAfterReconnect()
+    public void LocalFlowCatalogueAndWritesStayLocalAfterReconnect()
     {
         WithTemplates((storage, path) =>
         {
@@ -142,10 +142,29 @@ public sealed class LocalFlowTemplateStorageTests
             Assert.Equal(0, attempts);
             Assert.Equal("联网后保存", Open(path).Read(value.Id).Name);
             templates.Load();
-            Assert.Equal(1, attempts);
+            Assert.Equal(0, attempts);
             Assert.Equal(value.Id, Assert.Single(TemplateFlow.Params).Id);
-            templates.Create("回退期间新建");
+            templates.Create("联网期间新建");
             Assert.Equal(2, Open(path).Load().Count);
+        });
+    }
+
+    [Fact]
+    public void UnavailableServerCatalogueRetainsSelectionAndCannotCreateLocalFlows()
+    {
+        WithTemplates((storage, path) =>
+        {
+            storage.Save(new FlowParam { Name = "本地同名" });
+            var selected = new TemplateModel<FlowParam>("服务器", new FlowParam { Id = 5, Name = "服务器" });
+            TemplateFlow.Params.Add(selected);
+            bool connected = true;
+            var templates = new TemplateFlow(storage, () => connected, () => throw new IOException("unavailable"));
+            Assert.Throws<IOException>(templates.Load);
+            connected = false;
+            Assert.Throws<InvalidOperationException>(templates.Load);
+            Assert.Throws<InvalidOperationException>(() => templates.Create("错误位置"));
+            Assert.Same(selected, Assert.Single(TemplateFlow.Params));
+            Assert.Single(Open(path).Load());
         });
     }
 
@@ -266,10 +285,10 @@ public sealed class LocalFlowTemplateStorageTests
     }
 
     [Theory]
-    [InlineData(false, 99, "{}")]
-    [InlineData(true, 1, "invalid json")]
-    [InlineData(false, 1, "{\"FlowKey\":\"local-flow:93fa3c71f235441faf6fe1c842f4c366\",\"DataBase64\":\"invalid!\"}")]
-    public void InvalidLocalRowDoesNotHideOtherTemplates(bool mysqlConnected, int version, string payload)
+    [InlineData(99, "{}")]
+    [InlineData(1, "invalid json")]
+    [InlineData(1, "{\"FlowKey\":\"local-flow:93fa3c71f235441faf6fe1c842f4c366\",\"DataBase64\":\"invalid!\"}")]
+    public void InvalidLocalRowDoesNotHideOtherTemplates(int version, string payload)
     {
         WithTemplates((storage, path) =>
         {
@@ -281,8 +300,7 @@ public sealed class LocalFlowTemplateStorageTests
             storage.Save(damaged);
             storage.Save(last);
 
-            var templates = new TemplateFlow(storage, () => mysqlConnected,
-                () => throw new IOException("Unavailable MySQL"));
+            var templates = Offline(storage);
             templates.Load();
             TemplateModel<FlowParam> original = TemplateFlow.Params[0];
             int documentId = -damaged.Id - 1;

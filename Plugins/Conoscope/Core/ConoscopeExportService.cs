@@ -98,19 +98,21 @@ namespace Conoscope.Core
         public static void ExportAzimuthCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double azimuthAngle, ConoscopeCrossSectionExportOptions options)
         {
             options ??= new ConoscopeCrossSectionExportOptions();
+            var direction = CalculateDirection(azimuthAngle, polar: false);
             WriteCrossSection(filePath, channel, context, options,
                 FormattableString.Invariant($"Azimuth Cross-Section Export (Angle = {azimuthAngle}°)"),
                 "Azimuth Position (degrees)", EnumerateRange(-context.MaxAngle, context.MaxAngle, options.StepDegrees),
-                position => CreateAzimuthSample(context, azimuthAngle, position));
+                position => CreateSample(context, position, position * context.PixelsPerDegree, direction));
         }
 
         public static void ExportPolarCrossSection(string filePath, ExportChannel channel, ConoscopeExportContext context, double polarAngle, ConoscopeCrossSectionExportOptions options)
         {
             options ??= new ConoscopeCrossSectionExportOptions();
+            double radius = polarAngle * context.PixelsPerDegree;
             WriteCrossSection(filePath, channel, context, options,
                 FormattableString.Invariant($"Polar Cross-Section Export (Radius Angle = {polarAngle}°)"),
                 "Circumferential Angle (degrees)", EnumerateRange(0, 360, options.StepDegrees),
-                position => CreatePolarSample(context, polarAngle, position));
+                position => CreateSample(context, position, radius, CalculateDirection(position, polar: true)));
         }
 
         private static void WriteCrossSection(string path, ExportChannel channel, ConoscopeExportContext context,
@@ -160,36 +162,27 @@ namespace Conoscope.Core
             if (!double.IsFinite(step) || step < MinimumStepDegrees) throw new ArgumentOutOfRangeException(nameof(step), "Export step must be at least 0.1 degrees.");
         }
 
-        private static ExportSample CreateAzimuthSample(ConoscopeExportContext context, double azimuthAngle, double polarAngle)
+        private static (double Cos, double Sin) CalculateDirection(double angle, bool polar)
         {
-            double normalizedAngle = ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(azimuthAngle);
+            double normalizedAngle = polar ? angle % 360.0 : ConoscopeCoordinateAxisParam.NormalizeAzimuthAngle(angle);
+            if (polar && normalizedAngle < 0)
+                normalizedAngle += 360.0;
             double radians = normalizedAngle * Math.PI / 180.0;
-            double radiusPixels = polarAngle * context.PixelsPerDegree;
-            int imageX = Math.Clamp((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
-            int imageY = Math.Clamp((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
-            return new ExportSample(polarAngle, imageX, imageY, context.ReadXyz(imageX, imageY));
+            return (Math.Cos(radians), Math.Sin(radians));
         }
 
-        private static ExportSample CreatePolarSample(ConoscopeExportContext context, double polarAngle, double circumferentialAngle)
+        private static ExportSample CreateSample(ConoscopeExportContext context, double position, double radiusPixels, (double Cos, double Sin) direction)
         {
-            double normalizedAngle = circumferentialAngle % 360.0;
-            if (normalizedAngle < 0)
-            {
-                normalizedAngle += 360.0;
-            }
-
-            double radians = normalizedAngle * Math.PI / 180.0;
-            double radiusPixels = polarAngle * context.PixelsPerDegree;
-            int imageX = Math.Clamp((int)Math.Round(context.Center.X + radiusPixels * Math.Cos(radians)), 0, context.ImageWidth - 1);
-            int imageY = Math.Clamp((int)Math.Round(context.Center.Y - radiusPixels * Math.Sin(radians)), 0, context.ImageHeight - 1);
-            return new ExportSample(circumferentialAngle, imageX, imageY, context.ReadXyz(imageX, imageY));
+            int imageX = Math.Clamp((int)Math.Round(context.Center.X + radiusPixels * direction.Cos), 0, context.ImageWidth - 1);
+            int imageY = Math.Clamp((int)Math.Round(context.Center.Y - radiusPixels * direction.Sin), 0, context.ImageHeight - 1);
+            return new ExportSample(position, imageX, imageY, context.ReadXyz(imageX, imageY));
         }
 
         private static void WriteMatrix(string path, string title, ExportChannel channel, ConoscopeExportContext context,
             string firstAxisComment, string secondAxisComment, string headerTitle, double[] columns, double[] positions,
             bool polar, string headerFormat, int decimalPlaces)
         {
-            int digits = Math.Clamp(decimalPlaces, 0, 8);
+            string valueFormat = $"F{Math.Clamp(decimalPlaces, 0, 8)}";
             long total = (long)columns.Length * positions.Length;
             ConoscopeAtomicFile.Write(path, writer =>
             {
@@ -200,18 +193,30 @@ namespace Conoscope.Core
                 writer.Write(headerTitle);
                 foreach (double column in columns) writer.Write($",{column.ToString(headerFormat, CultureInfo.InvariantCulture)}");
                 writer.WriteLine();
+                // Direction and radius each depend on only one axis. Keep the original
+                // coordinate arithmetic and sample order while reusing those axis values.
+                var directions = Array.ConvertAll(polar ? positions : columns, angle => CalculateDirection(angle, polar));
+                var radii = Array.ConvertAll(polar ? columns : positions, angle => angle * context.PixelsPerDegree);
+                Span<char> valueBuffer = stackalloc char[64];
                 Stopwatch timer = Stopwatch.StartNew();
                 long completed = 0;
-                foreach (double position in positions)
+                for (int row = 0; row < positions.Length; row++)
                 {
                     context.CancellationToken.ThrowIfCancellationRequested();
+                    double position = positions[row];
                     writer.Write(position.ToString("F2", CultureInfo.InvariantCulture));
-                    foreach (double column in columns)
+                    for (int column = 0; column < columns.Length; column++)
                     {
                         if ((completed & 255) == 0) context.CancellationToken.ThrowIfCancellationRequested();
-                        ExportSample sample = polar ? CreatePolarSample(context, column, position) : CreateAzimuthSample(context, column, position);
+                        ExportSample sample = CreateSample(context, position, radii[polar ? column : row], directions[polar ? row : column]);
                         double value = ReadExportValue(channel, context, sample.ImageX, sample.ImageY, sample.Xyz);
-                        writer.Write($",{ConoscopeColorimetry.FormatChannelValue(value, channel, digits)}");
+                        writer.Write(',');
+                        if (!double.IsFinite(value))
+                            writer.Write("--");
+                        else if (value.TryFormat(valueBuffer, out int count, valueFormat, CultureInfo.InvariantCulture))
+                            writer.Write(valueBuffer[..count]);
+                        else
+                            writer.Write(value.ToString(valueFormat, CultureInfo.InvariantCulture));
                         completed++;
                     }
                     writer.WriteLine();

@@ -161,15 +161,21 @@ namespace ColorVision.ImageEditor.Algorithms
             int stride = checked(width * format.BytesPerPixel());
             byte[] data = GC.AllocateUninitializedArray<byte>(checked(stride * height));
             image.CopyPixels(bounds, data, stride, 0);
+            NormalizePackedPixels(data, sourceFormat, width, height, stride, format.BytesPerPixel());
+            return new AlgorithmImageBuffer(width, height, stride, format, data, image.DpiX, image.DpiY);
+        }
+
+        internal static unsafe void NormalizePackedPixels(byte[] data, PixelFormat sourceFormat, int width, int height,
+            int stride, int pixelBytes)
+        {
             if (sourceFormat == PixelFormats.Rgb24) SwapRedBlue24(data);
             else if (sourceFormat == PixelFormats.Rgb48 || sourceFormat == PixelFormats.Rgba64)
             {
                 fixed (byte* pixels = data)
-                    CopyColor16(pixels, stride, pixels, stride, width, height, format.BytesPerPixel());
+                    CopyColor16(pixels, stride, pixels, stride, width, height, pixelBytes);
             }
             else if (sourceFormat == PixelFormats.Bgr32) SetOpaqueAlpha(data);
             else if (sourceFormat == PixelFormats.Pbgra32) UnpremultiplyAlpha(data);
-            return new AlgorithmImageBuffer(width, height, stride, format, data, image.DpiX, image.DpiY);
         }
 
         public static unsafe WriteableBitmap ToWriteableBitmap(AlgorithmImageBuffer image)
@@ -362,7 +368,7 @@ namespace ColorVision.ImageEditor.Algorithms
             }
         }
 
-        private static void SwapRedBlue24(byte[] data)
+        internal static void SwapRedBlue24(Span<byte> data)
         {
             int offset = 0;
             if (Ssse3.IsSupported)

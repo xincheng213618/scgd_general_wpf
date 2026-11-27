@@ -1054,29 +1054,127 @@ public sealed class LocalSpectrumTests
     }
 
     // These cases protect the physical ND/calibration and dark-path boundaries, independently of UI routing.
+    [Fact]
+    public void BoundNdUsesTheCurrentHoleCalibrationEvenWithAutomaticSwitchingDisabled()
+    {
+        using var first = new CalibrationFiles();
+        using var second = new CalibrationFiles();
+        var config = first.Config;
+        ConfigureNd(config, second.Config);
+        config.ActiveCalibrationGroupName = "ND0";
+        config.NDConfig.IsBingNDDevice = true;
+        config.NDConfig.NDBindDeviceCode = "BOUND-ND";
+        config.NDConfig.IsNDPort = false;
+        config.NDConfig.EnableResetND = true;
+        var wheel = new FakeNd();
+        var native = new FakeNative { AutoTimes = new([1500, 1500]) };
+        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        session.Open(config);
+
+        wheel.Port = 1;
+        var linked = session.Capture(new() { IsWithND = true, AutoIntegration = true }, config);
+        Assert.Equal(1, linked.NDPort);
+        Assert.Equal("ND1", linked.NdCalibration?.GroupName);
+        Assert.Equal(Path.GetFullPath(second.Config.WavelengthFile), linked.NdCalibration?.WavelengthFile);
+        Assert.Equal(Path.GetFullPath(second.Config.MaguideFile), native.MagnitudePath);
+        Assert.Equal(1500, linked.IntegralTime);
+
+        wheel.Port = 2;
+        var unlinked = session.Capture(new() { IsWithND = true, AutoIntegration = true }, config);
+        Assert.Equal(2, unlinked.NDPort);
+        Assert.Null(unlinked.NdCalibration);
+        Assert.Equal(Path.GetFullPath(first.Config.MaguideFile), native.MagnitudePath);
+        Assert.Empty(wheel.Moves);
+    }
+
+    [Fact]
+    public void BoundNdWithAutomaticSwitchingDisabledRejectsAnInvalidLinkedFile()
+    {
+        using var first = new CalibrationFiles();
+        using var second = new CalibrationFiles();
+        var config = first.Config;
+        ConfigureNd(config, second.Config);
+        config.NDConfig.IsBingNDDevice = true;
+        config.NDConfig.NDBindDeviceCode = "BOUND-ND";
+        config.NDConfig.IsNDPort = false;
+        File.Delete(second.Config.MaguideFile);
+        var wheel = new FakeNd { Port = 1 };
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        session.Open(config);
+
+        var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new(), config));
+        Assert.Contains(second.Config.MaguideFile, error.Message);
+        Assert.Empty(wheel.Moves);
+        Assert.Equal(0, native.CaptureCalls);
+    }
+
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void NdAutoIntegrationUsesConfirmedHoleCalibrationAndRestoresThatHoleAfterDark(bool eqe)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void NdAutoIntegrationUsesConfirmedHoleCalibrationAndRestoresThatHoleAfterDark(bool eqe, bool usesSparseRates)
     {
         using var first = new CalibrationFiles();
         using var second = new CalibrationFiles();
         ConfigureNd(first.Config, second.Config);
+        int measuringHole = usesSparseRates ? 2 : 1;
+        int darkHole = usesSparseRates ? 1 : 4;
+        if (usesSparseRates)
+        {
+            first.Config.CalibrationGroups[1].NDHoleIndex = measuringHole;
+            first.Config.NDConfig.LocalNDRates = new Dictionary<int, int> { [0] = 0, [measuringHole] = 8 };
+            first.Config.NDConfig.DarkNDPort = darkHole;
+        }
         var wheel = new FakeNd();
         var native = new FakeNative { OnAutoTime = _ => { }, AutoTimes = new([1, 100]) };
         using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
         session.Open(first.Config);
         var result = session.Capture(new() { IsWithND = true, AutoIntegration = true, AutoInitDark = true, Eqe = eqe, Current = 1 }, first.Config);
-        Assert.Equal(1, result.NDPort);
-        Assert.Equal(1, LocalSpectrumResultService.CreateModel(result, new()).NDPort);
+        Assert.Equal(measuringHole, result.NDPort);
+        Assert.Equal(measuringHole, LocalSpectrumResultService.CreateModel(result, new()).NDPort);
         Assert.Equal(100, result.IntegralTime);
         Assert.Equal(Path.GetFullPath(second.Config.MaguideFile), native.MagnitudePath);
         Assert.Equal("ND1", result.NdCalibration!.GroupName);
-        Assert.Equal(new[] { 1, 4, 1 }, wheel.Moves);
-        Assert.Equal(1, wheel.Port);
+        Assert.Equal(new[] { measuringHole, darkHole, measuringHole }, wheel.Moves);
+        Assert.Equal(measuringHole, wheel.Port);
         Assert.Equal(new[] { "auto", "auto", "dark", "capture" }, native.Calls.Where(call => call is "auto" or "dark" or "capture"));
         Assert.True(wheel.Disposed);
         Assert.Contains(Path.GetFileName(second.Config.MaguideFile), result.AcquisitionParametersJson);
+    }
+
+    [Theory]
+    [InlineData(false, "配置非负且不重复")]
+    [InlineData(true, "校零孔位 1 不能参与自动换档")]
+    public void NdAutoIntegrationDoesNotFallBackWhenExplicitRatesAreEmptyOrIncludeTheDarkHole(bool includeDarkHole, string errorMessage)
+    {
+        using var files = new CalibrationFiles();
+        ConfigureNd(files.Config, files.Config);
+        files.Config.NDConfig.DarkNDPort = 1;
+        files.Config.NDConfig.LocalNDRates = includeDarkHole ? new Dictionary<int, int> { [0] = 0, [1] = 8 } : [];
+        var wheel = new FakeNd();
+        var native = new FakeNative();
+        using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
+        session.Open(files.Config);
+
+        var error = Assert.Throws<InvalidOperationException>(() => session.Capture(new() { IsWithND = true, AutoIntegration = true }, files.Config));
+        Assert.Contains(errorMessage, error.Message);
+        Assert.Empty(wheel.Moves);
+        Assert.DoesNotContain("auto", native.Calls);
+        Assert.Equal(0, native.CaptureCalls);
+    }
+
+    [Fact]
+    public void DirectNdUsesTheConfiguredPortCountOrInfersItFromExistingHoleAssignments()
+    {
+        var config = new NDConfig { NDRate = [0, 8] };
+        Assert.Equal(6, LocalSpectrumNd.GetDirectConnection(config).Ports);
+        config.LocalNDRates = new Dictionary<int, int> { [8] = 8 };
+        Assert.Equal(12, LocalSpectrumNd.GetDirectConnection(config).Ports);
+        config.LocalNDRates.Clear();
+        config.LocalNDPortCount = 12;
+        Assert.Equal(12, LocalSpectrumNd.GetDirectConnection(config).Ports);
     }
 
     [Theory]
@@ -1109,7 +1207,7 @@ public sealed class LocalSpectrumTests
         ConfigureNd(files.Config, files.Config);
         var wheel = new FakeNd();
         using var stopped = new CancellationTokenSource();
-        var native = new FakeNative { AutoTimes = new([1, 500]), OnAutoTime = _ => { if (cancel && wheel.Port == 1) stopped.Cancel(); } };
+        var native = new FakeNative { AutoTimes = new([1, 1500]), OnAutoTime = _ => { if (cancel && wheel.Port == 1) stopped.Cancel(); } };
         using var session = new LocalSpectrumSession(native, nd: new(_ => wheel));
         session.Open(files.Config);
         var parameters = new LocalSpectrumParameters { IsWithND = true, AutoIntegration = true, AutoInitDark = true };
@@ -1178,7 +1276,8 @@ public sealed class LocalSpectrumTests
         Assert.Empty(wheel.Moves);
         Assert.Equal(0, native.CaptureCalls);
         files.Config.NDConfig.NDCaliNameGroups = [files.Config.MaguideFile, files.Config.MaguideFile];
-        Assert.Equal(Path.GetFullPath(files.Config.MaguideFile), LocalSpectrumNd.ResolveCalibration(files.Config, 1).MagnitudeFile);
+        var legacyCalibration = Assert.IsType<LocalSpectrumNd.Calibration>(LocalSpectrumNd.ResolveCalibration(files.Config, 1));
+        Assert.Equal(Path.GetFullPath(files.Config.MaguideFile), legacyCalibration.MagnitudeFile);
     }
 
     [Theory]
@@ -1300,8 +1399,6 @@ public sealed class LocalSpectrumTests
     {
         first.NDConfig.IsNDPort = true;
         first.NDConfig.NDRate = [0, 8];
-        first.NDConfig.NDMinExpTime = 10;
-        first.NDConfig.NDMaxExpTime = 300;
         first.NDConfig.DarkNDPort = 4;
         first.CalibrationGroups = [new() { GroupName = "ND0", NDHoleIndex = 0, WavelengthFile = first.WavelengthFile, MaguideFile = first.MaguideFile },
             new() { GroupName = "ND1", NDHoleIndex = 1, WavelengthFile = second.WavelengthFile, MaguideFile = second.MaguideFile }];

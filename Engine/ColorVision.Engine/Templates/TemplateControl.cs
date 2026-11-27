@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS1998
 using ColorVision.Database;
+using ColorVision.Engine.Services;
 using ColorVision.UI;
 using log4net;
 using System;
@@ -61,6 +62,7 @@ namespace ColorVision.Engine.Templates
                 InitializeTemplatesAsync(cooperative: false).GetAwaiter().GetResult();
             MySqlControl.GetInstance().MySqlConnectChanged += (_, _) =>
             {
+                if (WorkstationConfiguration.UseLocal || WorkstationConfiguration.ConnectedEndpoint == null) return;
                 // Runtime reconnect consumers depend on template publication completing
                 // before the subsequent service-hierarchy event handlers run.
                 if (reloadTask is { IsCompleted: false }) reloadRequested = true;
@@ -102,7 +104,7 @@ namespace ColorVision.Engine.Templates
 
         private static async Task InitializeTemplatesAsync(bool cooperative)
         {
-            if (!MySqlControl.GetInstance().IsConnect)
+            if (WorkstationConfiguration.UseLocal)
             {
                 // Only initialize owners with local persistence; legacy template loaders still require MySQL.
                 try
@@ -112,8 +114,12 @@ namespace ColorVision.Engine.Templates
                     else flow.Load();
                 }
                 catch (Exception ex) { log.Error("Local flow template initialization failed.", ex); }
+                try { new POI.TemplatePoi().Load(); }
+                catch (Exception ex) { log.Error("Local POI template initialization failed.", ex); }
                 return;
             }
+            var endpoint = WorkstationConfiguration.ConnectedEndpoint;
+            if (endpoint == null) return;
             Stopwatch totalStopwatch = Stopwatch.StartNew();
             Stopwatch phaseStopwatch = Stopwatch.StartNew();
             List<IITemplateLoad> templateLoaders = AssemblyHandler.GetInstance().LoadImplementations<IITemplateLoad>();
@@ -127,6 +133,7 @@ namespace ColorVision.Engine.Templates
                     await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
                     sliceStopwatch.Restart();
                 }
+                if (!ReferenceEquals(endpoint, WorkstationConfiguration.ConnectedEndpoint)) return;
                 phaseStopwatch.Restart();
                 try
                 {

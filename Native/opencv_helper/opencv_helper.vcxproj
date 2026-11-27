@@ -196,6 +196,7 @@
     <ClInclude Include="..\include\opencv_media_export.h" />
     <ClInclude Include="algorithm\calibration\calibration_context.h" />
     <ClInclude Include="algorithm\calibration\calibration_core.h" />
+    <ClInclude Include="algorithm\calibration\calibration_color_eval.h" />
     <ClInclude Include="algorithm\calibration\calibration_geometric.h" />
     <ClInclude Include="algorithm\poi\poi_batch.h" />
     <ClInclude Include="algorithm\binocular\binocular_fusion.h" />

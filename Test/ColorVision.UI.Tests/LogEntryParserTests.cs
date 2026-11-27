@@ -1,11 +1,39 @@
 #pragma warning disable CA1707,CA1861
 using ColorVision.UI.LogImp;
 using ColorVision.UI.LogImp.Models;
+using System.Globalization;
 
 namespace ColorVision.UI.Tests;
 
 public class LogEntryParserTests
 {
+    [Theory]
+    [InlineData("en-US", "2024-02-29 10:23:18,507", 2024)]
+    [InlineData("en-US", "2023-02-29 10:23:18,507", 0)]
+    [InlineData("en-US", "2024-02-29 24:23:18,507", 0)]
+    [InlineData("th-TH", "2567-02-29 10:23:18,507", 2024)]
+    [InlineData("en-US", "2024-02-29 10.23.18,507", 2024)]
+    public void TryParseLogTimestamp_PreservesCalendarAndSeparatorRules(string cultureName, string prefix, int expectedYear)
+    {
+        CultureInfo previousCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            var culture = (CultureInfo)CultureInfo.GetCultureInfo(cultureName).Clone();
+            culture.DateTimeFormat.TimeSeparator = prefix[13].ToString();
+            CultureInfo.CurrentCulture = culture;
+
+            bool parsed = LogEntryParser.TryParseLogTimestamp(prefix + " [1] INFO Test  ready", out DateTime timestamp);
+
+            Assert.Equal(expectedYear > 0, parsed);
+            Assert.Equal(expectedYear == 0 ? default : new DateTime(expectedYear, 2, 29, 10, 23, 18, 507), timestamp);
+            Assert.Equal(DateTimeKind.Unspecified, timestamp.Kind);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+        }
+    }
+
     [Theory]
     [InlineData("2026-06-03 10:00:00,000 [1] ERROR Test  failed", LogEntryLevel.Error)]
     [InlineData("2026-06-03 10:00:00,000 [1] FATAL Test  stopped", LogEntryLevel.Fatal)]

@@ -31,10 +31,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         internal static SysDictionaryModModel? GetDefaultDictionary()
         {
-            if (!MySqlSetting.IsConnect) return null;
+            if (WorkstationConfiguration.ConnectedEndpoint is not { } endpoint) return null;
             try
             {
-                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = DbType.MySql, IsAutoCloseConnection = true });
+                using var db = endpoint.CreateDbClient();
                 return GetDefaultDictionary(db);
             }
             catch (Exception ex)

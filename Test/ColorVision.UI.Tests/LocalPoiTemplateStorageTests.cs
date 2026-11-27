@@ -72,39 +72,87 @@ public sealed class LocalPoiTemplateStorageTests
     }
 
     [Fact]
-    public void UnusableMySqlFallsBackAndLocalRecordsStayLocalAfterReconnect()
+    public void LocalCatalogueAndNewPoiWritesStayLocalAfterReconnect()
     {
         string path = NewPath();
         var value = Sample();
         Offline(path).Save(value);
         int attempts = 0;
-        var storage = new PoiTemplateStorage(new LocalTemplateStore(path), () => true, () => { attempts++; throw new IOException("MySQL unavailable"); });
+        bool connected = false;
+        var storage = new PoiTemplateStorage(new LocalTemplateStore(path), () => connected, () => { attempts++; throw new IOException("unexpected database read"); });
+        connected = true;
         var reopened = Assert.Single(storage.Load());
         Assert.True(storage.IsLocal);
-        Assert.Equal(1, attempts);
         reopened.PoiPoints[0].PixX = 108.5;
         storage.Save(reopened);
-        Assert.Equal(1, attempts);
+        storage.Save(Sample());
         Assert.Equal(108.5, storage.ReadPoints(value.Id)[0].PixX);
-        Assert.Equal(1, attempts);
+        Assert.Equal(2, storage.Load().Count);
+        Assert.Equal(0, attempts);
     }
 
     [Fact]
-    public void FailedServerSavePreservesCompleteLocalCopyWithoutOverwritingSameNumberedLocalRecord()
+    public void UnavailableServerDoesNotReadLocalCatalogueOrCopyFailedWrites()
     {
         string path = NewPath();
         var local = Sample();
         Offline(path).Save(local);
         var server = Sample();
         server.Id = 1;
-        server.Name = "服务器副本";
+        server.Name = "服务器模板";
         server.DetailsLoaded = true;
-        var storage = new PoiTemplateStorage(new LocalTemplateStore(path), () => true, () => throw new IOException("Disconnected"));
-        storage.Save(server);
-        Assert.True(server.Id < -1);
-        Assert.NotEqual(local.Id, server.Id);
-        Assert.Equal(2, Offline(path).Load().Count);
-        Assert.Equal(local.Name, Offline(path).Load()[0].Name);
+        bool connected = true;
+        var storage = new PoiTemplateStorage(new LocalTemplateStore(path), () => connected, () => throw new IOException("Disconnected"));
+        Assert.Throws<IOException>(() => storage.Load());
+        Assert.Throws<IOException>(() => storage.Save(server));
+        connected = false;
+        Assert.Throws<InvalidOperationException>(() => storage.Save(server));
+        Assert.Throws<InvalidOperationException>(() => storage.Save(Sample()));
+        Assert.False(storage.IsLocal);
+        Assert.Equal(1, server.Id);
+        Assert.Equal(local.Name, Assert.Single(Offline(path).Load()).Name);
+    }
+
+    [Fact]
+    public void SnapshotReadsLatestMasterAndPointsFromTheSelectedOwner()
+    {
+        string path = NewPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        bool connected = true;
+        SqlSugar.SqlSugarClient OpenServer() => new(new SqlSugar.ConnectionConfig
+        {
+            ConnectionString = $"Data Source={path};Pooling=False", DbType = SqlSugar.DbType.Sqlite, IsAutoCloseConnection = true,
+            InitKeyType = SqlSugar.InitKeyType.Attribute,
+            ConfigureExternalServices = new SqlSugar.ConfigureExternalServices
+            {
+                EntityService = (_, column) => { if (!column.IsPrimarykey) column.IsNullable = true; }
+            }
+        });
+        using (var db = OpenServer())
+        {
+            db.CodeFirst.InitTables<PoiMasterModel, PoiDetailModel>();
+        }
+        var owner = new PoiTemplateStorage(new LocalTemplateStore(NewPath()), () => connected, OpenServer);
+        var value = Sample();
+        value.LeftTopX = 0; value.LeftTopY = 0;
+        value.RightTopX = 639; value.RightTopY = 0;
+        value.LeftBottomX = 0; value.LeftBottomY = 479;
+        value.RightBottomX = 639; value.RightBottomY = 479;
+        owner.Save(value);
+        var selected = Assert.Single(owner.Load());
+        var alternate = Offline(NewPath());
+        var changed = owner.ReadSnapshot(selected);
+        changed.Name = "新的名称";
+        changed.PoiPoints[0].PixX = 33;
+        owner.Save(changed);
+        var latest = alternate.ReadSnapshot(selected);
+        Assert.Equal(changed.Name, latest.Name);
+        Assert.Equal(new[] { 33.0, 320.0 }, latest.PoiPoints.Select(point => point.PixX));
+        connected = false;
+        Assert.Throws<InvalidOperationException>(() => alternate.ReadSnapshot(selected));
+        connected = true;
+        owner.Delete(selected.Id);
+        Assert.Throws<InvalidDataException>(() => alternate.ReadSnapshot(selected));
     }
 
     [Fact]

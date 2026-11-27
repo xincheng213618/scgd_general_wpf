@@ -2,9 +2,11 @@ namespace ColorVision.UI.LogImp.Models
 {
     public sealed class LogEntry
     {
+        private static readonly char[] LineEndings = { '\r', '\n' };
+
         public LogEntry(string text, LogEntryLevel level)
         {
-            Text = text.TrimEnd('\r', '\n');
+            Text = text.TrimEnd(LineEndings);
             Level = level;
         }
 

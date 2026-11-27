@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.IO;
+using System.Buffers;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -14,6 +15,7 @@ namespace ProjectKB
     public static class KBItemMasterExtensions
     {
         private const string FalloutLabel = "Fallout=";
+        private static readonly SearchValues<char> RecordDelimiters = SearchValues.Create("\"\r\n");
         private static readonly object CsvWriteGate = new();
 
         public static void SaveCsv(this KBItemMaster KBItems, string FileName, KBCsvDataType dataType, bool appendFalloutSummary = false)
@@ -135,7 +137,7 @@ namespace ProjectKB
                 if (automatic)
                     Directory.CreateDirectory(directory);
 
-                List<string>? records = LoadAppendableRecords(destination, newHeaders);
+                List<ReadOnlyMemory<char>>? records = LoadAppendableRecords(destination, newHeaders);
                 if (records == null && automatic)
                 {
                     string layout = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(newHeaders)))[..12];
@@ -149,15 +151,20 @@ namespace ProjectKB
                 if (records == null)
                     throw new IOException($"现有 CSV 的表头与本次结果不同，请选择新的文件名或移动原文件。{Environment.NewLine}{destination}");
 
-                records.Add(string.Join(",", values));
+                records.Add(string.Join(",", values).AsMemory());
                 if (appendFalloutSummary)
-                    records.Add(BuildFalloutSummary(records, properties.IndexOf("Result")));
+                    records.Add(BuildFalloutSummary(records, properties.IndexOf("Result")).AsMemory());
 
                 // Stage beside the destination to keep replacement on the same volume.
                 string stagingPath = Path.Combine(directory, $".{Guid.NewGuid():N}.kbcsv.tmp");
                 try
                 {
-                    File.WriteAllLines(stagingPath, records.Prepend(newHeaders), Encoding.UTF8);
+                    using (var writer = new StreamWriter(stagingPath, append: false, Encoding.UTF8))
+                    {
+                        writer.WriteLine(newHeaders);
+                        foreach (ReadOnlyMemory<char> record in records)
+                            writer.WriteLine(record.Span);
+                    }
                     File.Move(stagingPath, destination, overwrite: true);
                 }
                 finally
@@ -187,7 +194,7 @@ namespace ProjectKB
                 : selector(recipe).ToString("F2", CultureInfo.InvariantCulture);
         }
 
-        private static List<string>? LoadAppendableRecords(string fileName, string headers)
+        private static List<ReadOnlyMemory<char>>? LoadAppendableRecords(string fileName, string headers)
         {
             string csv;
             try
@@ -208,17 +215,21 @@ namespace ProjectKB
             if (csv[headers.Length] == '\r' && start < csv.Length && csv[start] == '\n')
                 start++;
 
-            List<string> records = [];
+            List<ReadOnlyMemory<char>> records = [];
             bool inQuotes = false;
             for (int index = start; index < csv.Length; index++)
             {
+                int delimiter = csv.AsSpan(index).IndexOfAny(RecordDelimiters);
+                if (delimiter < 0)
+                    break;
+                index += delimiter;
                 char character = csv[index];
                 if (character == '"')
                     inQuotes = !inQuotes;
                 if (inQuotes || character is not ('\r' or '\n'))
                     continue;
 
-                records.Add(csv[start..index]);
+                records.Add(csv.AsMemory(start, index - start));
                 if (character == '\r' && index + 1 < csv.Length && csv[index + 1] == '\n')
                     index++;
                 start = index + 1;
@@ -227,68 +238,62 @@ namespace ProjectKB
             if (inQuotes)
                 throw new IOException($"现有 CSV 包含未闭合的引号，请检查原文件或选择新的文件名。{Environment.NewLine}{fileName}");
             if (start < csv.Length)
-                records.Add(csv[start..]);
+                records.Add(csv.AsMemory(start));
 
             TrimTrailingSummaryLines(records);
             return records;
         }
 
-        private static void TrimTrailingSummaryLines(List<string> lines)
+        private static void TrimTrailingSummaryLines(List<ReadOnlyMemory<char>> lines)
         {
-            while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[^1]))
+            while (lines.Count > 0 && lines[^1].Span.IsWhiteSpace())
             {
                 lines.RemoveAt(lines.Count - 1);
             }
 
-            if (lines.Count > 0 && IsFalloutSummaryLine(lines[^1]))
+            if (lines.Count > 0 && IsFalloutSummaryLine(lines[^1].Span))
             {
                 lines.RemoveAt(lines.Count - 1);
             }
 
-            while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[^1]))
+            while (lines.Count > 0 && lines[^1].Span.IsWhiteSpace())
             {
                 lines.RemoveAt(lines.Count - 1);
             }
         }
 
-        private static bool IsFalloutSummaryLine(string line)
-        {
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                return false;
-            }
+        private static bool IsFalloutSummaryLine(ReadOnlySpan<char> line)
+            => IsFalloutSummaryField(TakeCsvField(ref line, out _));
 
-            List<string> fields = ParseCsvLine(line);
-            return fields.Count > 0 && string.Equals(fields[0], FalloutLabel, StringComparison.OrdinalIgnoreCase);
-        }
+        private static bool IsFalloutSummaryField(ReadOnlySpan<char> field)
+            => DecodeCsvField(field).Equals(FalloutLabel, StringComparison.OrdinalIgnoreCase);
 
-        private static string BuildFalloutSummary(IEnumerable<string> dataLines, int resultColumnIndex)
+        private static string BuildFalloutSummary(List<ReadOnlyMemory<char>> dataLines, int resultColumnIndex)
         {
             int totalCount = 0;
             int passCount = 0;
 
-            foreach (string line in dataLines)
+            foreach (ReadOnlyMemory<char> line in dataLines)
             {
-                if (string.IsNullOrWhiteSpace(line))
+                // Only the summary marker and Result matter. Other columns can be skipped as spans.
+                ReadOnlySpan<char> remaining = line.Span;
+                for (int column = 0; ; column++)
                 {
-                    continue;
-                }
-
-                List<string> fields = ParseCsvLine(line);
-                if (fields.Count <= resultColumnIndex || string.Equals(fields[0], FalloutLabel, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (!bool.TryParse(fields[resultColumnIndex], out bool result))
-                {
-                    continue;
-                }
-
-                totalCount++;
-                if (result)
-                {
-                    passCount++;
+                    ReadOnlySpan<char> field = TakeCsvField(ref remaining, out bool hasNextField);
+                    if (column == 0 && IsFalloutSummaryField(field))
+                        break;
+                    if (column == resultColumnIndex)
+                    {
+                        if (bool.TryParse(DecodeCsvField(field), out bool result))
+                        {
+                            totalCount++;
+                            if (result)
+                                passCount++;
+                        }
+                        break;
+                    }
+                    if (!hasNextField)
+                        break;
                 }
             }
 
@@ -314,20 +319,50 @@ namespace ProjectKB
             return text;
         }
 
-        private static List<string> ParseCsvLine(string line)
+        private static ReadOnlySpan<char> TakeCsvField(ref ReadOnlySpan<char> remaining, out bool hasNextField)
         {
-            List<string> fields = new();
-            StringBuilder fieldBuilder = new();
             bool inQuotes = false;
-
-            for (int i = 0; i < line.Length; i++)
+            for (int index = 0; index < remaining.Length; index++)
             {
-                char current = line[i];
+                int delimiter = remaining[index..].IndexOfAny(',', '"');
+                if (delimiter < 0)
+                    break;
+                index += delimiter;
+                if (remaining[index] == '"')
+                {
+                    inQuotes = !inQuotes;
+                }
+                else if (!inQuotes)
+                {
+                    ReadOnlySpan<char> field = remaining[..index];
+                    remaining = remaining[(index + 1)..];
+                    hasNextField = true;
+                    return field;
+                }
+            }
+
+            hasNextField = false;
+            return remaining;
+        }
+
+        private static ReadOnlySpan<char> DecodeCsvField(ReadOnlySpan<char> field)
+        {
+            if (!field.Contains('"'))
+                return field;
+            if (field.Length >= 2 && field[0] == '"' && field[^1] == '"' && !field[1..^1].Contains('"'))
+                return field[1..^1];
+
+            // Historical files may contain doubled quotes or unquoted text around a quoted portion.
+            var decoded = new StringBuilder(field.Length);
+            bool inQuotes = false;
+            for (int i = 0; i < field.Length; i++)
+            {
+                char current = field[i];
                 if (current == '"')
                 {
-                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                    if (inQuotes && i + 1 < field.Length && field[i + 1] == '"')
                     {
-                        fieldBuilder.Append('"');
+                        decoded.Append('"');
                         i++;
                     }
                     else
@@ -336,19 +371,9 @@ namespace ProjectKB
                     }
                     continue;
                 }
-
-                if (current == ',' && !inQuotes)
-                {
-                    fields.Add(fieldBuilder.ToString());
-                    fieldBuilder.Clear();
-                    continue;
-                }
-
-                fieldBuilder.Append(current);
+                decoded.Append(current);
             }
-
-            fields.Add(fieldBuilder.ToString());
-            return fields;
+            return decoded.ToString().AsSpan();
         }
     }
 }

@@ -1,13 +1,17 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Marketplace;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Windows.Threading;
+using log4net;
 
 namespace ColorVision.Rbac.CloudDrive;
 
 public sealed class CloudDriveManager : ViewModelBase
 {
+    private static readonly ILog Log = LogManager.GetLogger(typeof(CloudDriveManager));
     private static CloudDriveManager? _instance;
     public static CloudDriveManager Instance => _instance ??= new CloudDriveManager();
     private readonly CloudDriveStore _store;
@@ -33,7 +37,8 @@ public sealed class CloudDriveManager : ViewModelBase
     {
         _store = store;
         _state = _store.Load(serviceUri.AbsoluteUri);
-        Items = new ObservableCollection<CloudDriveItem>(_state.Items);
+        // Stored records are oldest first; the window shows the latest additions first.
+        Items = new ObservableCollection<CloudDriveItem>(Enumerable.Reverse(_state.Items));
         // The cloud drive always uses its own anonymous identity, independent of RBAC and browser login.
         _client = new TransferClient(http, serviceUri, _state.ClientId);
         Save();
@@ -41,7 +46,7 @@ public sealed class CloudDriveManager : ViewModelBase
 
     private void Save()
     {
-        _state.Items = Items.ToList();
+        _state.Items = Items.Reverse().ToList();
         _store.Save(_state);
     }
 
@@ -79,7 +84,7 @@ public sealed class CloudDriveManager : ViewModelBase
                 RemoteName = TransferClient.UniqueRemoteName(displayName), Size = folder ? 0 : new FileInfo(fullPath).Length
             };
             entry.UploadPath = folder ? Path.Combine(_store.PackagesDirectory, entry.Id + ".zip") : fullPath;
-            Items.Add(entry);
+            Items.Insert(0, entry);
         }
         Save();
         Status = "已加入队列，点击开始 / 继续上传。";
@@ -107,19 +112,22 @@ public sealed class CloudDriveManager : ViewModelBase
     public async Task UploadAsync(CloudDriveItem? selected = null)
     {
         if (IsBusy) return;
-        var pending = Items.Where(item => !item.IsComplete && (selected == null || item == selected)).ToList();
+        var pending = Items.Where(item => !item.IsComplete && (selected == null || item == selected)).Reverse().ToList();
         if (pending.Count == 0) { Status = "请先添加要上传的文件或文件夹。"; return; }
         IsBusy = true;
         using var cancellation = new CancellationTokenSource();
         _cancellation = cancellation;
         try
         {
-            var capabilities = await _client.GetCapabilitiesAsync(cancellation.Token);
+            Status = "正在连接云盘服务器…";
+            var capabilities = await TransferClient.RetryRequestAsync(() => _client.GetCapabilitiesAsync(cancellation.Token), message => Status = message, cancellation.Token);
             SetCapabilities(capabilities);
             if (!capabilities.AnonymousTransferUploadEnabled) throw new IOException(LimitText);
             foreach (var item in pending)
             {
                 if (cancellation.IsCancellationRequested) break;
+                bool showProgress = true;
+                DispatcherTimer? speedTimer = null;
                 try
                 {
                     item.Error = "";
@@ -137,15 +145,58 @@ public sealed class CloudDriveManager : ViewModelBase
                     item.Status = "校验文件 / 查询断点";
                     item.Refresh();
                     Status = $"正在处理 {item.DisplayName}。可最小化窗口继续使用软件。";
+                    var transferTime = new Stopwatch();
+                    var lastActivity = new Stopwatch();
+                    long resumeOffset = 0;
+                    long sampledBytes = 0;
+                    double sampledAt = 0;
+                    string? retryNotice = null;
                     var progress = new Progress<TransferProgress>(value =>
                     {
-                        if (item.IsComplete) return;
-                        item.Progress = value.Total == 0 ? 0 : Math.Min(99.9, 100d * value.Sent / value.Total);
-                        item.Status = value.Sent == value.Total ? "服务器确认中" : "正在上传";
+                        if (!showProgress || item.IsComplete) return;
+                        if (!transferTime.IsRunning || retryNotice != null || value.Sent < item.SentBytes)
+                        {
+                            resumeOffset = value.Confirmed;
+                            sampledBytes = value.Confirmed;
+                            sampledAt = 0;
+                            transferTime.Restart();
+                            item.UploadBytesPerSecond = null;
+                        }
+                        lastActivity.Restart();
+                        retryNotice = value.RetryNotice;
+                        item.TransferNotice = retryNotice ?? "";
+                        item.SentBytes = value.Sent;
+                        if (retryNotice != null) item.UploadBytesPerSecond = 0;
+                        long sentThisRun = value.Sent - resumeOffset;
+                        double elapsedSeconds = transferTime.Elapsed.TotalSeconds;
+                        item.EstimatedRemaining = retryNotice == null && value.Sent < value.Total && sentThisRun > 0 && elapsedSeconds >= 0.5
+                            ? TimeSpan.FromSeconds(Math.Ceiling((value.Total - value.Sent) * elapsedSeconds / sentThisRun))
+                            : null;
+                        item.Status = retryNotice != null ? "等待自动重试" : value.Sent == value.Total ? "服务器确认中"
+                            : value.AwaitingConfirmation ? "等待分块确认" : "正在上传";
                         item.Refresh();
                     });
+                    speedTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                    speedTimer.Tick += (_, _) =>
+                    {
+                        if (!showProgress || item.IsComplete || item.SentBytes is not long sent || retryNotice != null) return;
+                        double elapsed = transferTime.Elapsed.TotalSeconds;
+                        double sampleDuration = elapsed - sampledAt;
+                        if (sampleDuration < 0.5) return;
+                        item.UploadBytesPerSecond = Math.Max(0, sent - sampledBytes) / sampleDuration;
+                        sampledAt = elapsed;
+                        sampledBytes = sent;
+                        if (lastActivity.Elapsed.TotalSeconds >= 5)
+                        {
+                            item.TransferNotice = item.Status is "服务器确认中" or "等待分块确认"
+                                ? "等待服务器确认，已确认的数据可用于续传。"
+                                : "暂时没有发送进展，连接超时后将自动重试。";
+                            item.EstimatedRemaining = null;
+                        }
+                        item.Refresh();
+                    };
+                    speedTimer.Start();
                     await _client.UploadAsync(item, () => { Save(); item.Refresh(); }, progress, cancellation.Token);
-                    item.Progress = 100;
                     item.Status = item.CanShare ? "上传完成" : "分享已过期";
                     Save();
                     // Only remove the ZIP created by this item, after persisting the completed receipt.
@@ -160,6 +211,16 @@ public sealed class CloudDriveManager : ViewModelBase
                 {
                     item.Status = item.IsComplete ? "上传完成" : "上传失败，可重试";
                     item.Error = ex.Message;
+                    Log.Warn($"云盘上传失败（服务器已确认 {item.Offset} / {item.Size} 字节）：{ex.Message}");
+                }
+                finally
+                {
+                    showProgress = false;
+                    speedTimer?.Stop();
+                    item.SentBytes = null;
+                    item.UploadBytesPerSecond = null;
+                    item.EstimatedRemaining = null;
+                    item.TransferNotice = "";
                 }
                 item.Refresh();
                 Save();

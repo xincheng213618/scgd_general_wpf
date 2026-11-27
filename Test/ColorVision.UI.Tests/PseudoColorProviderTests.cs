@@ -79,6 +79,36 @@ public sealed class PseudoColorProviderTests
     }
 
     [Fact]
+    public void AutoRangeForALargeSelectedChannelMatchesDetachedSamples()
+    {
+        const int width = 2051, height = 1025;
+        using Mat pixels = new(height + 2, width + 4, MatType.CV_16UC4, new Scalar(0, 65535, 45000, 0));
+        using Mat source = new(pixels, new OpenCvSharp.Rect(2, 1, width, height));
+        using Mat first = source.RowRange(0, 1);
+        using Mat last = source.RowRange(height - 1, height);
+        first.SetTo(new Scalar(0, 65535, 1000, 0));
+        last.SetTo(new Scalar(0, 65535, 65000, 0));
+        using Mat original = source.Clone();
+
+        using Mat samples = new();
+        Cv2.ExtractChannel(source, samples, 2);
+        Cv2.MinMaxLoc(samples, out double minimum, out double maximum);
+        using Mat indices = new();
+        double scale = byte.MaxValue / (maximum - minimum);
+        samples.ConvertTo(indices, MatType.CV_8U, scale, -minimum * byte.MaxValue / (maximum - minimum));
+        using Mat expected = new();
+        Cv2.ApplyColorMap(indices, expected, ColormapTypes.Jet);
+
+        using Mat actual = new();
+        var range = PseudoColorProcessor.RenderSampleRange(source, actual, ImageColorChannel.Red,
+            StandardPseudoColorMap.Jet, autoRange: true, minimum: 0, maximum: 0);
+
+        Assert.Equal((1000d, 65000d), range);
+        Assert.Equal(0d, Cv2.Norm(expected, actual, NormTypes.INF));
+        Assert.Equal(0d, Cv2.Norm(original, source, NormTypes.INF));
+    }
+
+    [Fact]
     public void CacheUsesSnapshotIdentityAndEvictionDoesNotInvalidateActiveReaders()
     {
         PseudoColorProcessor processor = new();

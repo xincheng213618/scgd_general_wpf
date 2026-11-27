@@ -4,8 +4,11 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstring>
 #include <iterator>
 #include <limits>
+#include <map>
+#include <mutex>
 #include <numeric>
 #include <random>
 #include <utility>
@@ -237,12 +240,14 @@ bool PolygonBandsFromSpans(const cv::Mat& mask, const cv::Mat& kernel, cv::Mat& 
     std::vector<cv::Vec2i> spans(mask.rows, cv::Vec2i(-1, -1));
     for (int y = 0; y < mask.rows; ++y) {
         const uchar* row = mask.ptr<uchar>(y);
-        int left = 0;
-        while (left < mask.cols && row[left] == 0) ++left;
-        if (left == mask.cols) continue;
+        // The polygon raster contains only 0 and 255. Search its solid spans
+        // with byte scans instead of testing every interior pixel separately.
+        const auto* first = static_cast<const uchar*>(std::memchr(row, 255, mask.cols));
+        if (first == nullptr) continue;
+        const int left = static_cast<int>(first - row);
         int right = mask.cols - 1;
         while (row[right] == 0) --right;
-        for (int x = left; x <= right; ++x) if (row[x] == 0) return false;
+        if (std::memchr(first, 0, right - left + 1) != nullptr) return false;
         spans[y] = {left, right};
     }
     const int rx = kernel.cols / 2, ry = kernel.rows / 2;
@@ -291,12 +296,13 @@ bool PolygonBandsFromSpans(const cv::Mat& mask, const cv::Mat& kernel, cv::Mat& 
     return true;
 }
 
-double PolygonContrast(const cv::Mat& gray, const std::array<cv::Point2f, 4>& quad)
+using RasterizedQuad = std::array<int, 2 * kSideCount>;
+
+double PolygonContrast(const cv::Mat& gray, const RasterizedQuad& quad)
 {
-    std::vector<cv::Point> polygon;
-    polygon.reserve(4);
-    for (const cv::Point2f& point : quad) {
-        polygon.emplace_back(cvRound(point.x), cvRound(point.y));
+    std::array<cv::Point, kSideCount> polygon;
+    for (int side = 0; side < kSideCount; ++side) {
+        polygon[side] = {quad[2 * side], quad[2 * side + 1]};
     }
 
     const int radius = std::max(2, cvRound(std::min(gray.cols, gray.rows) * 0.006));
@@ -315,7 +321,7 @@ double PolygonContrast(const cv::Mat& gray, const std::array<cv::Point2f, 4>& qu
         point -= bounds.tl();
     }
     cv::Mat mask = cv::Mat::zeros(bounds.size(), CV_8U);
-    cv::fillConvexPoly(mask, polygon, cv::Scalar(255));
+    cv::fillConvexPoly(mask, polygon.data(), static_cast<int>(polygon.size()), cv::Scalar(255));
     const cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(radius * 2 + 1, radius * 2 + 1));
     cv::Mat inner;
     cv::Mat outer;
@@ -326,7 +332,7 @@ double PolygonContrast(const cv::Mat& gray, const std::array<cv::Point2f, 4>& qu
     outer.setTo(0, mask);
 
     const double inside = cv::mean(localGray, inner.empty() ? mask : inner)[0];
-    const double outside = cv::countNonZero(outer) > 0 ? cv::mean(localGray, outer)[0] : inside;
+    const double outside = cv::hasNonZero(outer) ? cv::mean(localGray, outer)[0] : inside;
     return inside - outside;
 }
 
@@ -467,6 +473,39 @@ std::vector<CoarseCandidate> FindCoarseCandidates(
         }
     }
 
+    // Different blur and threshold observations can yield the same rasterized
+    // polygon. They still vote independently, but its contrast only depends on
+    // the integer vertices and the shared gray image.
+    constexpr size_t maxCachedContrasts = 256;
+    struct ContrastEntry
+    {
+        std::once_flag initialized;
+        double contrast = 0.0;
+    };
+    std::map<RasterizedQuad, ContrastEntry> contrasts;
+    std::mutex contrastMutex;
+    const auto contrastOf = [&](const std::array<cv::Point2f, kSideCount>& quad) {
+        RasterizedQuad key;
+        for (int side = 0; side < kSideCount; ++side) {
+            key[2 * side] = cvRound(quad[side].x);
+            key[2 * side + 1] = cvRound(quad[side].y);
+        }
+        ContrastEntry* entry = nullptr;
+        {
+            const std::lock_guard lock(contrastMutex);
+            const auto position = contrasts.lower_bound(key);
+            if (position != contrasts.end() && position->first == key) {
+                entry = &position->second;
+            }
+            else if (contrasts.size() < maxCachedContrasts) {
+                entry = &contrasts.try_emplace(position, key)->second;
+            }
+        }
+        if (entry == nullptr) return PolygonContrast(gray, key);
+        std::call_once(entry->initialized, [&] { entry->contrast = PolygonContrast(gray, key); });
+        return entry->contrast;
+    };
+
     std::vector<std::vector<CoarseCandidate>> observations(tasks.size());
     const auto evaluate = [&](int taskIndex) {
         const int sigmaIndex = tasks[taskIndex].sigmaIndex;
@@ -505,7 +544,7 @@ std::vector<CoarseCandidate> FindCoarseCandidates(
                     return;
                 }
                 const double fill = Clamp01(contourArea / quadArea);
-                candidate.contrast = PolygonContrast(gray, candidate.quad);
+                candidate.contrast = contrastOf(candidate.quad);
                 const double areaScore = Clamp01(std::log1p(areaRatio * 200.0) / std::log(21.0));
                 candidate.score = 2.2 * Clamp01(candidate.contrast / 0.25)
                     + 0.9 * fill + 0.7 * areaScore - (border ? 0.35 : 0.0);

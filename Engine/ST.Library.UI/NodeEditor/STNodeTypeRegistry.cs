@@ -20,6 +20,8 @@ public static class STNodeTypeRegistry
 	private static readonly Dictionary<string, Type> GuidTypes = new Dictionary<string, Type>();
 	private static readonly Dictionary<string, Type> ModelTypes = new Dictionary<string, Type>();
 	private static readonly HashSet<string> AmbiguousModels = new HashSet<string>();
+	private static readonly Dictionary<string, Type> FullNameTypes = new Dictionary<string, Type>();
+	private static readonly Dictionary<string, Type> ShortNameTypes = new Dictionary<string, Type>();
 	private static readonly Dictionary<Assembly, List<Type>> AssemblyTypes = new Dictionary<Assembly, List<Type>>();
 	private static int _initializationState;
 	private static bool _assemblyLoadSubscribed;
@@ -217,11 +219,8 @@ public static class STNodeTypeRegistry
 
 		// A moved node may have a different assembly and namespace. Never pick
 		// an arbitrary node when more than one loaded type has the same name.
-		Type[] matches = NodeTypes.Where(candidate => candidate.FullName == legacyTypeName).Take(2).ToArray();
-		if (matches.Length == 0)
-			matches = NodeTypes.Where(candidate => candidate.Name == shortName).Take(2).ToArray();
-		type = matches.Length == 1 ? matches[0] : null;
-		return type != null;
+		if (FullNameTypes.TryGetValue(legacyTypeName, out type)) return type != null;
+		return ShortNameTypes.TryGetValue(shortName, out type) && type != null;
 	}
 
 	private static void CurrentDomain_AssemblyLoad(object sender, AssemblyLoadEventArgs args)
@@ -286,6 +285,8 @@ public static class STNodeTypeRegistry
 
 				RegisterModelKey(registration.Model, registration.Type);
 				RegisterModelKey(registration.ShortModel, registration.Type);
+				RegisterTypeName(FullNameTypes, registration.Type.FullName, registration.Type);
+				RegisterTypeName(ShortNameTypes, registration.Type.Name, registration.Type);
 			}
 			return registeredTypes.Count > 0;
 		}
@@ -304,6 +305,13 @@ public static class STNodeTypeRegistry
 			return;
 		}
 		ModelTypes[model] = type;
+	}
+
+	private static void RegisterTypeName(Dictionary<string, Type> names, string name, Type type)
+	{
+		// Keep an ambiguous name in the index so it cannot resolve via a less specific fallback.
+		if (name != null && !names.TryAdd(name, type))
+			names[name] = null;
 	}
 
 	private static bool ShouldScanAssembly(Assembly assembly)

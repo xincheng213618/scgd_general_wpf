@@ -4,7 +4,7 @@ knowledge_type: "decision"
 status: "current"
 summary: "图像设置的作用范围、默认值与标定档案保存、视图隔离和扩展入口。"
 aliases: ["图像设置", "当前有效", "全局与当前", "外接设置", "设置作用范围", "设置提供方", "ImageViewSettingsEntry", "ImageViewSettingsWindow", "标定状态隔离", "ImageSettingsSession"]
-code_paths: ["UI/ColorVision.ImageEditor/Settings", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/EditorTools/Filters", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.ImageEditor/Draw/Ruler", "UI/ColorVision.ImageEditor/Draw/Text/DefalutTextAttribute.cs", "UI/ColorVision.ImageEditor/Draw/Special/ToolReferenceLine.cs", "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Presentation/ImageShaderPresentation.cs", "UI/ColorVision.ImageEditor/Presentation/ImageDisplayEffects.cs"]
+code_paths: ["UI/ColorVision.ImageEditor/Settings", "UI/ColorVision.ImageEditor/ImageView.xaml.cs", "UI/ColorVision.ImageEditor/ImageView.Configuration.cs", "UI/ColorVision.ImageEditor/ImageViewConfig.cs", "UI/ColorVision.ImageEditor/EditorTools/Filters", "UI/ColorVision.ImageEditor/EditorTools/PseudoColor", "UI/ColorVision.ImageEditor/Draw/Ruler", "UI/ColorVision.ImageEditor/Draw/Text/DefalutTextAttribute.cs", "UI/ColorVision.ImageEditor/Draw/Special/ToolReferenceLine.cs", "UI/ColorVision.UI/PropertyEditor/SettingsPropertyPresenter.cs", "Engine/ColorVision.Engine/Media/CvcieDisplaySettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeSettingProvider.cs", "Engine/ColorVision.Engine/Media/CvcieMouseProbeOptions.cs", "UI/ColorVision.ImageEditor/Presentation/ImageShaderPresentation.cs", "UI/ColorVision.ImageEditor/Presentation/ImageDisplayEffects.cs"]
 related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.property-grid", "engine.file-io"]
 ---
 
@@ -19,6 +19,7 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 | 当前视图 | 显示、工具栏 | 立即影响此视图，不持久化 |
 | 当前视图 | 伪彩、显示滤镜、适用的 CVCIE 探针 | 局部状态；提供“应用默认值”和“将当前设为默认” |
 | 当前视图 | 标定与单位 | 使用此视图的有效标定；“保存到此来源档案”才更新档案 |
+| 当前视图 | 参考线 | 编辑确认后保存到视图档案。空 Code 编辑全局默认，具名档案可恢复继承全局 |
 | 应用偏好 | 显示与性能 | 共享 `DefaultImageViewDisplayConfig`；已有订阅者响应修改 |
 | 应用偏好 | 创建时默认值 | 新视图缩放、滤镜、伪彩、探针及新标注文字的初始化值，不广播覆盖已有局部状态 |
 | 应用偏好 | 文件打开 | TIFF 和 Engine CVCIE 读取/显示策略；当前文件不会因修改配置自动重读 |
@@ -33,6 +34,8 @@ related: ["ui.image-editor", "ui.image-editor-context", "ui.configuration", "ui.
 ## 局部状态和默认值
 
 `ImageViewConfig.Configs` 是每个视图的类型字典；`Properties` 是随图像清除的附加字典。它们的生命周期及字符串键限制见[编辑器上下文](../../04-api-reference/ui-components/image-editor-context.md)。不要把 scope 标签当成独立存储空间。
+
+**参考线档案。** 宿主以 `ImageView.ConfigurationCode` 提供稳定、区分大小写的档案键。相机宿主只提供 `Camera:<设备 Code>`。ImageView 在应用配置的 `ImageEditor.ViewProfiles` 下保存工具选项，读取顺序为指定档案、全局默认、内置默认。参考线开关属于当前窗口。参考线工具自行注册设置页，用同一编辑入口处理确认和取消。拖动及归中即时显示，打开编辑并确认后保存。
 
 ### 显示滤镜
 

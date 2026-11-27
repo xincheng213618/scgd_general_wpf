@@ -1,6 +1,13 @@
+using ColorVision.Engine;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.Types;
+using cvColorVision;
+using Newtonsoft.Json;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -74,6 +81,54 @@ public sealed class CalibrationExportArchiveTests : IDisposable
     }
 
     [Fact]
+    public void SameTitleResourcesKeepBothFilesAndTheirGroupReferences()
+    {
+        const string sharedTitle = "four-color.dat";
+        const string revisedFileName = "four-color_20250715171119.dat";
+        var camera = (PhyCamera)RuntimeHelpers.GetUninitializedObject(typeof(PhyCamera));
+        camera.SysResourceModel = new SysResourceModel { Code = "TEST-CAMERA" };
+        camera.Config = new ConfigPhyCamera();
+        camera.Config.FileServerCfg.FileBasePath = _tempDirectory;
+
+        var original = CreateCalibrationResource(70, sharedTitle, sharedTitle);
+        var revised = CreateCalibrationResource(90, sharedTitle, revisedFileName);
+        camera.VisualChildren = [original, revised, CreateGroup("Original", original), CreateGroup("F8", revised)];
+
+        string cameraDirectory = Path.Combine(_tempDirectory, camera.Code, "cfg");
+        Directory.CreateDirectory(cameraDirectory);
+        File.WriteAllText(Path.Combine(cameraDirectory, sharedTitle), "original coefficients");
+        File.WriteAllText(Path.Combine(cameraDirectory, revisedFileName), "revised coefficients");
+        string archivePath = Path.Combine(_tempDirectory, "same-title.cvcal");
+
+        CalibrationExportArchive.CreateOrReplace(archivePath, CalibrationArchivePlanBuilder.Create(camera));
+
+        using ZipArchive archive = ZipFile.OpenRead(archivePath);
+        Assert.Equal("original coefficients", ReadEntry(archive, $"Calibration/LumFourColor/{sharedTitle}"));
+        Assert.Equal("revised coefficients", ReadEntry(archive, $"Calibration/LumFourColor/{revisedFileName}"));
+        var index = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(ReadEntry(archive, "Calibration.cfg"))!;
+        CalibrationPackageManifest manifest = new(index.Values.SelectMany(items => items));
+        var originalRef = Assert.Single(JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(ReadEntry(archive, "Calibration/Original.cfg"))!);
+        var revisedRef = Assert.Single(JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(ReadEntry(archive, "Calibration/F8.cfg"))!);
+        Assert.Equal(2, manifest.Items.Count);
+        Assert.Equal(sharedTitle, manifest.ResolveGroupItem(originalRef)!.FileName);
+        Assert.Equal(revisedFileName, manifest.ResolveGroupItem(revisedRef)!.FileName);
+        Assert.Null(manifest.ResolveGroupItem(new ZipCalibrationItem { Title = sharedTitle, CalibrationType = CalibrationType.LumFourColor }));
+        Assert.Same(revised.SysResourceModel, manifest.FindExistingResource(revisedRef, [original.SysResourceModel, revised.SysResourceModel], revisedFileName));
+        Assert.Null(manifest.FindExistingResource(revisedRef, [original.SysResourceModel], revisedFileName));
+    }
+
+    [Fact]
+    public void LegacyTitleOnlyGroupAndSingleResourceReplacementRemainSupported()
+    {
+        ZipCalibrationItem item = new() { Title = "four-color", FileName = "four-color.dat", CalibrationType = CalibrationType.LumFourColor };
+        CalibrationPackageManifest manifest = new([item]);
+        SysResourceModel existing = new() { Value = "old-storage-name.dat" };
+
+        Assert.Same(item, manifest.ResolveGroupItem(new ZipCalibrationItem { Title = item.Title }));
+        Assert.Same(existing, manifest.FindExistingResource(item, [existing], item.FileName));
+    }
+
+    [Fact]
     public void ExtractionRejectsEntriesOutsideWorkspace()
     {
         string archivePath = Path.Combine(_tempDirectory, "unsafe.cvcal");
@@ -101,6 +156,22 @@ public sealed class CalibrationExportArchiveTests : IDisposable
     {
         using StreamReader reader = new(archive.GetEntry(entryPath)!.Open());
         return reader.ReadToEnd();
+    }
+
+    private static CalibrationResource CreateCalibrationResource(int id, string title, string storageName)
+    {
+        var resource = (CalibrationResource)RuntimeHelpers.GetUninitializedObject(typeof(CalibrationResource));
+        resource.SysResourceModel = new SysResourceModel { Id = id, Type = (int)ServiceTypes.LumFourColor, Name = title, Value = storageName };
+        resource.Config = new CalibrationFileConfig { FileName = title, Title = title };
+        return resource;
+    }
+
+    private static GroupResource CreateGroup(string name, CalibrationResource resource)
+    {
+        var group = (GroupResource)RuntimeHelpers.GetUninitializedObject(typeof(GroupResource));
+        group.Name = name;
+        group.VisualChildren = [resource];
+        return group;
     }
 
     private sealed class InlineProgress<T>(Action<T> report) : IProgress<T>

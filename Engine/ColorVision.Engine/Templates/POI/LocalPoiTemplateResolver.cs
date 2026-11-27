@@ -1,4 +1,3 @@
-using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using System;
 using System.Linq;
@@ -20,10 +19,8 @@ namespace ColorVision.Engine.Templates.POI
             PoiParam source = TemplatePoi.Params.FirstOrDefault(item => string.Equals(item.Key, templateName, StringComparison.Ordinal))?.Value
                 ?? throw new InvalidOperationException($"找不到 POI 模板：{templateName}");
 
-            PoiMasterModel? master = source.Id > 0 ? PoiMasterDao.Instance.GetById(source.Id) : null;
-            PoiParam template = master == null ? CloneTemplate(source) : new PoiParam(master);
-            if (master != null) PoiParam.LoadPoiDetailFromDB(template);
-            if (template.PoiPoints.Count == 0 && source.PoiPoints.Count > 0) CopyPoints(source, template);
+            PoiParam template = source.Id is 0 or -1
+                ? CloneTemplate(source) : (source.Storage ?? PoiTemplateStorage.Default).ReadSnapshot(source);
             if (template.PoiPoints.Count == 0) throw new InvalidOperationException($"POI 模板没有关注点：{template.Name}");
             return template;
         }

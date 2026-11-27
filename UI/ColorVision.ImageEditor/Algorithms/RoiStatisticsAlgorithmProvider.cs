@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
@@ -16,6 +17,9 @@ namespace ColorVision.ImageEditor.Algorithms
     {
         private const string ResultSchema = "colorvision.analysis.roi-statistics/v1";
         private const int MaximumStackPercentiles = 32;
+        private const int ParallelBadPixelThreshold = 512 * 1024;
+        private const int MaximumBadPixelWorkers = 4;
+        private const int ParallelCandidateCapacity = 16 * 1024;
         internal const long MaximumExactFloatingValueBytes = 16L * 1024 * 1024;
         private static readonly IReadOnlySet<AlgorithmImageFormat> Formats = Enum.GetValues<AlgorithmImageFormat>().ToHashSet();
         private (AlgorithmPixelRoi Roi, ImageSelectionScope Source)? DisplayRegion { get; init; }
@@ -87,6 +91,8 @@ namespace ColorVision.ImageEditor.Algorithms
             bool boundsCovered = roi.Geometry.Kind == AlgorithmGeometryKind.Rectangle
                 && roi.Contains(roi.MinimumX, roi.MinimumY)
                 && roi.Contains(roi.MaximumXExclusive - 1, roi.MaximumYExclusive - 1);
+            roi = roi.WithCircleScanlines(cancellationToken).WithPolygonScanlines(cancellationToken);
+            var circleRows = roi.CircleScanlines;
             int channelCount = image.Format.Channels();
             long? preflightPixelCount = null;
             if (image.Format.IsFloatingPoint())
@@ -96,7 +102,7 @@ namespace ColorVision.ImageEditor.Algorithms
                 cancellationToken.ThrowIfCancellationRequested();
                 preflightPixelCount = boundsCovered
                     ? (long)(roi.MaximumXExclusive - roi.MinimumX) * (roi.MaximumYExclusive - roi.MinimumY)
-                    : CountIncludedPixels(roi, maximumPixels, cancellationToken);
+                    : roi.PreparedPolygon?.PixelCount ?? CountIncludedPixels(roi, circleRows, maximumPixels, cancellationToken);
                 if (ExceedsExactFloatingStatisticsBudget(preflightPixelCount.Value, channelCount, out _))
                 {
                     return ValueTask.FromResult(Failure(
@@ -112,22 +118,36 @@ namespace ColorVision.ImageEditor.Algorithms
             ChannelAccumulator[] channels = Enumerable.Range(0, channelCount)
                 .Select(index => new ChannelAccumulator(index, ChannelName(image.Format, index), image.Format, floatingCapacity))
                 .ToArray();
-            long includedPixels = boundsCovered
-                ? Scan<FullBounds>(image, roi, originX, originY, channels, cancellationToken, context.Progress)
-                : Scan<ShapeBoundary>(image, roi, originX, originY, channels, cancellationToken, context.Progress);
+            long includedPixels;
+            if (boundsCovered || circleRows != null || roi.PreparedPolygon != null)
+            {
+                includedPixels = image.Format.BitsPerChannel() switch
+                {
+                    8 => ScanIntegerRows<byte>(image, roi, circleRows, originX, originY, channels, cancellationToken, context.Progress),
+                    16 when BitConverter.IsLittleEndian => ScanIntegerRows<ushort>(image, roi, circleRows, originX, originY, channels, cancellationToken, context.Progress),
+                    _ => roi.PreparedPolygon == null
+                        ? Scan<FullBounds>(image, roi, circleRows, originX, originY, channels, cancellationToken, context.Progress)
+                        : Scan<PolygonBounds>(image, roi, null, originX, originY, channels, cancellationToken, context.Progress),
+                };
+            }
+            else includedPixels = Scan<ShapeBoundary>(image, roi, null, originX, originY, channels, cancellationToken, context.Progress);
             if (includedPixels == 0)
                 return ValueTask.FromResult(Failure(context, "roi_empty_after_clip", "The ROI does not contain any image pixel centers after clipping.", "roi"));
 
             context.Progress?.Report(new AlgorithmProgress(0.5, "roi.percentiles", "Ordering finite samples for exact percentiles"));
             cancellationToken.ThrowIfCancellationRequested();
-            foreach (ChannelAccumulator channel in channels) channel.PreparePercentiles(cancellationToken);
+            foreach (ChannelAccumulator channel in channels) channel.PreparePercentiles(parameters.Percentiles, cancellationToken);
             BadPixelDetectionResult badPixels = BadPixelDetectionResult.Empty;
             if (parameters.DetectBadPixelCandidates && parameters.MaximumBadPixelCandidates > 0)
             {
                 context.Progress?.Report(new AlgorithmProgress(0.55, "roi.bad-pixels", "Detecting local outlier candidates"));
                 badPixels = boundsCovered
                     ? DetectBadPixels<FullBounds>(image, roi, originX, originY, channels, parameters, cancellationToken, context.Progress)
-                    : DetectBadPixels<ShapeBoundary>(image, roi, originX, originY, channels, parameters, cancellationToken, context.Progress);
+                    : circleRows != null
+                        ? DetectBadPixels<CircleBounds>(image, roi, originX, originY, channels, parameters, cancellationToken, context.Progress)
+                        : roi.PreparedPolygon != null
+                            ? DetectBadPixels<PolygonBounds>(image, roi, originX, originY, channels, parameters, cancellationToken, context.Progress)
+                            : DetectBadPixels<ShapeBoundary>(image, roi, originX, originY, channels, parameters, cancellationToken, context.Progress);
             }
 
             context.Progress?.Report(new AlgorithmProgress(0.82, "roi.artifacts", "Building structured result artifacts"));
@@ -171,6 +191,7 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static long CountIncludedPixels(
             AlgorithmPixelRoi roi,
+            (int Start, int End)[]? circleRows,
             long maximumPixels,
             CancellationToken cancellationToken)
         {
@@ -178,6 +199,13 @@ namespace ColorVision.ImageEditor.Algorithms
             for (int y = roi.MinimumY; y < roi.MaximumYExclusive; y++)
             {
                 if (((y - roi.MinimumY) & 31) == 0) cancellationToken.ThrowIfCancellationRequested();
+                if (circleRows != null)
+                {
+                    var (start, end) = circleRows[y - roi.MinimumY];
+                    included += end - start;
+                    if (included > maximumPixels) return maximumPixels + 1;
+                    continue;
+                }
                 for (int x = roi.MinimumX; x < roi.MaximumXExclusive; x++)
                 {
                     if (((x - roi.MinimumX) & 1023) == 0) cancellationToken.ThrowIfCancellationRequested();
@@ -205,9 +233,58 @@ namespace ColorVision.ImageEditor.Algorithms
             return requiredBytes > MaximumExactFloatingValueBytes;
         }
 
+        private static long ScanIntegerRows<T>(
+            AlgorithmImageBuffer image,
+            AlgorithmPixelRoi roi,
+            (int Start, int End)[]? circleRows,
+            int originX,
+            int originY,
+            ChannelAccumulator[] channels,
+            CancellationToken cancellationToken,
+            IProgress<AlgorithmProgress>? progress)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            ReadOnlySpan<byte> data = image.Data.Span;
+            int pixelBytes = image.Format.BytesPerPixel();
+            long included = 0;
+            int height = roi.MaximumYExclusive - roi.MinimumY;
+            var polygon = roi.PreparedPolygon;
+            Span<(int Start, int End)> singleRun = stackalloc (int, int)[1];
+            for (int row = 0; row < height; row++)
+            {
+                if ((row & 31) == 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    progress?.Report(new AlgorithmProgress(0.05 + 0.42 * row / height, "roi.scan"));
+                }
+                int y = roi.MinimumY + row;
+                scoped ReadOnlySpan<(int Start, int End)> runs;
+                if (polygon != null) runs = polygon.GetRuns(y);
+                else
+                {
+                    singleRun[0] = circleRows == null ? (roi.MinimumX, roi.MaximumXExclusive) : circleRows[row];
+                    runs = singleRun;
+                }
+                int rowOffset = (y - originY) * image.Stride;
+                foreach (var (start, end) in runs)
+                {
+                    if (start == end) continue;
+                    int rowBytes = (end - start) * pixelBytes;
+                    included += end - start;
+                    int offset = rowOffset + (start - originX) * pixelBytes;
+                    ReadOnlySpan<T> samples = MemoryMarshal.Cast<byte, T>(data.Slice(offset, rowBytes));
+                    foreach (ChannelAccumulator channel in channels)
+                        channel.AddIntegerRow(samples, channels.Length);
+                }
+            }
+            foreach (ChannelAccumulator channel in channels) channel.UpdateIntegerSaturationCounts();
+            return included;
+        }
+
         private static long Scan<TMembership>(
             AlgorithmImageBuffer image,
             AlgorithmPixelRoi roi,
+            (int Start, int End)[]? circleRows,
             int originX,
             int originY,
             ChannelAccumulator[] channels,
@@ -228,7 +305,8 @@ namespace ColorVision.ImageEditor.Algorithms
                     cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report(new AlgorithmProgress(0.05 + 0.42 * (y - roi.MinimumY) / height, "roi.scan"));
                 }
-                for (int x = roi.MinimumX; x < roi.MaximumXExclusive; x++)
+                var (start, end) = circleRows == null ? (roi.MinimumX, roi.MaximumXExclusive) : circleRows[y - roi.MinimumY];
+                for (int x = start; x < end; x++)
                 {
                     if (!TMembership.Contains(roi, x, y)) continue;
                     included++;
@@ -251,58 +329,132 @@ namespace ColorVision.ImageEditor.Algorithms
             IProgress<AlgorithmProgress>? progress)
             where TMembership : struct, IRoiMembership
         {
-            PriorityQueue<BadPixelCandidate, BadPixelCandidate> strongest = new(
-                parameters.MaximumBadPixelCandidates,
-                BadPixelCandidateComparer.Instance);
-            long uniquePixelCount = 0;
+            int height = roi.MaximumYExclusive - roi.MinimumY;
+            int width = roi.MaximumXExclusive - roi.MinimumX;
+            int capacity = parameters.MaximumBadPixelCandidates;
             int radius = parameters.BadPixelNeighborhoodRadius;
             int maximumNeighbors = checked((radius * 2 + 1) * (radius * 2 + 1) - 1);
-            double[] neighbors = new double[maximumNeighbors];
+            int workers = height >= 32 && (long)width * height >= ParallelBadPixelThreshold
+                ? Math.Min(Math.Min(MaximumBadPixelWorkers, Environment.ProcessorCount), Math.Max(1, ParallelCandidateCapacity / capacity))
+                : 1;
+            var scans = new BadPixelScan[workers];
+            for (int worker = 0; worker < workers; worker++) scans[worker] = new(capacity, maximumNeighbors, channels.Length);
+
+            if (workers == 1)
+            {
+                ScanBadPixelRows<TMembership>(image, roi, originX, originY, channels, parameters, scans[0],
+                    roi.MinimumY, roi.MaximumYExclusive, cancellationToken, progress);
+            }
+            else
+            {
+                var options = new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = workers,
+                    TaskScheduler = TaskScheduler.Default,
+                    CancellationToken = cancellationToken,
+                };
+                int rowsPerBand = Math.Clamp(131_072 / (width * channels.Length), 8, 64);
+                // Report between bounded batches on the caller thread. Each band owns its
+                // scratch and retains only its strongest candidates across those batches.
+                for (int top = roi.MinimumY; top < roi.MaximumYExclusive;)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    progress?.Report(new AlgorithmProgress(0.55 + 0.22 * (top - roi.MinimumY) / height, "roi.bad-pixels"));
+                    int end = Math.Min(roi.MaximumYExclusive, top + rowsPerBand * workers);
+                    Parallel.For(0, workers, options, worker =>
+                    {
+                        int firstRow = top + worker * rowsPerBand;
+                        ScanBadPixelRows<TMembership>(image, roi, originX, originY, channels, parameters, scans[worker],
+                            firstRow, Math.Min(end, firstRow + rowsPerBand), cancellationToken, null);
+                    });
+                    top = end;
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            BadPixelScan combined = scans[0];
+            for (int worker = 1; worker < scans.Length; worker++)
+            {
+                BadPixelScan scan = scans[worker];
+                combined.UniquePixelCount += scan.UniquePixelCount;
+                for (int channel = 0; channel < channels.Length; channel++)
+                    combined.ChannelCounts[channel] += scan.ChannelCounts[channel];
+                foreach (var item in scan.Strongest.UnorderedItems) combined.Keep(item.Element);
+            }
+            for (int channel = 0; channel < channels.Length; channel++)
+                channels[channel].BadPixelCandidateCount = combined.ChannelCounts[channel];
+
+            BadPixelCandidate[] candidates = combined.Strongest.UnorderedItems.Select(item => item.Element).ToArray();
+            Array.Sort(candidates, (left, right) => BadPixelCandidateComparer.Instance.Compare(right, left));
+            return new BadPixelDetectionResult(candidates, combined.UniquePixelCount);
+        }
+
+        private static void ScanBadPixelRows<TMembership>(AlgorithmImageBuffer image, AlgorithmPixelRoi roi,
+            int originX, int originY, ChannelAccumulator[] channels, RoiStatisticsParameters parameters, BadPixelScan scan,
+            int firstRow, int endRow, CancellationToken cancellationToken, IProgress<AlgorithmProgress>? progress)
+            where TMembership : struct, IRoiMembership
+        {
+            int radius = parameters.BadPixelNeighborhoodRadius;
+            double[] neighbors = scan.Neighbors;
             ReadOnlySpan<byte> data = image.Data.Span;
             int stride = image.Stride;
             int pixelBytes = image.Format.BytesPerPixel();
             int channelBytes = pixelBytes / channels.Length;
             double minimumDeviation = parameters.BadPixelMinimumDeviationFraction * channels[0].NominalMaximum;
+            bool useInteriorNeighborhood = typeof(TMembership) == typeof(FullBounds) && radius == 1 && channelBytes is 1 or 2;
             int height = Math.Max(1, roi.MaximumYExclusive - roi.MinimumY);
-            for (int y = roi.MinimumY; y < roi.MaximumYExclusive; y++)
+            for (int y = firstRow; y < endRow; y++)
             {
                 if (((y - roi.MinimumY) & 7) == 0)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report(new AlgorithmProgress(0.55 + 0.22 * (y - roi.MinimumY) / height, "roi.bad-pixels"));
                 }
+                bool interiorRow = useInteriorNeighborhood && y > roi.MinimumY && y < roi.MaximumYExclusive - 1;
                 for (int x = roi.MinimumX; x < roi.MaximumXExclusive; x++)
                 {
                     if (((x - roi.MinimumX) & 255) == 0) cancellationToken.ThrowIfCancellationRequested();
                     if (!TMembership.Contains(roi, x, y)) continue;
                     bool pixelIsCandidate = false;
                     int pixelOffset = (y - originY) * stride + (x - originX) * pixelBytes;
+                    bool interior = interiorRow && x > roi.MinimumX && x < roi.MaximumXExclusive - 1;
                     for (int channelIndex = 0; channelIndex < channels.Length; channelIndex++)
                     {
                         int channelOffset = channelIndex * channelBytes;
-                        double value = ReadValue(data, pixelOffset + channelOffset, channelBytes);
+                        int center = pixelOffset + channelOffset;
+                        double value = ReadValue(data, center, channelBytes);
                         if (!double.IsFinite(value)) continue;
-                        int count = 0;
-                        int distantNeighbors = 0;
-                        for (int offsetY = -radius; offsetY <= radius; offsetY++)
+                        int count;
+                        if (interior)
                         {
-                            int neighborY = y + offsetY;
-                            if (neighborY < roi.MinimumY || neighborY >= roi.MaximumYExclusive) continue;
-                            int neighborRowOffset = (neighborY - originY) * stride + channelOffset;
-                            for (int offsetX = -radius; offsetX <= radius; offsetX++)
-                            {
-                                if (offsetX == 0 && offsetY == 0) continue;
-                                int neighborX = x + offsetX;
-                                if (neighborX < roi.MinimumX || neighborX >= roi.MaximumXExclusive
-                                    || !TMembership.Contains(roi, neighborX, neighborY)) continue;
-                                double neighbor = ReadValue(data, neighborRowOffset + (neighborX - originX) * pixelBytes, channelBytes);
-                                if (!double.IsFinite(neighbor)) continue;
-                                neighbors[count++] = neighbor;
-                                distantNeighbors += Math.Abs(value - neighbor) > minimumDeviation ? 1 : 0;
-                            }
+                            if (!TryCollectInteriorNeighborhood(data, center, stride, pixelBytes, channelBytes,
+                                value, minimumDeviation, neighbors)) continue;
+                            count = neighbors.Length;
                         }
-                        // Fewer than half the neighbors outside the limit keeps both middle ranks within it.
-                        if (count < 3 || distantNeighbors * 2 < count) continue;
+                        else
+                        {
+                            count = 0;
+                            int distantNeighbors = 0;
+                            for (int offsetY = -radius; offsetY <= radius; offsetY++)
+                            {
+                                int neighborY = y + offsetY;
+                                if (neighborY < roi.MinimumY || neighborY >= roi.MaximumYExclusive) continue;
+                                int neighborRowOffset = (neighborY - originY) * stride + channelOffset;
+                                for (int offsetX = -radius; offsetX <= radius; offsetX++)
+                                {
+                                    if (offsetX == 0 && offsetY == 0) continue;
+                                    int neighborX = x + offsetX;
+                                    if (neighborX < roi.MinimumX || neighborX >= roi.MaximumXExclusive
+                                        || !TMembership.Contains(roi, neighborX, neighborY)) continue;
+                                    double neighbor = ReadValue(data, neighborRowOffset + (neighborX - originX) * pixelBytes, channelBytes);
+                                    if (!double.IsFinite(neighbor)) continue;
+                                    neighbors[count++] = neighbor;
+                                    distantNeighbors += Math.Abs(value - neighbor) > minimumDeviation ? 1 : 0;
+                                }
+                            }
+                            // Fewer than half the neighbors outside the limit keeps both middle ranks within it.
+                            if (count < 3 || distantNeighbors * 2 < count) continue;
+                        }
 
                         Array.Sort(neighbors, 0, count);
                         double median = Median(neighbors, count);
@@ -314,40 +466,60 @@ namespace ColorVision.ImageEditor.Algorithms
                         double threshold = Math.Max(minimumDeviation, parameters.BadPixelSigmaThreshold * madSigma);
                         if (deviation <= threshold) continue;
 
-                        ChannelAccumulator channel = channels[channelIndex];
-                        channel.BadPixelCandidateCount++;
+                        scan.ChannelCounts[channelIndex]++;
                         pixelIsCandidate = true;
                         double confidence = threshold <= 0 ? 1 : Math.Clamp(1 - threshold / deviation, 0, 1);
-                        BadPixelCandidate candidate = new(
+                        scan.Keep(new BadPixelCandidate(
                             x,
                             y,
                             channelIndex,
-                            channel.Name,
+                            channels[channelIndex].Name,
                             value,
                             median,
                             deviation,
                             threshold,
-                            confidence);
-                        if (strongest.Count < parameters.MaximumBadPixelCandidates)
-                        {
-                            strongest.Enqueue(candidate, candidate);
-                        }
-                        else if (strongest.TryPeek(out BadPixelCandidate weakest, out _)
-                            && BadPixelCandidateComparer.Instance.Compare(candidate, weakest) > 0)
-                        {
-                            strongest.Dequeue();
-                            strongest.Enqueue(candidate, candidate);
-                        }
+                            confidence));
                     }
-                    if (pixelIsCandidate) uniquePixelCount++;
+                    if (pixelIsCandidate) scan.UniquePixelCount++;
                 }
             }
+        }
 
-            BadPixelCandidate[] candidates = strongest.UnorderedItems
-                .Select(item => item.Element)
-                .ToArray();
-            Array.Sort(candidates, (left, right) => BadPixelCandidateComparer.Instance.Compare(right, left));
-            return new BadPixelDetectionResult(candidates, uniquePixelCount);
+        private static bool TryCollectInteriorNeighborhood(ReadOnlySpan<byte> data, int center, int stride, int pixelBytes,
+            int channelBytes, double value, double minimumDeviation, double[] neighbors)
+        {
+            int above = center - stride;
+            double topLeft = ReadValue(data, above - pixelBytes, channelBytes);
+            double top = ReadValue(data, above, channelBytes);
+            double topRight = ReadValue(data, above + pixelBytes, channelBytes);
+            double left = ReadValue(data, center - pixelBytes, channelBytes);
+            double right = ReadValue(data, center + pixelBytes, channelBytes);
+            int distant = (Math.Abs(value - topLeft) > minimumDeviation ? 1 : 0)
+                + (Math.Abs(value - top) > minimumDeviation ? 1 : 0)
+                + (Math.Abs(value - topRight) > minimumDeviation ? 1 : 0)
+                + (Math.Abs(value - left) > minimumDeviation ? 1 : 0)
+                + (Math.Abs(value - right) > minimumDeviation ? 1 : 0);
+            // Five close neighbors leave both middle ranks within the limit, regardless of the last three.
+            if (distant == 0) return false;
+
+            int below = center + stride;
+            double bottomLeft = ReadValue(data, below - pixelBytes, channelBytes);
+            double bottom = ReadValue(data, below, channelBytes);
+            double bottomRight = ReadValue(data, below + pixelBytes, channelBytes);
+            distant += (Math.Abs(value - bottomLeft) > minimumDeviation ? 1 : 0)
+                + (Math.Abs(value - bottom) > minimumDeviation ? 1 : 0)
+                + (Math.Abs(value - bottomRight) > minimumDeviation ? 1 : 0);
+            if (distant < 4) return false;
+
+            neighbors[0] = topLeft;
+            neighbors[1] = top;
+            neighbors[2] = topRight;
+            neighbors[3] = left;
+            neighbors[4] = right;
+            neighbors[5] = bottomLeft;
+            neighbors[6] = bottom;
+            neighbors[7] = bottomRight;
+            return true;
         }
 
         // Specialize the scan loops once per ROI so shape checks need no per-pixel mode branch.
@@ -359,6 +531,20 @@ namespace ColorVision.ImageEditor.Algorithms
         private readonly struct FullBounds : IRoiMembership
         {
             public static bool Contains(AlgorithmPixelRoi roi, int x, int y) => true;
+        }
+
+        private readonly struct CircleBounds : IRoiMembership
+        {
+            public static bool Contains(AlgorithmPixelRoi roi, int x, int y)
+            {
+                var (start, end) = roi.CircleScanlines![y - roi.MinimumY];
+                return x >= start && x < end;
+            }
+        }
+
+        private readonly struct PolygonBounds : IRoiMembership
+        {
+            public static bool Contains(AlgorithmPixelRoi roi, int x, int y) => roi.PreparedPolygon!.Contains(x, y);
         }
 
         private readonly struct ShapeBoundary : IRoiMembership
@@ -549,6 +735,20 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private readonly record struct HistogramBin(int Index, double Lower, double Upper, bool IsUpperInclusive, long Count);
 
+        private sealed class BadPixelScan(int capacity, int maximumNeighbors, int channelCount)
+        {
+            public readonly double[] Neighbors = new double[maximumNeighbors];
+            public readonly long[] ChannelCounts = new long[channelCount];
+            public readonly PriorityQueue<BadPixelCandidate, BadPixelCandidate> Strongest = new(capacity, BadPixelCandidateComparer.Instance);
+            public long UniquePixelCount;
+
+            public void Keep(BadPixelCandidate candidate)
+            {
+                if (Strongest.Count < capacity) Strongest.Enqueue(candidate, candidate);
+                else Strongest.EnqueueDequeue(candidate, candidate);
+            }
+        }
+
         private readonly record struct BadPixelCandidate(
             int X,
             int Y,
@@ -622,6 +822,41 @@ namespace ColorVision.ImageEditor.Algorithms
             public double Mean { get; private set; }
             public double StandardDeviation => ValidCount == 0 ? double.NaN : Math.Sqrt(_m2 / ValidCount);
 
+            public void AddIntegerRow<T>(ReadOnlySpan<T> samples, int channelCount)
+                where T : unmanaged, IBinaryInteger<T>
+            {
+                long[] counts = _integerCounts!;
+                long count = ValidCount;
+                int minimum = count == 0 ? counts.Length - 1 : (int)Minimum;
+                int maximum = count == 0 ? 0 : (int)Maximum;
+                double mean = Mean;
+                double m2 = _m2;
+                // Keep Welford's update order for each channel, even when channels share one row.
+                for (int index = Index; index < samples.Length; index += channelCount)
+                {
+                    int value = int.CreateTruncating(samples[index]);
+                    counts[value]++;
+                    minimum = Math.Min(minimum, value);
+                    maximum = Math.Max(maximum, value);
+                    count++;
+                    double delta = value - mean;
+                    mean += delta / count;
+                    m2 += delta * (value - mean);
+                }
+                ValidCount = count;
+                Minimum = minimum;
+                Maximum = maximum;
+                Mean = mean;
+                _m2 = m2;
+            }
+
+            public void UpdateIntegerSaturationCounts()
+            {
+                long[] counts = _integerCounts!;
+                LowSaturatedCount = counts[0];
+                HighSaturatedCount = counts[^1];
+            }
+
             public void Add(double value)
             {
                 if (!double.IsFinite(value))
@@ -655,17 +890,78 @@ namespace ColorVision.ImageEditor.Algorithms
                 }
             }
 
-            public void PreparePercentiles(CancellationToken cancellationToken)
+            public void PreparePercentiles(ReadOnlySpan<double> percentiles, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (_floatValues != null)
                 {
                     Span<float> samples = CollectionsMarshal.AsSpan(_floatValues);
                     bool descending = samples[0] > samples[^1];
-                    if (samples[0] == samples[^1] || !IsOrdered(samples, descending)) _floatValues.Sort();
-                    else if (descending) samples.Reverse();
+                    if (samples[0] != samples[^1] && IsOrdered(samples, descending))
+                    {
+                        if (descending) samples.Reverse();
+                    }
+                    else if (samples.Length < 16_384 || percentiles.Length > MaximumStackPercentiles
+                        || (Minimum == 0 && ContainsNegativeZero(percentiles))) _floatValues.Sort();
+                    else
+                    {
+                        // Histograms do not require sorted samples. Place only the ranks used for interpolation.
+                        Span<int> ranks = stackalloc int[2 * percentiles.Length];
+                        for (int index = 0; index < percentiles.Length; index++)
+                        {
+                            double rank = percentiles[index] / 100 * (ValidCount - 1);
+                            ranks[2 * index] = (int)Math.Floor(rank);
+                            ranks[2 * index + 1] = (int)Math.Ceiling(rank);
+                        }
+                        ranks.Sort();
+                        // Fall back to sorting the unfinished partition if pivots repeatedly split poorly.
+                        int depthLimit = 2 * BitOperations.Log2((uint)samples.Length);
+                        PositionRanks(samples, ranks, 0, depthLimit, cancellationToken);
+                    }
                 }
                 cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            private static bool ContainsNegativeZero(ReadOnlySpan<double> percentiles)
+            {
+                // Interpolation at -0% can expose which signed zero occupies the first rank.
+                foreach (double percentile in percentiles)
+                    if (BitConverter.DoubleToInt64Bits(percentile) == long.MinValue) return true;
+                return false;
+            }
+
+            private static void PositionRanks(Span<float> samples, ReadOnlySpan<int> ranks, int offset,
+                int depthLimit, CancellationToken cancellationToken)
+            {
+                if (ranks.IsEmpty || samples.Length <= 1) return;
+                cancellationToken.ThrowIfCancellationRequested();
+                if (depthLimit == 0 || samples.Length <= 32)
+                {
+                    samples.Sort();
+                    return;
+                }
+
+                float first = samples[0], last = samples[^1];
+                if (first > last) (first, last) = (last, first);
+                float pivot = Math.Clamp(samples[samples.Length / 2], first, last);
+                int left = 0, right = samples.Length - 1;
+                do
+                {
+                    while (samples[left] < pivot) left++;
+                    while (samples[right] > pivot) right--;
+                    if (left > right) break;
+                    (samples[left], samples[right]) = (samples[right], samples[left]);
+                    left++;
+                    right--;
+                } while (left <= right);
+
+                // The two partitions bound the pivot; any index between them already has its final value.
+                int lowerCount = 0;
+                while (lowerCount < ranks.Length && ranks[lowerCount] < offset + right + 1) lowerCount++;
+                int upperStart = lowerCount;
+                while (upperStart < ranks.Length && ranks[upperStart] < offset + left) upperStart++;
+                PositionRanks(samples[..(right + 1)], ranks[..lowerCount], offset, depthLimit - 1, cancellationToken);
+                PositionRanks(samples[left..], ranks[upperStart..], offset + left, depthLimit - 1, cancellationToken);
             }
 
             private static bool IsOrdered(ReadOnlySpan<float> samples, bool descending)

@@ -243,9 +243,12 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             return null;
         }
 
-        private static bool ContainsAny(string value, params string[] candidates)
+        private static bool ContainsAny(string value, params ReadOnlySpan<string> candidates)
         {
-            return candidates.Any(candidate => value.Contains(candidate, StringComparison.OrdinalIgnoreCase));
+            foreach (string candidate in candidates)
+                if (value.Contains(candidate, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
         }
     }
 }

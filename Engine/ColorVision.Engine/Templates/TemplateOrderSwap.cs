@@ -36,12 +36,21 @@ internal static class TemplateOrderSwap
                 persist = () => (localPoi.Storage ?? PoiTemplateStorage.Default).SwapLocalOrder(firstId, secondId);
             else if (renumber)
             {
-                string connection = MySqlControl.GetConnectionString();
+                Func<SqlSugarClient> openDatabase;
+                if (first.Value is FlowParam flow)
+                    openDatabase = (flow.Database ?? TemplateStorageSource.Workstation.CaptureDatabase()).Open;
+                else if (first.Value is PoiParam poiParam)
+                    openDatabase = (poiParam.Storage ?? PoiTemplateStorage.Default).CaptureDatabase().Open;
+                else
+                {
+                    string connection = MySqlControl.GetConnectionString();
+                    openDatabase = () => new SqlSugarClient(new ConnectionConfig { ConnectionString = connection, DbType = DbType.MySql, IsAutoCloseConnection = true });
+                }
                 string firstName = first.Key, secondName = second.Key;
                 bool poi = first.Value is PoiParam;
                 persist = () =>
                 {
-                    using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = connection, DbType = DbType.MySql, IsAutoCloseConnection = true });
+                    using var db = openDatabase();
                     SwapRecords(db, poi, firstId, secondId, firstName, secondName);
                 };
             }

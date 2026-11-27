@@ -19,6 +19,7 @@ namespace ColorVision.ImageEditor.Cie;
 public partial class CieSampleAnalysisView : UserControl
 {
     private readonly List<CieAnalysisSample> _samples = new();
+    private readonly Dictionary<Guid, int> _sampleIndices = new();
     private readonly List<CheckBox> _gamutOptions = new();
     private List<CieAnalysisRow> _rows = new();
     private CieAnalysisSettings _settings = new();
@@ -220,7 +221,15 @@ public partial class CieSampleAnalysisView : UserControl
     {
         selectedId ??= Selected?.Sample.Id;
         CieAnalysisSample? reference = _samples.FirstOrDefault(s => s.Id == _referenceId);
-        _rows = _samples.Select(sample => new CieAnalysisRow(sample, reference, _settings)).ToList();
+        _sampleIndices.Clear();
+        _sampleIndices.EnsureCapacity(_samples.Count);
+        _rows = new List<CieAnalysisRow>(_samples.Count);
+        for (int index = 0; index < _samples.Count; index++)
+        {
+            CieAnalysisSample sample = _samples[index];
+            _sampleIndices.Add(sample.Id, index);
+            _rows.Add(new CieAnalysisRow(sample, reference, _settings));
+        }
         RefreshFilter(selectedId);
         EmptyHint.Visibility = _samples.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         double[] differences = _rows.Where(r => !r.IsReference && r.DeltaE00.HasValue).Select(r => r.DeltaE00!.Value).ToArray();
@@ -236,8 +245,7 @@ public partial class CieSampleAnalysisView : UserControl
         SamplesGrid.ItemsSource = visible;
         SamplesGrid.SelectedItem = visible.FirstOrDefault(r => r.Sample.Id == selectedId) ?? visible.FirstOrDefault();
         _refreshing = false;
-        RefreshDiagram();
-        RefreshSelection();
+        RefreshDiagramAndSelection();
     }
 
     private void Filter_Changed(object sender, TextChangedEventArgs e)
@@ -247,10 +255,17 @@ public partial class CieSampleAnalysisView : UserControl
 
     private void Samples_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_ready && !_refreshing) RefreshSelection();
+        if (_ready && !_refreshing) AnalysisDiagram.UpdateOverlay(RefreshSelection);
     }
 
-    private Color ColorFor(CieAnalysisSample sample) => sample.Id == _referenceId ? Colors.Black : MarkerColors[Math.Max(0, _samples.FindIndex(s => s.Id == sample.Id)) % MarkerColors.Length];
+    private Color ColorFor(CieAnalysisSample sample)
+        => sample.Id == _referenceId ? Colors.Black : MarkerColors[_sampleIndices.GetValueOrDefault(sample.Id) % MarkerColors.Length];
+
+    private void RefreshDiagramAndSelection() => AnalysisDiagram.UpdateOverlay(() =>
+    {
+        RefreshDiagram();
+        RefreshSelection();
+    });
 
     private void RefreshDiagram()
     {
@@ -379,8 +394,7 @@ public partial class CieSampleAnalysisView : UserControl
             ShowCct = ShowCct.IsChecked == true, ShowDaylight = ShowDaylight.IsChecked == true, ShowWavelength = ShowWavelength.IsChecked == true,
             Gamuts = _gamutOptions.Where(c => c.IsChecked == true).Select(c => ((CieGamut)c.Tag).Name).ToArray() };
         MarkChanged();
-        RefreshDiagram();
-        RefreshSelection();
+        RefreshDiagramAndSelection();
     }
 
     private void ZoomOut_Click(object sender, RoutedEventArgs e) => AnalysisDiagram.Zoom(0.8);

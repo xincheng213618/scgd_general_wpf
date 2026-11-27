@@ -117,8 +117,6 @@
                     <ListBoxItem x:Name="CalibrationTab" Content="{x:Static properties:Resources.SpectrumCalibrationCorrection}"/>
                     <ListBoxItem x:Name="AcquisitionTab" Content="{x:Static properties:Resources.SpectrumAcquisitionSettings}"/>
                     <ListBoxItem x:Name="ShutterTab" Content="{x:Static properties:Resources.SpectrumShutterSettings}"/>
-                    <ListBoxItem x:Name="NdTab" Content="{x:Static properties:Resources.SpectrumNdSettings}"/>
-                    <ListBoxItem x:Name="FileTab" Content="{x:Static properties:Resources.SpectrumFileSettings}"/>
                 </ListBox>
                 <Grid Grid.Column="2">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=ConnectionTab, Converter={StaticResource VisibleWhen}}">
@@ -182,6 +180,14 @@
                         <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
                             <StackPanel>
                                 <TextBlock Text="{x:Static properties:Resources.SpectrumCalibrationCorrection}" Style="{StaticResource SectionTitleStyle}"/>
+                                <StackPanel x:Name="CalibrationFileFields"/>
+                                <DockPanel Margin="0,3,0,5" MinHeight="28">
+                                    <Button x:Name="ManageCalibrationGroupsButton" DockPanel.Dock="Right" Content="{x:Static properties:Resources.SpectrumCalibrationGroups_Title}"
+                                            Style="{StaticResource ToolbarButtonStyle}" Margin="8,0,0,0" Click="ManageCalibrationGroups_Click"/>
+                                    <TextBlock MinWidth="125" Margin="0,0,8,0" VerticalAlignment="Center" Text="{x:Static properties:Resources.SpectrumActiveGroup}"/>
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding EditConfig.ActiveCalibrationGroupName}" TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding EditConfig.ActiveCalibrationGroupName}"/>
+                                </DockPanel>
                                 <StackPanel x:Name="CalibrationFields"/>
 
                             </StackPanel>
@@ -205,24 +211,6 @@
                             </StackPanel>
                         </Border>
                     </ScrollViewer>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=NdTab, Converter={StaticResource VisibleWhen}}">
-                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
-                            <StackPanel>
-                                <TextBlock Text="{x:Static properties:Resources.SpectrumNdSettings}" Style="{StaticResource SectionTitleStyle}"/>
-                                <StackPanel x:Name="NdFields"/>
-
-                            </StackPanel>
-                        </Border>
-                    </ScrollViewer>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="{Binding IsSelected, ElementName=FileTab, Converter={StaticResource VisibleWhen}}">
-                        <Border Style="{StaticResource CardStyle}" Margin="0,0,6,12" VerticalAlignment="Top">
-                            <StackPanel>
-                                <TextBlock Text="{x:Static properties:Resources.SpectrumFileSettings}" Style="{StaticResource SectionTitleStyle}"/>
-                                <StackPanel x:Name="FileFields"/>
-
-                            </StackPanel>
-                        </Border>
-                    </ScrollViewer>
                 </Grid>
             </Grid>
         </Grid>
@@ -231,13 +219,10 @@
             <TextBlock x:Name="StatusText" Style="{StaticResource HintStyle}" Margin="0,5,0,5" MaxHeight="48" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
         </StackPanel>
         <Border Grid.Row="2" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,1,0,0" Padding="0,14,0,14">
-            <DockPanel>
-                <Button x:Name="AdvancedButton" Content="{x:Static properties:Resources.PropertyEdit}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="110" Height="36" Click="Advanced_Click" DockPanel.Dock="Left"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="OkButton" Content="{x:Static properties:Resources.OK}" Style="{StaticResource PrimaryToolbarButtonStyle}" MinWidth="110" Height="36" Click="Ok_Click"/>
-                    <Button Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="110" Height="36" IsCancel="True" Margin="4,0,0,6"/>
-                </StackPanel>
-            </DockPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="OkButton" Content="{x:Static properties:Resources.OK}" Style="{StaticResource PrimaryToolbarButtonStyle}" MinWidth="110" Height="36" Click="Ok_Click"/>
+                <Button Content="{x:Static properties:Resources.Cancel}" Style="{StaticResource ToolbarButtonStyle}" MinWidth="110" Height="36" IsCancel="True" Margin="4,0,0,6"/>
+            </StackPanel>
         </Border>
     </Grid>
 </Window>

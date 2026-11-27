@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using SqlSugar;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -49,7 +50,8 @@ namespace ColorVision.UI.Desktop.Download
             catch { return true; }
         }
 
-        public ObservableCollection<DownloadTask> Tasks { get; } = new();
+        private readonly DownloadTaskCollection _tasks = new();
+        public ObservableCollection<DownloadTask> Tasks => _tasks;
         private readonly ConcurrentDictionary<int, DownloadTask> _knownTasks = new();
         private readonly ConcurrentDictionary<int, DownloadTask> _activeTasks = new();
         private readonly ConcurrentDictionary<int, DownloadTask> _localCopyTasks = new();
@@ -293,14 +295,14 @@ namespace ColorVision.UI.Desktop.Download
                 _reservedPaths.Add(path);
                 _knownTasks[task.Id] = task;
             }
-            PostUI(() => ShowTask(task));
+            PostUI(() => ShowTask(task, Tasks));
             QueueStart(task, tryReuse: true, resume: false);
             return task;
         }
 
-        private void ShowTask(DownloadTask task)
+        private static void ShowTask(DownloadTask task, IList<DownloadTask> tasks)
         {
-            if (!task.Runtime.IsDeleted && !Tasks.Any(existing => existing.Id == task.Id)) Tasks.Insert(0, task);
+            if (!task.Runtime.IsDeleted && !tasks.Any(existing => existing.Id == task.Id)) tasks.Insert(0, task);
         }
 
         private static DownloadTask CreateTask(DownloadEntry entry) => new()
@@ -532,7 +534,7 @@ namespace ColorVision.UI.Desktop.Download
             {
                 var task = _knownTasks.GetOrAdd(entry.Id, _ => CreateTask(entry));
                 if (task.Runtime.IsRunning(task.Runtime.Version)) continue;
-                PostUI(() => ShowTask(task));
+                PostUI(() => ShowTask(task, Tasks));
                 QueueStart(task, tryReuse: false, resume: false);
             }
         }
@@ -813,17 +815,32 @@ namespace ColorVision.UI.Desktop.Download
         }
         private void ApplyRecords(List<DownloadEntry> records)
         {
-            Tasks.Clear();
+            var tasks = new List<DownloadTask>(records.Count);
             foreach (var entry in records)
             {
                 DownloadTask task = _knownTasks.TryGetValue(entry.Id, out var known) ? known : CreateTask(entry);
                 if (task.Runtime.IsDeleted) continue;
                 if (task.Status is DownloadStatus.Waiting or DownloadStatus.Downloading or DownloadStatus.Paused or DownloadStatus.Failed)
                     task = _knownTasks.GetOrAdd(task.Id, task);
-                Tasks.Add(task);
+                tasks.Add(task);
             }
             // A task added after the records were read must stay visible.
-            foreach (var active in _activeTasks.Values) ShowTask(active);
+            foreach (var active in _activeTasks.Values) ShowTask(active, tasks);
+            _tasks.ReplaceWith(tasks);
+        }
+
+        private sealed class DownloadTaskCollection : ObservableCollection<DownloadTask>
+        {
+            public void ReplaceWith(IReadOnlyList<DownloadTask> tasks)
+            {
+                CheckReentrancy();
+                Items.Clear();
+                foreach (DownloadTask task in tasks)
+                    Items.Add(task);
+                OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+                OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.PhySpectrums;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using SqlSugar;
 using System.IO;
@@ -18,17 +19,68 @@ namespace ColorVision.UI.Tests;
 public sealed class SpectrumLicenseImportTests
 {
     [Fact]
+    public void DatabaseRemovalKeepsRenewedLicensesAndRollsBackWhenTheSourceChanges()
+    {
+        using var db = CreateLicenseDatabase();
+        db.Insertable(RemovalTestLicenses()).ExecuteCommand();
+        var selection = db.Queryable<LicenseModel>().First(row => row.LicenseValue == "selected");
+        db.Updateable<LicenseModel>().SetColumns(row => row.LicenseValue == "renewed").Where(row => row.Id == selection.Id).ExecuteCommand();
+
+        Assert.False(PhySpectrumStore.TryRemoveLicenseRecords(db, selection, () => true));
+        Assert.Equal(4, db.Queryable<LicenseModel>().Count());
+
+        selection = db.Queryable<LicenseModel>().InSingle(selection.Id);
+        int sourceChecks = 0;
+        Assert.False(PhySpectrumStore.TryRemoveLicenseRecords(db, selection, () => ++sourceChecks < 3));
+        Assert.Equal(4, db.Queryable<LicenseModel>().Count());
+
+        Assert.True(PhySpectrumStore.TryRemoveLicenseRecords(db, selection, () => true));
+        Assert.Equal(new[] { "camera", "other" }, db.Queryable<LicenseModel>().OrderBy(row => row.Id).Select(row => row.LicenseValue).ToArray());
+    }
+
+    [Fact]
+    public void LocalRemovalDeletesDuplicateLicensesForOnlyTheSelectedSpectrometer()
+    {
+        string file = Path.Combine(Path.GetTempPath(), $"spectrum-remove-{Guid.NewGuid():N}.db");
+        try
+        {
+            var store = new LocalTemplateStore(file);
+            var dao = new PhyLicenseDao(store, () => false);
+            var resources = new SysResourceDao(store, () => false);
+            var registered = new SysResourceModel { Code = "TEST-SN", Type = (int)ServiceTypes.PhySpectrums };
+            resources.Save(registered, local: true);
+            var licenses = RemovalTestLicenses();
+            foreach (var license in licenses) dao.Save(license, local: true);
+            var selection = dao.GetById(licenses[1].Id)!;
+            licenses[1].LicenseValue = "renewed";
+            dao.Save(licenses[1], local: true);
+
+            Assert.False(dao.TryRemoveSpectrumLicense(selection));
+            Assert.False(dao.TryRemoveSpectrumLicense(licenses[2]));
+            Assert.Equal(4, dao.GetLocal().Count);
+
+            Assert.True(dao.TryRemoveSpectrumLicense(licenses[1]));
+            var remaining = dao.GetLocal();
+            Assert.Equal(new[] { "camera", "other" }, remaining.Select(row => row.LicenseValue).OrderBy(value => value).ToArray());
+            var selected = Assert.Single(PhySpectrumStore.Merge(resources.GetLocal(), remaining, []), item => item.SN == "TEST-SN");
+            Assert.Equal(registered.Id, selected.ResourceId);
+            Assert.Null(selected.License);
+        }
+        finally { File.Delete(file); }
+    }
+
+    private static LicenseModel[] RemovalTestLicenses() =>
+    [
+        new() { MacAddress = " test-sn ", LiceType = 1, LicenseValue = "duplicate" },
+        new() { MacAddress = "TEST-SN", LiceType = 1, LicenseValue = "selected" },
+        new() { MacAddress = "TEST-SN", LiceType = 0, LicenseValue = "camera" },
+        new() { MacAddress = "ANY-OTHER-SN", LiceType = 1, LicenseValue = "other" }
+    ];
+
+    [Fact]
     public void DatabaseRenewalUpdatesDuplicateSpectraWithoutChangingAssociationsOrCameraRecords()
     {
-        using var db = new SqlSugarClient(new ConnectionConfig
-        {
-            ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite, IsAutoCloseConnection = false,
-            ConfigureExternalServices = new ConfigureExternalServices
-            {
-                EntityService = (_, column) => { if (!column.IsPrimarykey) column.IsNullable = true; }
-            }
-        });
-        db.CodeFirst.InitTables<LicenseModel>();
+        using var db = CreateLicenseDatabase();
         DateTime created = new(2026, 1, 1);
         db.Insertable(new[]
         {
@@ -56,6 +108,20 @@ public sealed class SpectrumLicenseImportTests
         Assert.Equal(12, rows[1].DevCaliId);
         Assert.Equal("camera", rows[2].LicenseValue);
         Assert.Equal("other", rows[3].LicenseValue);
+    }
+
+    private static SqlSugarClient CreateLicenseDatabase()
+    {
+        var db = new SqlSugarClient(new ConnectionConfig
+        {
+            ConnectionString = "Data Source=:memory:", DbType = DbType.Sqlite, IsAutoCloseConnection = false,
+            ConfigureExternalServices = new ConfigureExternalServices
+            {
+                EntityService = (_, column) => { if (!column.IsPrimarykey) column.IsNullable = true; }
+            }
+        });
+        db.CodeFirst.InitTables<LicenseModel>();
+        return db;
     }
 
     [Theory]

@@ -110,7 +110,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             var (layout, pointSet) = LocalRealPoiInputResolver.ResolveInput(action, pointInput, poiInputMasterId, poiInputResultType,
                 InputPortNames[0], endpoint);
             bool useInputColor = string.IsNullOrWhiteSpace(CalibTempName);
-            using LocalCalibrationExecution execution = ExecuteCalibrationCore(action, useInputColor, endpoint);
+            using LocalCalibrationExecution execution = ExecuteCalibrationCore(action, useInputColor, endpoint, requireColor: true);
             if (!execution.Frame.HasCie && execution.Frame.ColorCalibration == null)
             {
                 throw new InvalidOperationException("实时 POI 需要 CIE 或带色度校正参数的 RAW，请在校正模板中选择一个亮度或颜色校正文件。");

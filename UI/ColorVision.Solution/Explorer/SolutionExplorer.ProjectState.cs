@@ -17,12 +17,8 @@ namespace ColorVision.Solution.Explorer
 
             try
             {
-                string firstPath = Path.GetFullPath(Path.IsPathRooted(firstReference)
-                    ? firstReference
-                    : Path.Combine(solutionDirectory, firstReference));
-                string secondPath = Path.GetFullPath(Path.IsPathRooted(secondReference)
-                    ? secondReference
-                    : Path.Combine(solutionDirectory, secondReference));
+                string firstPath = GetFullProjectReferencePath(solutionDirectory, firstReference);
+                string secondPath = GetFullProjectReferencePath(solutionDirectory, secondReference);
                 return PathEquals(firstPath, secondPath);
             }
             catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
@@ -38,9 +34,7 @@ namespace ColorVision.Solution.Explorer
 
             try
             {
-                string referencePath = Path.GetFullPath(Path.IsPathRooted(projectReference)
-                    ? projectReference
-                    : Path.Combine(solutionDirectory, projectReference));
+                string referencePath = GetFullProjectReferencePath(solutionDirectory, projectReference);
                 return PathEquals(referencePath, project.ProjectFile.FullName)
                     || PathEquals(referencePath, project.ProjectDirectory.FullName);
             }
@@ -49,6 +43,9 @@ namespace ColorVision.Solution.Explorer
                 return false;
             }
         }
+
+        internal static string GetFullProjectReferencePath(string baseDirectory, string reference)
+            => Path.GetFullPath(Path.IsPathRooted(reference) ? reference : Path.Combine(baseDirectory, reference));
 
         internal bool IsProjectIncluded(ProjectDefinition project)
         {

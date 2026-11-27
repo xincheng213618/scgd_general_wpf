@@ -43,6 +43,26 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         self.assertEqual(run.call_count, 1)
         installer_check.assert_not_called()
 
+    def test_missing_help_directory_prevents_installer_build(self) -> None:
+        help_path = "Assets/Help/algorithms/example.html"
+        source = self.root / "UI" / "ColorVision.UI.Desktop" / help_path
+        source.parent.mkdir(parents=True)
+        source.write_text("help", encoding="utf-8")
+        aip = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
+        runtime = self.root / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
+        runtime.mkdir(parents=True)
+
+        with mock.patch("Scripts.build.subprocess.run") as run, \
+             mock.patch("Scripts.build.ensure_runtime_copy_integrity", return_value=True), \
+             mock.patch("Scripts.build.ensure_native_runtime_integrity"), \
+             mock.patch("Scripts.build.validate_installer_runtime_dlls", return_value=True), \
+             mock.patch("Scripts.build.validate_basic_template_runtime"), \
+             mock.patch("builtins.print") as report:
+            self.assertFalse(rebuild_project(Path("msbuild"), self.root / "build.sln", Path("installer"), aip))
+
+        self.assertEqual(run.call_count, 1)
+        report.assert_any_call(f"Installer delivery check failed: Advanced Installer does not include desktop help assets: {help_path}")
+
     def setUp(self) -> None:
         self._temp_directory = tempfile.TemporaryDirectory(prefix="build-installer-tests-")
         self.root = Path(self._temp_directory.name)

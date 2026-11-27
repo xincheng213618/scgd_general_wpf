@@ -2,6 +2,7 @@ using ColorVision.Algorithms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace ColorVision.ImageEditor.Algorithms
 {
@@ -9,6 +10,8 @@ namespace ColorVision.ImageEditor.Algorithms
     internal sealed class AlgorithmPixelRoi
     {
         private const double BoundaryTolerance = 1e-9;
+        private const int MinimumCircleScanlineWidth = 32;
+        private const int MaximumCircleScanlines = 65_536; // At most 512 KiB of scanline bounds.
         private AlgorithmPixelRoiKind Kind { get; init; }
         private double Left { get; init; }
         private double Top { get; init; }
@@ -87,6 +90,60 @@ namespace ColorVision.ImageEditor.Algorithms
             AlgorithmPixelRoiKind.Polygon => ContainsPolygon(x, y),
             _ => false,
         };
+
+        internal (int Start, int End)[]? CircleScanlines { get; private set; }
+        internal PolygonScanlines? PreparedPolygon { get; private set; }
+
+        internal AlgorithmPixelRoi WithPolygonScanlines(CancellationToken token)
+        {
+            if (Kind != AlgorithmPixelRoiKind.Polygon || IsEmpty) return this;
+            var scanlines = PolygonScanlines.Create(Points, MinimumX, MinimumY, MaximumXExclusive, MaximumYExclusive, BoundaryTolerance, token);
+            if (scanlines == null) return this;
+            var prepared = (AlgorithmPixelRoi)MemberwiseClone();
+            prepared.PreparedPolygon = scanlines;
+            return prepared;
+        }
+
+        internal AlgorithmPixelRoi WithCircleScanlines(CancellationToken token)
+        {
+            if (Kind != AlgorithmPixelRoiKind.Circle || IsEmpty || MaximumXExclusive - MinimumX < MinimumCircleScanlineWidth
+                || MaximumYExclusive - MinimumY > MaximumCircleScanlines
+                || !double.IsFinite(CenterX) || !double.IsFinite(CenterY)
+                || !double.IsFinite(RadiusX) || RadiusX <= 0 || !double.IsFinite(RadiusY) || RadiusY <= 0)
+                return this;
+
+            var scanlines = new (int Start, int End)[MaximumYExclusive - MinimumY];
+            int closestX = (int)Math.Clamp(Math.Round(CenterX), MinimumX, MaximumXExclusive - 1);
+            for (int y = MinimumY; y < MaximumYExclusive; y++)
+            {
+                if (((y - MinimumY) & 31) == 0) token.ThrowIfCancellationRequested();
+                if (!Contains(closestX, y)) continue;
+
+                // Membership is monotonic on each side of the closest sample. Use Contains
+                // at the endpoints to retain its tolerance and floating-point decisions.
+                int low = MinimumX, high = closestX;
+                while (low < high)
+                {
+                    int middle = low + (high - low) / 2;
+                    if (Contains(middle, y)) high = middle;
+                    else low = middle + 1;
+                }
+                int start = low;
+                low = closestX;
+                high = MaximumXExclusive - 1;
+                while (low < high)
+                {
+                    int middle = low + (high - low + 1) / 2;
+                    if (Contains(middle, y)) low = middle;
+                    else high = middle - 1;
+                }
+                scanlines[y - MinimumY] = (start, low + 1);
+            }
+            // The display runner can reuse the original region across executions.
+            var prepared = (AlgorithmPixelRoi)MemberwiseClone();
+            prepared.CircleScanlines = scanlines;
+            return prepared;
+        }
 
         public (int MinimumX, int MinimumY, int MaximumXExclusive, int MaximumYExclusive) GetSamplingBounds(AlgorithmImageBuffer image)
         {

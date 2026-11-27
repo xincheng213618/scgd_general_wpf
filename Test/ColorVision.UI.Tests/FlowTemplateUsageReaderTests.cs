@@ -7,8 +7,10 @@ namespace ColorVision.UI.Tests;
 
 public sealed class FlowTemplateUsageReaderTests
 {
-    [Fact]
-    public void CountsAllRetainedRunsButEstimatesOnlyRecentCompletedRunsOfTheSavedVersion()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CountsAllRetainedRunsButEstimatesOnlyRecentCompletedRunsOfTheSavedVersion(bool indexed)
     {
         string path = NewPath();
         using var connection = new SqliteConnection($"Data Source={path};Pooling=False");
@@ -19,8 +21,17 @@ public sealed class FlowTemplateUsageReaderTests
               completed_time TEXT,content_hash TEXT,final_outcome INTEGER);
             """;
         command.ExecuteNonQuery();
+        if (indexed)
+        {
+            command.CommandText = """
+                CREATE INDEX idx_flow_run_flow_key_completed ON FlowRunRecord(flow_key, completed_time DESC);
+                CREATE INDEX idx_flow_run_template_completed ON FlowRunRecord(template_id, completed_time DESC);
+                """;
+            command.ExecuteNonQuery();
+        }
         for (int index = 1; index <= 25; index++)
             Insert(connection, 10, "stable", FlowStatus.Completed, index * 100, "current", $"2026-01-{index:D2}");
+        Insert(connection, 10, null, FlowStatus.Completed, 2600, "current", "2026-01-26");
         Insert(connection, 10, "stable", FlowStatus.Completed, 999999, "old");
         Insert(connection, 10, "stable", FlowStatus.Failed, 999999, "current");
         Insert(connection, 10, "stable", FlowStatus.Runing, 999999, "current");
@@ -28,14 +39,52 @@ public sealed class FlowTemplateUsageReaderTests
         Insert(connection, 10, "different-key", FlowStatus.Completed, 999999, "current");
         var usage = FlowTemplateUsageReader.Read(path, new FlowIdentity(10, "stable", "renamed"), "current");
         Assert.NotNull(usage);
-        Assert.Equal(29, usage.ExecutionCount);
+        Assert.Equal(30, usage.ExecutionCount);
         Assert.Equal(20, usage.SampleCount);
-        Assert.Equal(1550, usage.ExpectedMs); // The latest 20 samples are 600 through 2500 ms.
+        Assert.Equal(1650, usage.ExpectedMs); // The latest 20 samples are 700 through 2600 ms.
         var changed = FlowTemplateUsageReader.Read(path, new FlowIdentity(10, "stable", "renamed"), "new-version")!;
-        Assert.Equal(29, changed.ExecutionCount);
+        Assert.Equal(30, changed.ExecutionCount);
         Assert.Null(changed.ExpectedMs);
         command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table'";
         Assert.Equal(1L, command.ExecuteScalar());
+    }
+
+    [Fact]
+    public void EqualCompletionTimesKeepTheExistingSampleSelection()
+    {
+        string path = NewPath();
+        using var connection = new SqliteConnection($"Data Source={path};Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            CREATE TABLE FlowRunRecord(id INTEGER PRIMARY KEY,template_id INTEGER,flow_key TEXT,status INTEGER,
+                elapsed_ms INTEGER,completed_time TEXT,owner_machine TEXT);
+            CREATE INDEX idx_flow_run_flow_key_completed ON FlowRunRecord(flow_key, completed_time DESC);
+            CREATE INDEX idx_flow_run_status_owner ON FlowRunRecord(status, owner_machine);
+
+            WITH RECURSIVE numbers(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM numbers WHERE n<22)
+            INSERT INTO FlowRunRecord
+            SELECT n,0,'stable',$completed,n*100,'2026-01-01',CASE WHEN n<=2 THEN 'z' ELSE 'a' END FROM numbers;
+            """;
+        command.Parameters.AddWithValue("$completed", (int)FlowStatus.Completed);
+        command.ExecuteNonQuery();
+
+        command.CommandText = """
+            SELECT AVG(elapsed_ms) FROM (
+                SELECT elapsed_ms FROM FlowRunRecord
+                WHERE (flow_key=$key OR ((flow_key IS NULL OR flow_key='') AND $id>0 AND template_id=$id))
+                    AND status=$completed AND elapsed_ms>=0
+                ORDER BY completed_time DESC LIMIT 20);
+            """;
+        command.Parameters.AddWithValue("$key", "stable");
+        command.Parameters.AddWithValue("$id", 0);
+        var expected = (double)command.ExecuteScalar()!;
+
+        var usage = FlowTemplateUsageReader.Read(path, new FlowIdentity(-2, "stable", null), null);
+        Assert.NotNull(usage);
+        Assert.Equal(22, usage.ExecutionCount);
+        Assert.Equal(20, usage.SampleCount);
+        Assert.Equal(expected, usage.ExpectedMs);
     }
 
     [Fact]
@@ -66,12 +115,12 @@ public sealed class FlowTemplateUsageReaderTests
 
     private static string NewPath() => Path.Combine(Directory.CreateTempSubdirectory("ColorVision-flow-usage-").FullName, "runs.db");
 
-    private static void Insert(SqliteConnection connection, int templateId, string key, FlowStatus status, long duration, string hash, string date = "2026-02-01", int finalOutcome = 0)
+    private static void Insert(SqliteConnection connection, int templateId, string? key, FlowStatus status, long duration, string hash, string date = "2026-02-01", int finalOutcome = 0)
     {
         using var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO FlowRunRecord VALUES($id,$key,'Original name',$status,$duration,$date,$hash,$outcome)";
         command.Parameters.AddWithValue("$id", templateId);
-        command.Parameters.AddWithValue("$key", key);
+        command.Parameters.AddWithValue("$key", (object?)key ?? DBNull.Value);
         command.Parameters.AddWithValue("$status", (int)status);
         command.Parameters.AddWithValue("$duration", duration);
         command.Parameters.AddWithValue("$date", date);

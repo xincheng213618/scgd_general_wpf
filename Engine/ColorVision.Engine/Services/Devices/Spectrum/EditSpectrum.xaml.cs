@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Calibration;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.Themes;
@@ -67,21 +68,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void InitializeFields()
         {
             AddFields(ConnectionFields, EditConfig, nameof(ConfigSpectrum.SpectrometerType), nameof(ConfigSpectrum.IsAutoOpen));
-            AddFields(ConnectionFields, Draft.DisplayConfig, nameof(DisplaySpectrumConfig.UseLocalSpectrum));
+            AddFields(ConnectionFields, Draft.DisplayConfig, nameof(DisplaySpectrumConfig.UseLocalSpectrum), nameof(DisplaySpectrumConfig.IsLuminousFluxMode));
             AddFields(SerialFields, Draft, nameof(SpectrumConfigurationDraft.SerialPortName));
             AddFields(SerialFields, EditConfig, nameof(ConfigSpectrum.BaudRate));
-            AddFields(CalibrationFields, EditConfig, nameof(ConfigSpectrum.WavelengthFile), nameof(ConfigSpectrum.MaguideFile),
-                nameof(ConfigSpectrum.ActiveCalibrationGroupName), nameof(ConfigSpectrum.CalibrationGroups));
+            AddFields(CalibrationFileFields, EditConfig, nameof(ConfigSpectrum.WavelengthFile), nameof(ConfigSpectrum.MaguideFile));
             AddGroup(CalibrationFields, Properties.Resources.SpectrumDarkSettings, EditConfig.SelfAdaptionInitDark);
             AddGroup(CalibrationFields, Properties.Resources.EmissionSP100Set, EditConfig.SetEmissionSP100Config);
-            AddFields(AcquisitionFields, Draft.DisplayConfig, nameof(DisplaySpectrumConfig.IsLuminousFluxMode));
             AddFields(AcquisitionFields, EditConfig, nameof(ConfigSpectrum.Saturation), nameof(ConfigSpectrum.MaxIntegralTime),
                 nameof(ConfigSpectrum.BeginIntegralTime), nameof(ConfigSpectrum.AutoTestTime));
             AddGroup(AcquisitionFields, Properties.Resources.SpectrumAcquisitionSettings, EditConfig.GetDataConfig);
             AddFields(ShutterFields, EditConfig, nameof(ConfigSpectrum.IsShutterEnable));
             ShutterDetails.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.ShutterCfg, showCategoryHeader: false));
-            NdFields.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.NDConfig, showCategoryHeader: false));
-            FileFields.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg, showCategoryHeader: false));
         }
 
         private static void AddFields(Panel panel, object config, params string[] names)
@@ -144,7 +141,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             isBusy = true;
             EditorBody.IsEnabled = false;
             OkButton.IsEnabled = false;
-            AdvancedButton.IsEnabled = false;
             Progress.Visibility = Visibility.Visible;
             StatusText.Text = Properties.Resources.SpectrumWorking;
             try
@@ -166,7 +162,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     EditorBody.IsEnabled = true;
                     OkButton.IsEnabled = true;
-                    AdvancedButton.IsEnabled = true;
                     Progress.Visibility = Visibility.Collapsed;
                     RefreshLicense();
                 }
@@ -237,21 +232,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             await RunAsync(LoadChoicesAsync);
         }
 
-        private void Advanced_Click(object sender, RoutedEventArgs e)
+        private void ManageCalibrationGroups_Click(object sender, RoutedEventArgs e)
         {
-            Keyboard.ClearFocus();
-            if (!Draft.Prepare(out string error)) { StatusText.Text = error; return; }
-            var window = new PropertyEditorWindow(EditConfig, PropertyEditorEditMode.Transactional) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            window.Submitted += (_, _) =>
+            new SpectrumCalibrationGroupWindow(EditConfig, Draft.DisplayConfig.UseLocalSpectrum)
             {
-                Draft.ReloadConnection();
-                foreach (Panel panel in new Panel[] { ConnectionFields, SerialFields, CalibrationFields, AcquisitionFields, ShutterFields, ShutterDetails, NdFields, FileFields }) panel.Children.Clear();
-                InitializeFields();
-                DataContext = null;
-                DataContext = this;
-                RefreshChoices();
-            };
-            window.ShowDialog();
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
         }
 
         private void Ok_Click(object sender, RoutedEventArgs e)
@@ -278,6 +265,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 error = string.Empty;
                 return false;
             }
+            using IDisposable? applyScope = openingDevice?.Device.CalibrationGroupChangeGuard.EnterApply();
             return Draft.TryApply(target, out error, displayTarget);
         }
     }

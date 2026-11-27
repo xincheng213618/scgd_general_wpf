@@ -3,9 +3,11 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor.Draw;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace ColorVision.Engine.Services.POI
@@ -79,7 +81,7 @@ namespace ColorVision.Engine.Services.POI
             }
         }
 
-        internal unsafe byte[] CreateChannel(int channel, CancellationToken cancellationToken = default)
+        internal byte[] CreateChannel(int channel, CancellationToken cancellationToken = default)
         {
             lock (sync)
             {
@@ -87,11 +89,77 @@ namespace ColorVision.Engine.Services.POI
                 cancellationToken.ThrowIfCancellationRequested();
                 if (channel < 0 || channel >= Channels) throw new ArgumentOutOfRangeException(nameof(channel));
                 byte[] output = GC.AllocateUninitializedArray<byte>(checked(Width * Height * sizeof(float)));
-                if (xyz != null) Buffer.BlockCopy(xyz, checked(channel * output.Length), output, 0, output.Length);
-                else TransformInto(output, channel);
+                FillChannel(channel, output);
                 cancellationToken.ThrowIfCancellationRequested();
                 return output;
             }
+        }
+
+        internal void CopyChannelTo(int channel, Span<float> destination)
+        {
+            lock (sync)
+            {
+                ThrowIfDisposed();
+                if (channel < 0 || channel >= Channels) throw new ArgumentOutOfRangeException(nameof(channel));
+                if (destination.Length != checked(Width * Height))
+                    throw new ArgumentException("XYZ 通道缓冲区尺寸与 RAW 图像不匹配。", nameof(destination));
+                FillChannel(channel, MemoryMarshal.AsBytes(destination));
+            }
+        }
+
+        private void FillChannel(int channel, Span<byte> output)
+        {
+            if (xyz != null)
+                xyz.AsSpan(checked(channel * output.Length), output.Length).CopyTo(output);
+            else
+                TransformInto(Width, Height, raw, channel, MemoryMarshal.Cast<byte, float>(output));
+        }
+
+        internal void ReadXyzChunk(int start, Span<float> destination, CancellationToken token)
+        {
+            if (Channels != 3) throw new InvalidOperationException("RAW 真彩显示需要三通道色度校正。");
+            int count = destination.Length / 3;
+            if (count == 0 || destination.Length != count * 3)
+                throw new ArgumentException("XYZ 数据块必须包含等长的三个平面。", nameof(destination));
+            int pixelCount = checked(Width * Height);
+            if (start < 0 || start > pixelCount - count) throw new ArgumentOutOfRangeException(nameof(start));
+
+            token.ThrowIfCancellationRequested();
+            lock (sync)
+            {
+                token.ThrowIfCancellationRequested();
+                ThrowIfDisposed();
+                if (xyz != null)
+                {
+                    ReadOnlySpan<float> planes = MemoryMarshal.Cast<byte, float>(xyz.AsSpan());
+                    for (int channel = 0; channel < 3; channel++)
+                        planes.Slice(channel * pixelCount + start, count).CopyTo(destination.Slice(channel * count, count));
+                }
+                else
+                {
+                    // The opener may reuse the RAW array after this source is disposed.
+                    ReadOnlySpan<byte> pixels = raw;
+                    int bytesPerSample = Bpp / 8;
+                    if (transform.InterleavedBgr != 0)
+                    {
+                        TransformInto(count, 1, pixels.Slice(start * 3 * bytesPerSample, count * 3 * bytesPerSample), -1, destination);
+                    }
+                    else
+                    {
+                        int planeBytes = count * bytesPerSample;
+                        byte[] rented = ArrayPool<byte>.Shared.Rent(planeBytes * 3);
+                        try
+                        {
+                            Span<byte> block = rented.AsSpan(0, planeBytes * 3);
+                            for (int channel = 0; channel < 3; channel++)
+                                pixels.Slice((channel * pixelCount + start) * bytesPerSample, planeBytes).CopyTo(block.Slice(channel * planeBytes, planeBytes));
+                            TransformInto(count, 1, block, -1, destination);
+                        }
+                        finally { ArrayPool<byte>.Shared.Return(rented); }
+                    }
+                }
+            }
+            token.ThrowIfCancellationRequested();
         }
 
         internal PoiMeasurementResult[] Calculate(IReadOnlyList<PoiMeasurementPoint> points, bool preserveNonPositiveValues)
@@ -196,12 +264,15 @@ namespace ColorVision.Engine.Services.POI
             xyz = output;
         }
 
-        private unsafe void TransformInto(byte[] output, int channel)
+        private void TransformInto(byte[] output, int channel)
+            => TransformInto(Width, Height, raw, channel, MemoryMarshal.Cast<byte, float>(output.AsSpan()));
+
+        private unsafe void TransformInto(int width, int height, ReadOnlySpan<byte> pixels, int channel, Span<float> output)
         {
-            fixed (byte* input = raw)
-            fixed (byte* destination = output)
-                Check(OpenCVMediaHelper.M_TransformRawColorV1(Width, Height, Bpp, (IntPtr)input, (ulong)raw!.LongLength,
-                    in transform, channel, (IntPtr)destination, (ulong)output.LongLength / sizeof(float)));
+            fixed (byte* input = pixels)
+            fixed (float* destination = output)
+                Check(OpenCVMediaHelper.M_TransformRawColorV1(width, height, Bpp, (IntPtr)input, (ulong)pixels.Length,
+                    in transform, channel, (IntPtr)destination, (ulong)output.Length));
         }
 
         private static PoiOptionsV2 Options(bool preserve)

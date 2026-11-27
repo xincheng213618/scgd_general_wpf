@@ -98,13 +98,29 @@ namespace ColorVision.Engine.Services.Devices.Camera
             catch (Exception ex) { MQTTServiceBase.log.Error("本地相机预览转换失败；采集与持久化结果不受影响。", ex); }
         }
 
+        private bool applyingAcquisitionSettings;
+
+        internal void SaveAcquisitionSettings(CameraAcquisitionSettingsDraft draft)
+        {
+            applyingAcquisitionSettings = true;
+            try
+            {
+                draft.Apply(DisplayConfig, () =>
+                {
+                    if (!ConfigHandler.GetInstance().TrySave(DisplayConfigManager.Instance, out string error))
+                        throw new InvalidOperationException(error);
+                });
+            }
+            finally { applyingAcquisitionSettings = false; }
+        }
+
         private void DisplayConfig_BackendPreferenceChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (IsDisposed) return;
             if (e.PropertyName == nameof(DisplayCameraConfig.UseLocalCamera))
                 CameraBackend.SetPreference(DisplayConfig.UseLocalCamera);
             else if (e.PropertyName != nameof(DisplayCameraConfig.UseHikMvs) && e.PropertyName != nameof(DisplayCameraConfig.HikBayerQuality) && e.PropertyName != nameof(DisplayCameraConfig.HikOutputBgr)) return;
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
+            if (!applyingAcquisitionSettings) ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
         [Browsable(false)]

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -42,47 +43,57 @@ namespace ColorVision.ImageEditor.Cie
             int stride = width * 4;
             uint[] pixels = new uint[width * height];
             List<CieChromaticity> locus = GetDiagramLocus(profile);
-            Span<double> intersections = stackalloc double[locus.Count];
             Rect plot = profile.PlotAreaPixels;
             Rect axes = profile.AxisBounds;
             uint background = dark ? 0xFF00_0000u : 0xFFFF_FFFFu;
             uint outsideSpectrum = dark ? background : 0xFFF8_F8F8u;
 
-            for (int y = 0; y < height; y++)
+            int workers = Math.Min(4, Environment.ProcessorCount);
+            if (workers > 1 && pixels.Length >= 256 * 1024)
             {
-                double diagramY = axes.Top + (plot.Bottom - y) / plot.Height * axes.Height;
-                int intersectionCount = GetRowIntersections(diagramY, locus, intersections);
-                ReadOnlySpan<double> rowIntersections = intersections[..intersectionCount];
-                for (int x = 0; x < width; x++)
-                {
-                    uint pixel = background;
-
-                    if (plot.Contains(new Point(x, y)))
-                    {
-                        double diagramX = axes.Left + (x - plot.Left) / plot.Width * axes.Width;
-                        CieChromaticity diagramPoint = new(diagramX, diagramY);
-                        if (profile.ContainsDiagramPoint(diagramPoint) && IsInsideSpectrum(diagramX, rowIntersections))
-                        {
-                            CieChromaticity xy = profile.Kind == CieDiagramKind.Cie1976uv
-                                ? CieColorConverter.Uv1976ToXy(diagramPoint)
-                                : profile.Kind == CieDiagramKind.Cie1960uv
-                                ? CieColorConverter.Uv1960ToXy(diagramPoint)
-                                : diagramPoint;
-                            pixel = XyToDisplayPixel(xy);
-                        }
-                        else
-                        {
-                            pixel = outsideSpectrum;
-                        }
-                    }
-
-                    pixels[y * width + x] = pixel;
-                }
+                Parallel.For(0, workers, new ParallelOptions { MaxDegreeOfParallelism = workers },
+                    worker => FillRows((int)((long)height * worker / workers), (int)((long)height * (worker + 1) / workers)));
+            }
+            else
+            {
+                FillRows(0, height);
             }
 
             BitmapSource bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, stride);
             bitmap.Freeze();
             return bitmap;
+
+            void FillRows(int firstRow, int lastRow)
+            {
+                Span<double> intersections = stackalloc double[locus.Count];
+                for (int y = firstRow; y < lastRow; y++)
+                {
+                    double diagramY = axes.Top + (plot.Bottom - y) / plot.Height * axes.Height;
+                    int intersectionCount = GetRowIntersections(diagramY, locus, intersections);
+                    ReadOnlySpan<double> rowIntersections = intersections[..intersectionCount];
+                    for (int x = 0; x < width; x++)
+                    {
+                        uint pixel = background;
+
+                        if (plot.Contains(new Point(x, y)))
+                        {
+                            double diagramX = axes.Left + (x - plot.Left) / plot.Width * axes.Width;
+                            CieChromaticity diagramPoint = new(diagramX, diagramY);
+                            if (profile.ContainsDiagramPoint(diagramPoint) && IsInsideSpectrum(diagramX, rowIntersections))
+                            {
+                                CieChromaticity xy = profile.FromDiagramPoint(diagramPoint);
+                                pixel = XyToDisplayPixel(xy);
+                            }
+                            else
+                            {
+                                pixel = outsideSpectrum;
+                            }
+                        }
+
+                        pixels[y * width + x] = pixel;
+                    }
+                }
+            }
         }
 
         private static void DrawGrid(DrawingContext dc, CieDiagramProfile profile, bool dark)

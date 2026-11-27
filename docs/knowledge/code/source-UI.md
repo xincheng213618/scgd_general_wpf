@@ -31,7 +31,7 @@ next: false
   区分统一 Runner、ImageEditor 直接 native 分析与 Engine 模板/MQTT 算法，并按任务定位专题。
 
 - [ROI 模型与模板入口](../../04-api-reference/algorithms/primitives/roi.md) — `algorithms.roi-routes`
-  按用途定位发光区、SFR 寻边和中立算法 ROI 模型；各分支参数与坐标契约分别维护。
+  按用途定位本地发光区与中立算法 ROI 模型，并查阅各自的参数与坐标契约。
 
 - [统一图像算法平台 V1](../../02-developer-guide/core-concepts/image-algorithm-platform-v1.md) — `algorithms.platform`
   图像编辑器本地算法扩展：Catalog 描述、provider 注册、Invocation 和 Runner 执行；像素预览与应用/取消、几何结果和叠加显示分流，保留所有权与发布门禁；ONNX仅设计。
@@ -217,7 +217,7 @@ next: false
   MySQL恢复后更新流程节点标识，再同步配置和重启注册中心；支持独立更新按钮。SQL导入不回滚，迁移备份不含结果。
 
 - [数据库连接、DAO 与旧插件兼容](../../04-api-reference/ui-components/ColorVision.Database.md) — `ui.database`
-  MySQL 连接配置与业务 DAO、POI 模板的 SQLite 自动回退，以及旧插件注册的二进制兼容。
+  MySQL 连接配置与业务 DAO、POI 模板的工位存储来源，以及旧插件注册的二进制兼容。
 
 - [通用查询、条件会话与整表操作](../../04-api-reference/ui-components/database-query.md) — `ui.database-query`
   实体驱动的通用查询窗口，支持参数化筛选、调用方固定范围、前后台查询和只读模式。可写模式的表维护作用于整表。

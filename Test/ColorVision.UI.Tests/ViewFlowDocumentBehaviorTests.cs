@@ -6,13 +6,11 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Flow.Versioning;
 using ColorVision.Solution.Editor;
 using ColorVision.UI;
-using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Threading;
 
@@ -57,39 +55,18 @@ public class ViewFlowDocumentBehaviorTests
     }
 
     [Fact]
-    public void StandaloneFailureDetailsAreVisibleOnlyForAnIdentifiedCurrentNode()
+    public void StandaloneKeepsFailureSummaryAndFlowAnalysisShortcut()
     {
         WithStandaloneWindow(window =>
         {
             ViewFlow view = window.View;
-            var first = new CVDeviceNode("FOV", "SVR", "same", string.Empty);
-            var failed = new CVDeviceNode("FOV", "SVR", "same", string.Empty);
-            foreach (CVCommonNode node in new[] { first, failed }) { node.Create(); view.STNodeEditorMain.Nodes.Add(node); }
-            view.STNodeEditorMain.ClearHistory();
-            var details = (Button)view.FindName("ErrorNodeDetailsButton");
+            const string summary = "Flow failed on the device node";
+            view.ShowExecutionSummary(summary);
 
-            view.ShowExecutionSummary("Failed", failed.NodeID, first);
-            Assert.Equal(Visibility.Visible, details.Visibility);
-            Assert.Same(failed, GetField(view, "_executionDetailsNode"));
-            Assert.NotNull(details.ToolTip);
-            Assert.False(view.STNodeEditorMain.IsModified);
-
-            view.ShowExecutionSummary("Failed", $"{first.Title}.{first.NodeName}");
-            Assert.Equal(Visibility.Collapsed, details.Visibility);
-            Assert.Null(GetField(view, "_executionDetailsNode"));
-
-            view.STNodeEditorMain.Nodes.Remove(failed);
-            view.ShowExecutionSummary("Failed", failed.NodeID, failed);
-            Assert.Equal(Visibility.Collapsed, details.Visibility);
-            Assert.Null(details.ToolTip);
-            Assert.Null(GetField(view, "_executionDetailsNode"));
-
-            view.ShowExecutionSummary("Legacy failure", $"{first.Title}.{first.NodeName}");
-            Assert.Equal(Visibility.Visible, details.Visibility);
-            Assert.Same(first, GetField(view, "_executionDetailsNode"));
-            view.ShowExecutionSummary("Completed");
-            Assert.Equal(Visibility.Collapsed, details.Visibility);
-            Assert.Null(GetField(view, "_executionDetailsNode"));
+            Assert.Equal(summary, view.logTextBox.Text);
+            Assert.NotNull(view.FindName("ExecutionAnalysisButton"));
+            Assert.Null(view.FindName("FlowResultManagementButton"));
+            Assert.Null(view.FindName("ErrorNodeDetailsButton"));
         });
     }
 
@@ -195,54 +172,26 @@ public class ViewFlowDocumentBehaviorTests
             const BindingFlags sessionMembers = BindingFlags.Instance | BindingFlags.NonPublic;
             Type sessionType = session.GetType();
             long generation = (long)sessionType.GetField("_executionGeneration", sessionMembers)!.GetValue(session)!;
-            sessionType.GetField("_lastFailedNode", sessionMembers)!.SetValue(session, previousNode);
-            sessionType.GetField("_completedErrorNodeKey", sessionMembers)!.SetValue(session, previousNode.NodeID);
-            sessionType.GetField("_completedSummaryMessage", sessionMembers)!.SetValue(session, oldSummary);
-            view.ShowExecutionSummary(oldSummary, previousNode.NodeID, previousNode);
-            var details = (Button)view.FindName("ErrorNodeDetailsButton");
-            var pendingWrite = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            Task delayedSummary = (Task)sessionType.GetMethod("ShowExecutionSummaryAfterNodeWritesAsync", sessionMembers)!.Invoke(
-                session, [previousNode, pendingWrite.Task, previousNode.NodeID, oldSummary, generation])!;
-            Assert.False(delayedSummary.IsCompleted);
+            view.ShowExecutionSummary(oldSummary);
             Assert.False(view.IsExecutionActive);
 
-            try
+            byte[] canvas = CreateCanvas("Replacement");
+            Assert.ThrowsAny<Exception>(() => view.LoadStandaloneFlowParam(new FlowParam
             {
-                byte[] canvas = CreateCanvas("Replacement");
-                Assert.ThrowsAny<Exception>(() => view.LoadStandaloneFlowParam(new FlowParam
-                {
-                    Name = "Broken",
-                    DataBase64 = Convert.ToBase64String(canvas[..^4])
-                }, false));
-                Assert.Equal(runHandler, previousNode.nodeRunEvent);
-                Assert.Equal(endHandler, previousNode.nodeEndEvent);
-                Assert.Equal(generation, (long)sessionType.GetField("_executionGeneration", sessionMembers)!.GetValue(session)!);
-                Assert.Equal(oldSummary, view.logTextBox.Text);
-                Assert.Equal(Visibility.Visible, details.Visibility);
-                Assert.Same(previousNode, GetField(view, "_executionDetailsNode"));
-                Assert.False(delayedSummary.IsCompleted);
+                Name = "Broken",
+                DataBase64 = Convert.ToBase64String(canvas[..^4])
+            }, false));
+            Assert.Equal(runHandler, previousNode.nodeRunEvent);
+            Assert.Equal(endHandler, previousNode.nodeEndEvent);
+            Assert.Equal(generation, (long)sessionType.GetField("_executionGeneration", sessionMembers)!.GetValue(session)!);
+            Assert.Equal(oldSummary, view.logTextBox.Text);
 
-                view.LoadStandaloneFlowParam(new FlowParam { Name = "Replacement", DataBase64 = Convert.ToBase64String(canvas) }, false);
-                Assert.Null(previousNode.nodeRunEvent);
-                Assert.Null(previousNode.nodeEndEvent);
-                Assert.DoesNotContain(previousNode, view.STNodeEditorMain.Nodes.Cast<STNode>());
-                Assert.Equal(string.Empty, view.logTextBox.Text);
-                Assert.Equal(Visibility.Collapsed, details.Visibility);
-
-                pendingWrite.SetResult(true);
-                PumpUntil(delayedSummary);
-
-                Assert.Equal("Replacement", Assert.Single(view.STNodeEditorMain.Nodes.Cast<STNode>()).Title);
-                Assert.Equal(string.Empty, view.logTextBox.Text);
-                Assert.Equal(Visibility.Collapsed, details.Visibility);
-                Assert.Null(GetField(view, "_executionDetailsNode"));
-                Assert.Null(details.ToolTip);
-            }
-            finally
-            {
-                pendingWrite.TrySetResult(true);
-                PumpUntil(delayedSummary);
-            }
+            view.LoadStandaloneFlowParam(new FlowParam { Name = "Replacement", DataBase64 = Convert.ToBase64String(canvas) }, false);
+            Assert.Null(previousNode.nodeRunEvent);
+            Assert.Null(previousNode.nodeEndEvent);
+            Assert.DoesNotContain(previousNode, view.STNodeEditorMain.Nodes.Cast<STNode>());
+            Assert.Equal("Replacement", Assert.Single(view.STNodeEditorMain.Nodes.Cast<STNode>()).Title);
+            Assert.Equal(string.Empty, view.logTextBox.Text);
         });
     }
 

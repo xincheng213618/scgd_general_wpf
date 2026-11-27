@@ -130,9 +130,6 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		case AlgorithmARVRType.双目融合:
 			operatorCode = "ARVR.BinocularFusion";
 			break;
-		case AlgorithmARVRType.SFR_FindROI:
-			operatorCode = "ARVR.SFR.FindROI";
-			break;
 		case AlgorithmARVRType.十字计算:
 			operatorCode = "FindCross";
 			break;
@@ -145,6 +142,9 @@ public class AlgorithmARVRNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
+		if (!System.Enum.IsDefined(_Algorithm))
+			throw new System.NotSupportedException($"算法编号 {(int)_Algorithm} 已退役或不受支持，请重新选择受支持的算子。");
+
 		AlgorithmParam_ROI algorithmParam_ROI = new AlgorithmParam_ROI();
 		algorithmParam_ROI.POITemplateParam = new CVTemplateParam
 		{

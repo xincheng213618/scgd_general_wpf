@@ -35,7 +35,7 @@ public sealed class LocalRgbCrossNodeTests
             var action = new CVStartCFC("shared-rgb-cross-batch");
             MySqlConnectedEndpoint? active = null;
             bool switchOnOpen = false;
-            var replacement = new MySqlConnectedEndpoint(endpoint => ReferenceEquals(active, endpoint), () => Open("replacement.db"));
+            var replacement = new MySqlConnectedEndpoint(endpoint => ReferenceEquals(active, endpoint), () => Open("replacement.db"), new("TEST", 3306, "replacement"));
             var original = new MySqlConnectedEndpoint(endpoint => ReferenceEquals(active, endpoint), () =>
             {
                 if (switchOnOpen)
@@ -44,10 +44,11 @@ public sealed class LocalRgbCrossNodeTests
                     active = replacement;
                 }
                 return Open("original.db");
-            });
+            }, new("TEST", 3306, "original"));
             try
             {
                 active = original;
+                var templates = LocalPoiSearchRegionTests.ServiceTemplates(fixture.FullName, original);
                 var first = Seed(original, "first.png", x: 40, bind: true);
                 var other = Seed(replacement, "other.png", x: 70, bind: false);
                 Assert.Equal((first.BatchId, first.ImageId, first.TemplateId), (other.BatchId, other.ImageId, other.TemplateId));
@@ -66,7 +67,7 @@ public sealed class LocalRgbCrossNodeTests
                 {
                     if (message.SerialNumber == action.SerialNumber) published = message;
                 });
-                var node = new LocalRgbCrossNode { SearchRegionPoiTemplate = "shared-roi", ResultDirectory = outputDirectory };
+                var node = new LocalRgbCrossNode(new LocalRgbCrossNodeServices(templates)) { SearchRegionPoiTemplate = "shared-roi", ResultDirectory = outputDirectory };
                 var saved = rejectDetail ? null : node.ExecuteSynchronously(action);
                 if (rejectDetail)
                 {

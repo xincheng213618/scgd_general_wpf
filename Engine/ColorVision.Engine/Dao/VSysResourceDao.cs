@@ -61,7 +61,7 @@ namespace ColorVision.Engine
                 var ids = GetLocalGroupLinks().Where(link => link.GroupId == groupId).Select(link => link.ResourceId).ToHashSet();
                 return GetLocal().Where(resource => ids.Contains(resource.Id)).ToList();
             }
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            using var Db = OpenDatabase();
             return Db.Queryable<SysResourceGoupModel, SysResourceModel>((rg, r) => rg.ResourceId == r.Id).Where((rg, r) => rg.GroupId == groupId).Select((rg, r) => r).ToList();
         }
 
@@ -84,7 +84,7 @@ namespace ColorVision.Engine
                 return;
             }
             if (UseLocal) throw new InvalidOperationException("MySQL 未连接，不能修改服务器资源组。");
-            using var db = MySqlControl.CreateDbClient();
+            using var db = OpenDatabase();
             db.Ado.BeginTran();
             try
             {

@@ -1,6 +1,7 @@
 #include "distortion_p9.h"
 #include "grid_distortion_v2.h"
 
+#include <opencv2/geometry.hpp>
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -113,6 +114,31 @@ bool isCandidateRect(const cv::Rect& rect, int area, const DistortionP9Config& c
     return true;
 }
 
+cv::Mat trimLabelMask(const cv::Mat& mask)
+{
+    const size_t pixels = mask.total();
+    if (pixels < 1024 * 1024 || mask.ptr<uchar>(mask.rows - 1)[mask.cols - 1] != 0) return mask;
+
+    // Foreground in both outer sixteenths already requires more than 7/8 of the mask.
+    const int rightMargin = mask.cols / 16;
+    const int bottomMargin = mask.rows / 16;
+    if (rightMargin > 0 && bottomMargin > 0
+        && cv::hasNonZero(mask.rowRange(mask.rows - bottomMargin, mask.rows))
+        && cv::hasNonZero(mask.colRange(mask.cols - rightMargin, mask.cols))) {
+        return mask;
+    }
+    const cv::Rect foreground = cv::boundingRect(mask);
+    if (foreground.empty()) return {};
+
+    // Keep the origin and trim only trailing background. Whole 2x2 blocks
+    // keep the labeling traversal and foreground coordinates aligned.
+    const cv::Point end = foreground.br();
+    const int width = end.x + ((end.x < mask.cols) && (end.x & 1));
+    const int height = end.y + ((end.y < mask.rows) && (end.y & 1));
+    const size_t labelPixels = static_cast<size_t>(width) * height;
+    return labelPixels <= pixels - pixels / 8 ? mask(cv::Rect(0, 0, width, height)) : mask;
+}
+
 std::vector<DistortionP9Point> findCandidates(const cv::Mat& gray, const DistortionP9Config& config)
 {
     cv::Mat mask = makePointMask(gray, config);
@@ -120,10 +146,13 @@ std::vector<DistortionP9Point> findCandidates(const cv::Mat& gray, const Distort
         return {};
     }
 
+    const cv::Mat labelMask = trimLabelMask(mask);
+    if (labelMask.empty()) return {};
+
     cv::Mat labels;
     cv::Mat stats;
     cv::Mat centroids;
-    const int labelCount = cv::connectedComponentsWithStats(mask, labels, stats, centroids, 8, CV_32S);
+    const int labelCount = cv::connectedComponentsWithStats(labelMask, labels, stats, centroids, 8, CV_32S);
 
     std::vector<DistortionP9Point> candidates;
     candidates.reserve(static_cast<size_t>(std::max(0, labelCount - 1)));

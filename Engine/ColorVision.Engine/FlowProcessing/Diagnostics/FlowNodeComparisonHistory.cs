@@ -9,18 +9,23 @@ internal sealed record FlowNodeComparisonHistory(
     IReadOnlyList<FlowNodeMessage> Messages,
     bool HasFlowIdentity)
 {
-    internal static FlowNodeComparisonHistory ForRuns(string nodeId, IEnumerable<FlowRunRecord> runs,
-        IEnumerable<FlowNodeRecord> records, IEnumerable<FlowNodeMessage> messages)
+    internal static FlowNodeRecord[] SelectRunRecords(string nodeId, IEnumerable<FlowRunRecord> runs,
+        IEnumerable<FlowNodeRecord> records)
     {
         var runKeys = runs.Where(run => run.BatchId.HasValue)
             .Select(run => (run.BatchId!.Value, run.SerialNumber ?? string.Empty)).ToHashSet();
         var legacySerials = runs.Where(run => !run.BatchId.HasValue && !string.IsNullOrWhiteSpace(run.SerialNumber))
             .Select(run => run.SerialNumber!).ToHashSet(StringComparer.Ordinal);
-        var selectedRecords = records.Where(record => record.NodeId == nodeId
+        return records.Where(record => record.NodeId == nodeId
                 && (runKeys.Contains((record.BatchId, record.SerialNumber ?? string.Empty))
                     || legacySerials.Contains(record.SerialNumber ?? string.Empty)))
             .DistinctBy(record => (record.Id, record.BatchId, record.SerialNumber, record.StartTime))
             .OrderByDescending(record => record.StartTime).ThenByDescending(record => record.Id).ToArray();
+    }
+
+    internal static FlowNodeComparisonHistory FromSelectedRecords(string nodeId, IReadOnlyList<FlowNodeRecord> selectedRecords,
+        IEnumerable<FlowNodeMessage> messages)
+    {
         var selectedKeys = selectedRecords.Select(record => (record.BatchId, record.SerialNumber ?? string.Empty)).ToHashSet();
         var selectedMessages = messages.Where(message => message.NodeId == nodeId
                 && selectedKeys.Contains((message.BatchId, message.SerialNumber ?? string.Empty)))
@@ -32,10 +37,10 @@ internal sealed record FlowNodeComparisonHistory(
     internal IReadOnlyList<FlowNodeComparisonRow> BuildRows()
     {
         var rows = new List<FlowNodeComparisonRow>();
-        var messageLookup = new FlowExecutionAnalysisPresentation.NodeMessageLookup(Messages);
+        var messageLookup = new FlowExecutionAnalysisPresentation.NodeMessageLookup(Records, Messages);
         foreach (FlowNodeRecord record in Records)
         {
-            IReadOnlyList<FlowNodeMessage> messages = messageLookup.GetMessages(record, Records);
+            IReadOnlyList<FlowNodeMessage> messages = messageLookup.GetMessages(record);
             if (messages.Count == 0)
                 rows.Add(new(record, null));
             else

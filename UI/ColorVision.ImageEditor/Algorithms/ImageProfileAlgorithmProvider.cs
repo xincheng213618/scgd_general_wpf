@@ -13,7 +13,7 @@ using System.Windows;
 namespace ColorVision.ImageEditor.Algorithms
 {
     /// <summary>Deterministic nearest/bilinear sampling along an open or closed polyline.</summary>
-    public sealed class ImageProfileAlgorithmProvider : IImageAlgorithmProvider, IAlgorithmDescriptorSupport
+    public sealed partial class ImageProfileAlgorithmProvider : IImageAlgorithmProvider, IAlgorithmDescriptorSupport
     {
         private const string ResultSchema = "colorvision.analysis.image-profile/v1";
         private const int EstimatedRowBaseBytes = 256;
@@ -235,23 +235,15 @@ namespace ColorVision.ImageEditor.Algorithms
                     context.Progress?.Report(new AlgorithmProgress(0.05 + 0.8 * requestedIndex / Math.Max(1, requestedSamples), "profile.sample"));
                 }
 
-                double distance = SampleDistance(requestedIndex, requestedSamples, totalPixels, parameters.SampleSpacingPixels, parameters.ClosePath);
-                while (segmentIndex < segments.Length - 1 && distance > segments[segmentIndex].PixelStart + segments[segmentIndex].PixelLength)
-                    segmentIndex++;
-                Segment segment = segments[segmentIndex];
-                double local = Math.Clamp(distance - segment.PixelStart, 0, segment.PixelLength);
-                double ratio = segment.PixelLength <= 0 ? 0 : local / segment.PixelLength;
-                double x = segment.Start.X + (segment.End.X - segment.Start.X) * ratio;
-                double y = segment.Start.Y + (segment.End.Y - segment.Start.Y) * ratio;
-                bool outside = x < 0 || x > image.Width - 1 || y < 0 || y > image.Height - 1;
-                if (outside)
+                ProfileSample sample = GetSample(requestedIndex, requestedSamples, totalPixels, parameters, segments, ref segmentIndex);
+                if (IsOutside(sample, image.Width, image.Height))
                 {
                     if (parameters.BoundaryMode == ImageProfileBoundaryMode.Reject)
                     {
                         return Failure(
                             context,
                             "profile_sample_out_of_bounds",
-                            $"Sample {requestedIndex} at ({x:R}, {y:R}) is outside the image.",
+                            $"Sample {requestedIndex} at ({sample.X:R}, {sample.Y:R}) is outside the image.",
                             "roi.points");
                     }
                     if (parameters.BoundaryMode == ImageProfileBoundaryMode.Skip)
@@ -259,16 +251,13 @@ namespace ColorVision.ImageEditor.Algorithms
                         skipped++;
                         continue;
                     }
-                    x = Math.Clamp(x, 0, image.Width - 1);
-                    y = Math.Clamp(y, 0, image.Height - 1);
+                    sample = ClampSample(sample, image.Width, image.Height);
                     clamped++;
                 }
 
-                ProfileSample sample = new(requestedIndex, segment.OriginalIndex, distance,
-                    segment.PhysicalStart + ratio * segment.PhysicalLength, x, y);
                 if (batchSource == null)
                 {
-                    SampleRaw(image, x, y, parameters.Interpolation, raw);
+                    SampleRaw(image, sample, parameters.Interpolation, raw);
                     AppendSample(sample);
                 }
                 else
@@ -291,7 +280,7 @@ namespace ColorVision.ImageEditor.Algorithms
                         pixels[index] = (NearestPixel(sample.X, image.Width), NearestPixel(sample.Y, image.Height));
                     else
                     {
-                        var (x0, y0, x1, y1, tx, ty) = BilinearFootprint(image, sample.X, sample.Y);
+                        var (x0, y0, x1, y1, tx, ty) = BilinearFootprint(image.Width, image.Height, sample.X, sample.Y);
                         int first = index * neighbors;
                         pixels[first] = (x0, y0);
                         pixels[first + 1] = (x1, y0);
@@ -451,14 +440,30 @@ namespace ColorVision.ImageEditor.Algorithms
             return last < length - 1e-10 * Math.Max(1, length) ? checked(regular + 1) : regular;
         }
 
-        private static double SampleDistance(int index, int count, double length, double spacing, bool closed)
+        private static ProfileSample GetSample(int index, int count, double length, ImageProfileParameters parameters,
+            Segment[] segments, ref int segmentIndex)
         {
-            if (!closed && index == count - 1) return length;
-            return Math.Min(length, index * spacing);
+            double distance = !parameters.ClosePath && index == count - 1 ? length : Math.Min(length, index * parameters.SampleSpacingPixels);
+            while (segmentIndex < segments.Length - 1 && distance > segments[segmentIndex].PixelStart + segments[segmentIndex].PixelLength)
+                segmentIndex++;
+            Segment segment = segments[segmentIndex];
+            double local = Math.Clamp(distance - segment.PixelStart, 0, segment.PixelLength);
+            double ratio = segment.PixelLength <= 0 ? 0 : local / segment.PixelLength;
+            double x = segment.Start.X + (segment.End.X - segment.Start.X) * ratio;
+            double y = segment.Start.Y + (segment.End.Y - segment.Start.Y) * ratio;
+            return new ProfileSample(index, segment.OriginalIndex, distance,
+                segment.PhysicalStart + ratio * segment.PhysicalLength, x, y);
         }
 
-        private static void SampleRaw(ProfileRaster image, double x, double y, ImageProfileInterpolation interpolation, Span<double> result)
+        private static bool IsOutside(ProfileSample sample, int width, int height)
+            => sample.X < 0 || sample.X > width - 1 || sample.Y < 0 || sample.Y > height - 1;
+
+        private static ProfileSample ClampSample(ProfileSample sample, int width, int height)
+            => sample with { X = Math.Clamp(sample.X, 0, width - 1), Y = Math.Clamp(sample.Y, 0, height - 1) };
+
+        private static void SampleRaw(ProfileRaster image, ProfileSample sample, ImageProfileInterpolation interpolation, Span<double> result)
         {
+            double x = sample.X, y = sample.Y;
             if (interpolation == ImageProfileInterpolation.Nearest)
             {
                 int pixelX = NearestPixel(x, image.Width);
@@ -471,15 +476,16 @@ namespace ColorVision.ImageEditor.Algorithms
                 else
                 {
                     int bytesPerChannel = image.Format.BitsPerChannel() / 8;
-                    ReadOnlySpan<byte> data = image.Buffer!.Data.Span;
-                    int offset = PixelOffset(image, pixelX, pixelY, result.Length * bytesPerChannel);
+                    ReadOnlySpan<byte> data = image.Data;
+                    int offset = image.DisplaySamples?.GetOffset(sample.RequestedIndex, 0)
+                        ?? PixelOffset(image, pixelX, pixelY, result.Length * bytesPerChannel);
                     for (int channel = 0; channel < result.Length; channel++, offset += bytesPerChannel)
                         result[channel] = ReadSample(data, offset, bytesPerChannel);
                 }
                 return;
             }
 
-            var (x0, y0, x1, y1, tx, ty) = BilinearFootprint(image, x, y);
+            var (x0, y0, x1, y1, tx, ty) = BilinearFootprint(image.Width, image.Height, x, y);
             if (image.Source != null)
             {
                 for (int channel = 0; channel < result.Length; channel++)
@@ -493,9 +499,10 @@ namespace ColorVision.ImageEditor.Algorithms
             {
                 int bytesPerChannel = image.Format.BitsPerChannel() / 8;
                 int pixelBytes = result.Length * bytesPerChannel;
-                ReadOnlySpan<byte> data = image.Buffer!.Data.Span;
-                int topLeft = PixelOffset(image, x0, y0, pixelBytes);
-                int bottomLeft = PixelOffset(image, x0, y1, pixelBytes);
+                ReadOnlySpan<byte> data = image.Data;
+                DisplaySampleSnapshot? samples = image.DisplaySamples;
+                int topLeft = samples?.GetOffset(sample.RequestedIndex, 0) ?? PixelOffset(image, x0, y0, pixelBytes);
+                int bottomLeft = samples?.GetOffset(sample.RequestedIndex, y1 - y0) ?? PixelOffset(image, x0, y1, pixelBytes);
                 int columnDistance = (x1 - x0) * pixelBytes;
                 for (int channel = 0; channel < result.Length; channel++, topLeft += bytesPerChannel, bottomLeft += bytesPerChannel)
                 {
@@ -508,12 +515,12 @@ namespace ColorVision.ImageEditor.Algorithms
 
         private static int NearestPixel(double coordinate, int size) => Math.Clamp((int)Math.Floor(coordinate + 0.5), 0, size - 1);
 
-        private static (int X0, int Y0, int X1, int Y1, double Tx, double Ty) BilinearFootprint(ProfileRaster image, double x, double y)
+        private static (int X0, int Y0, int X1, int Y1, double Tx, double Ty) BilinearFootprint(int width, int height, double x, double y)
         {
             double floorX = Math.Floor(x), floorY = Math.Floor(y);
-            int x0 = Math.Clamp((int)floorX, 0, image.Width - 1);
-            int y0 = Math.Clamp((int)floorY, 0, image.Height - 1);
-            return (x0, y0, Math.Min(x0 + 1, image.Width - 1), Math.Min(y0 + 1, image.Height - 1), x - floorX, y - floorY);
+            int x0 = Math.Clamp((int)floorX, 0, width - 1);
+            int y0 = Math.Clamp((int)floorY, 0, height - 1);
+            return (x0, y0, Math.Min(x0 + 1, width - 1), Math.Min(y0 + 1, height - 1), x - floorX, y - floorY);
         }
 
         private static double Lerp(double start, double end, double amount)
@@ -667,6 +674,7 @@ namespace ColorVision.ImageEditor.Algorithms
         private sealed class ProfileRaster
         {
             public AlgorithmImageBuffer? Buffer { get; }
+            public DisplaySampleSnapshot? DisplaySamples { get; }
             public IImageProfileMeasurementSource? Source { get; }
             public int Width { get; }
             public int Height { get; }
@@ -674,7 +682,8 @@ namespace ColorVision.ImageEditor.Algorithms
             public double DpiY { get; }
             public int OriginX { get; }
             public int OriginY { get; }
-            public AlgorithmImageFormat Format => Buffer?.Format ?? AlgorithmImageFormat.Gray32Float;
+            public AlgorithmImageFormat Format => Buffer?.Format ?? DisplaySamples?.Format ?? AlgorithmImageFormat.Gray32Float;
+            public ReadOnlySpan<byte> Data => DisplaySamples == null ? Buffer!.Data.Span : DisplaySamples.Data;
             public string Unit => Format.IsFloatingPoint() ? "value" : "DN";
             public ProfileRaster(AlgorithmImageBuffer buffer)
             {
@@ -693,6 +702,10 @@ namespace ColorVision.ImageEditor.Algorithms
             public ProfileRaster(IImageProfileMeasurementSource source, ImageSelectionScope scope)
             {
                 Source = source; Width = source.Width; Height = source.Height; DpiX = scope.DpiX; DpiY = scope.DpiY;
+            }
+            public ProfileRaster(DisplaySampleSnapshot samples, ImageSelectionScope scope)
+            {
+                DisplaySamples = samples; Width = scope.PixelWidth; Height = scope.PixelHeight; DpiX = scope.DpiX; DpiY = scope.DpiY;
             }
         }
 
