@@ -5,8 +5,8 @@
     "relativePath": "algorithms.find-light-area.html",
     "markdownRelativePath": "algorithms.find-light-area.md",
     "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/templates/find-light-area#algorithm-principles",
-    "sourceSha256": "43521092da755aa5380dc9873f4a8d18c4fb2f1811f2c7da460cc1b76227dd94",
-    "markdownSha256": "ace7ceaf31dba3a09ed2511ba0dd6c37165abfecaec7bd9d33a5c6678a9887d9"
+    "sourceSha256": "f7a84ba3848cccc0530ba88c3e5b84de2fdb835bcd5a14bd3d81272e7e71670c",
+    "markdownSha256": "f4231bd0d8843f9760297d889870bdcfdfee1abbf49f39b251c8db173db8f02b"
   },
   {
     "id": "algorithms.light-beads",
@@ -50,8 +50,8 @@
     "relativePath": "algorithms.find-cross.html",
     "markdownRelativePath": "algorithms.find-cross.md",
     "onlineUrl": "https://xincheng213618.github.io/scgd_general_wpf/04-api-reference/algorithms/detectors/find-cross#algorithm-principles",
-    "sourceSha256": "c3726ff44f7e5915d07756d5ef7d5a59f5000cfddfca8362d9f2d39b67175608",
-    "markdownSha256": "bf4c136d126ec80b9188579262c5ac35e3431eb1376580d866d121e1784f6241"
+    "sourceSha256": "e4f64e64aedb4ab5b1f92097d55e5703d2146460533a28b53cfb19897be92d16",
+    "markdownSha256": "625a18e88a13c1db4ffad3434036f06920f5aac20ec70ba1d77313f675a6b240"
   },
   {
     "id": "algorithms.stripe-mtf",
