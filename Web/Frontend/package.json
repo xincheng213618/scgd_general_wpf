@@ -16,7 +16,7 @@
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@noble/hashes": "^2.4.0",
     "antd": "^5.29.3",
-    "dompurify": "^3.4.16",
+    "dompurify": "^3.4.17",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.18.2",
